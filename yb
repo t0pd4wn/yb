@@ -1,0 +1,141 @@
+#!/bin/bash
+#---------------------------------------
+# yb | yaml bash parser
+#---------------------------------------
+
+# Setting the eu flag
+set -eu
+
+########################################
+# Parse a yaml file
+# Attributes:
+#   $1 # /path/to/a/yaml/file 
+########################################
+parse_yaml() {
+  local file="${1-}"
+  local spacing=2
+  local bold_colon="$(colorize ":" "\033[1m")"
+  local hyphen="$(colorize "-" "\033[1m")"
+  local yaml
+  local separator
+  local line
+  local spaces
+  local level
+  local key
+  local value
+
+  # Array to keep track of indentation levels
+  declare -a indentation
+
+  # Read the YAML file
+  yaml=$(<"${file}")  
+
+  # Set the space separator the length of $spacing
+  for (( i = 0; i < "${spacing}"; i++ )); do
+    separator+=" "
+  done
+
+  # Set whitespace as field separator
+  IFS=$' \t\n'
+
+  # Loop through each line of the YAML file
+  while IFS= read -r line; do
+
+    # Check if the line is empty or a comment
+    if [[ -z "${line}" || "${line}" == "#"* ]]; then
+      echo "${line}"
+      continue
+    fi
+
+    # Count the leading spaces to determine the indentation level
+    spaces="${line%%[^[:space:]]*}"
+    level="${#spaces}"
+    level="$(( level / spacing ))"
+
+    # Remove the indentation spaces from the line
+    line=$(trim_space "${line}")
+
+    # Check if the line is a key-value pair
+    if [[ "${line}" == *":"* ]]; then
+      # Extract the key and value
+      key="${line%%:*}"
+      value="${line#*:}"
+
+      # Trim leading and trailing whitespace
+      key=$(trim_space $key)
+      value=$(trim_space $value)
+
+      # Add indentation for child keys
+      for ((i = 0; i < level; i++)); do
+        echo -n "${separator}"
+      done
+
+      # Print the key and colorized value
+      value="$(colorize "$value" "\033[1;36m")"
+      echo -n "${key}${bold_colon}"
+      echo " ${value}"
+
+    else
+      # Trim leading space and list hyphen
+      line=$(trim_space "${line}")
+      line=$(trim_hyphen "${line}")
+
+      # Add indentation for list items
+      for ((i = 0; i < level; i++)); do
+        echo -n "  "
+      done
+
+      # Print the item
+      line=$(colorize ""${line}"" "\033[1;36m")
+      echo -e "${hyphen} ${line}"
+    fi
+  done <<< "${yaml}"
+
+  # Reset IFS to default value
+  unset IFS
+}
+
+########################################
+# Trim leading and trailing spaces
+# Attributes:
+#   $1 # string
+########################################
+trim_space(){
+  local string="${@-}"
+  string="${string##[[:space:]]}"
+  string="${string%%[[:space:]]}"
+  echo -e "${string}"
+}
+
+########################################
+# Trim a leading hyphen and space
+# Attributes:
+#   $1 # string
+########################################
+trim_hyphen(){
+  local string="${@-}"
+  string="${string##*- }"
+  echo -e "${string}"
+}
+
+########################################
+# Add some color tags to a string
+# Attributes:
+#   $1 # string
+#   $2 # an ANSI format color
+########################################
+colorize(){
+  local text="${1-}"
+  local color="${2-}"
+  echo -e "${color}${text}\033[0m"
+}
+
+# Checking if options are met
+if [[ $# -eq 1 ]]; then
+  parse_yaml "$1"
+else
+  echo "Usage: $0 <yaml_file>"
+fi
+
+# Unsetting the eu flag
+set +eu

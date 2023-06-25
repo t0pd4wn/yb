@@ -5,7 +5,7 @@ This is an effort at providing a pure bash solution to the yaml parsing problem.
 ## Usage:
 
 ```bash
-./yb -FRA -f <yaml_file> -k <key> -s <spacer value>
+./yb -FRA -f <yaml_file> -k <key> -s <spacer_value>
 ```
 
 Example:

@@ -10,13 +10,19 @@ yb <yaml_file>
 
 ## Todo:
 
-- [ ] `<key>` selection
-- [ ] `<key.childkey>` selection
+- [x] `<key>` selection
+- [x] `<key.childkey>` selection
+- [ ] `<key` perimeter options
+- [x] `-f` file option 
 - [ ] `-a` add option 
 - [ ] `-r` remove option
-- [ ] `-k` key option (limit to key(s))
+- [x] `-k` key option (limit to key(s))
+- [x] `-R` raw option (no formatting)
+- [x] `-F` format option
+- [x] `-A` array option (needs -F)
 - [ ] `-v` value option (limit to value(s))
 - [ ] `-w` write to file option
+- [ ] `---` group selection support
 
 ## License
 

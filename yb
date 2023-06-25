@@ -6,125 +6,125 @@
 # Setting the eu flag
 set -eu
 
+
+########################################
+# Declare globals
+# Attributes:
+#   $@ # script user options
+########################################
+_globals(){
+  declare -g yb_spacing=2
+  declare -g yb_grey="\033[0;30m"
+  declare -g yb_blue="\033[1;36m"
+  declare -g yb_orange="\033[1;33m"
+  declare -g yb_format=false
+  declare -g yb_is_array=false
+  declare -g yb_is_raw=false
+  declare -ga yb_array
+  # declare -A yb_line
+  declare -g yb_file_line_number
+  declare -g yb_is_sequence=false
+  declare -g yb_key_length=0
+  declare -g yb_key_step=0
+  declare -g yb_key_base_level
+  declare -g yb_retrieve
+  declare -g yb_is_retrieved=false
+}
+
 ########################################
 # Parse a yaml file
 # Attributes:
 #   $1 # /path/to/a/yaml/file 
 ########################################
-parse_yaml() {
-
-
-  # echo "is parsing"
+_parse_yaml() {
   local file="${1-}"
-  local spacing=2
-  local bold_colon="$(to_color ":" "\033[1m")"
-  local hyphen="$(to_color "-" "\033[1m")"
+  local bold_colon="$(_to_color ":" "\033[1m")"
+  local hyphen="$(_to_color "-" "\033[1m")"
   local comment
   local yaml
   local separator
   local line
   local spaces
   local level
+  local type
   local key
   local option_color=true
-  yb_file_line_number=0
-  yb_key_step=0
+  local line_number=0
 
-  # Array to keep track of indentation levels
-  declare -a indentation
+  # global associative array
+  declare -A line_struct
 
   # Read the YAML file
-  yaml=$(<"${file}")  
-
-  # echo "${yaml}"
-
-  # Set the space separator the length of $spacing
-  for (( i = 0; i < "${spacing}"; i++ )); do
-    separator+=" "
-  done
+  yaml=$(<"${file}")
 
   # Set whitespace as field separator
   IFS=$' \t\n'
 
   # Loop through each line of the YAML file
   while IFS= read -r line; do
-
-    # echo "IFS ing"
-
-    # increment the variable to keep track of current line number 
-    yb_file_line_number=( yb_file_line_number + 1 )
-
-    # echo "incremented"
+    # keep track of current line number
+    ((line_number += 1))
 
     # Count the leading spaces to determine the indentation level
     spaces="${line%%[^[:space:]]*}"
     level="${#spaces}"
-    level="$(( level / spacing ))"
+    level="$(( level / yb_spacing ))"
 
     # Remove the leading and trailing spaces
-    line=$(trim_space "${line}")
-
-    # echo "is messaging"
+    line=$(_trim_space "${line}")
 
     # Check the line type
     if [[ -z "${line}" ]]; then 
-      message "empty" "${line}" 
+      type="empty"
     elif [[ "${line}" == "#"* ]]; then
-      # echo "${line}"
-      message "comment" "${line}" 
+      type="comment"
+      value="${line}"
     elif [[ "${line}" == *":" && $line != *:*:* ]]; then
-      # echo "key"
-      line="${line%%:*}"
-      message "key" "${line}"
+      type="key"
+      key="${line%%:*}"
     elif [[ "${line}" == *": "* && ${line} != "- "* ]]; then
+      type="key:value"
       # echo "key-value"
-      message "key:value" "${line}"
+      key="${line%%:*}"
+      value="${line#*:}"
+      key=$(_trim_space $key)
+      value=$(_trim_space $value)
+    elif [[ "${line}" == "- "*": "* ]]; then
+        type="list-key:value"
+        key=$(_trim_space "${line}")
+        key=$(_trim_hyphen "${key}")
+        key="${key%%:*}"
+        value="${line#*:}"
+        value=$(_trim_space "${value}")
     elif [[ "${line}" == "- "* ]]; then
-      # echo "list-value"
-      message "list-value" "${line}"
+      if [[ ${level} -eq 0 ]]; then
+        type="list-key"
+        # Trim leading space and list hyphen
+        key=$(_trim_space "${line}")
+        key=$(_trim_hyphen "${line}")
+      else
+        type="list-value"
+        # Trim leading space and list hyphen
+        value=$(_trim_space "${line}")
+        value=$(_trim_hyphen "${line}")
+      fi
     else
-      # echo "other"
-      message "other" "${line}"
+      type="other"
+      value="${line}"
     fi
 
-    # # Check if the line is a key-value pair
-    # if [[ "${line}" == *":"* ]]; then
-    #   # Extract the key and value
-    #   key="${line%%:*}"
-    #   value="${line#*:}"
+    # populate the associative array
+    line_struct=(
+      [type]="${type}"
+      [level]="${level}"
+      [line_number]="${line_number}"
+      [key]="${key-}"
+      [value]="${value-}"
+    )
 
-    #   # Trim leading and trailing whitespace
-    #   key=$(trim_space $key)
-    #   value=$(trim_space $value)
+    # send the reference
+    _manage line_struct
 
-    #   # Add indentation for child keys
-    #   for ((i = 0; i < level; i++)); do
-    #     echo -n "${separator}"
-    #   done
-
-    #   # Print the key and colorized value
-    #   value="$(to_color "$value" "\033[1;36m")"
-    #   # echo -n "${key}${bold_colon}"
-    #   # echo " ${value}"
-    #   if [[ -z ${value} ]]; then
-    #     message "key:" "${key}"
-    #   else
-    #     message "key:value" "${key}" "${value}"
-    #   fi
-    # else
-    #   # Trim leading space and list hyphen
-    #   line=$(trim_space "${line}")
-    #   line=$(trim_hyphen "${line}")
-
-    #   # Add indentation for list items
-    #   for ((i = 0; i < level; i++)); do
-    #     echo -n "${separator}"
-    #   done
-
-    #   # Print the item
-    #   line=$(to_color ""${line}"" "\033[1;36m")
-    #   message "list-value" "${line}"
-    # fi
   done <<< "${yaml}"
 
   # Reset IFS to default value
@@ -132,36 +132,208 @@ parse_yaml() {
 }
 
 ########################################
+# Manage lines structures depending on action
+# Attributes:
+#   $1 # an associative array reference
+########################################
+_manage(){
+  local -n line="$1"
+  # if a sequence and not being retrieved
+  if [[ "${yb_is_sequence}" == true && "${yb_retrieve}" == false ]]; then
+    # if sequence hasn't been found yet
+    if [[ "${yb_is_retrieved}" == false ]]; then
+      if [[ "${line["key"]}" == "${yb_key["${yb_key_step}"]}" ]]; then
+        ((yb_key_step += 1))
+        # if value is on a sub level, retrieve it
+        if [[ "${yb_key_step}" -eq "${yb_key_length}" ]]; then
+          yb_retrieve=true
+          yb_key_base_level="${line["level"]}"
+          # if value is key:value, retrieve only once
+          if [[ "${line["type"]}" == "key:value" ]]; then
+            _format line
+            # sequence is over, reset flags
+            yb_key_step=0
+            yb_is_retrieved=false
+            yb_retrieve=false
+          fi
+        fi
+      fi
+    fi
+  elif [[  "${yb_is_sequence}" == true && "${yb_retrieve}" == true ]]; then
+    if [[ "${level}" -gt "${yb_key_base_level}"  ]]; then
+      _format line
+    else 
+      # if the level is lower or equal the key level
+      # sequence is over, reset flags
+      yb_key_step=0
+      yb_is_retrieved=false
+      yb_retrieve=false
+    fi
+  else
+    # current parsing is not a selection
+    _format line
+  fi
+}
+
+########################################
+# Format structures depending on output
+# Attributes:
+#   $1 # an associative array reference
+########################################
+_format(){
+  local -n line_prepare="$1"
+  local level=${line_prepare["level"]}
+  local spacer=""
+
+  if [[ ${yb_is_sequence} == true ]]; then
+    local base_level="${yb_key_base_level-}"
+    level=$(( $level - $base_level ))
+  fi
+
+  if [[ "${yb_format}" == true ]]; then
+
+    for (( i = 0; i < ${level}; i++ )); do
+      spacer+="."
+    done
+
+    if [[ "${line_prepare["type"]}" == "key" ]]; then
+      if [[ "${yb_is_array}" == true ]]; then
+        yb_array+=("${spacer}${line_prepare["key"]}")
+      else
+        echo "${spacer}${line_prepare["key"]}:"
+      fi
+    elif [[ "${line_prepare["type"]}" == "key:value" ]]; then
+      if [[ "${yb_is_array}" == true ]]; then
+        yb_array+=("${spacer}${line_prepare["key"]}")
+        yb_array+=("${line_prepare["value"]}")
+      else
+        echo "${spacer}${line_prepare["key"]}: ${line_prepare["value"]}"
+      fi
+    elif [[ "${line_prepare["type"]}" == "list-key:value" ]]; then
+      if [[ "${yb_is_array}" == true ]]; then
+        yb_array+=("${spacer}${line_prepare["key"]}")
+        yb_array+=("${line_prepare["value"]}")
+      else
+        echo "- ${line_prepare["key"]}: ${line_prepare["value"]}"
+      fi
+    elif [[ "${line_prepare["type"]}" == "list-value" ]]; then
+      if [[ "${yb_is_array}" == true ]]; then
+        yb_array+=("${line_prepare["value"]}")
+      else
+        echo "- ${line_prepare["value"]} "
+      fi
+    elif [[ "${line_prepare["type"]}" == "list-key" ]]; then
+      if [[ "${yb_is_array}" == true ]]; then
+        yb_array+=("${line_prepare["key"]}")
+      else
+        echo "- ${line_prepare["key"]} "
+      fi
+    fi
+  else
+    _print line_prepare
+  fi
+}
+
+########################################
+# Print to terminal
+# Attributes:
+#   $1 # an associative array reference
+########################################
+_print(){
+  local -n line_print="$1"
+  local spacer=""
+  local level
+  local key
+  local value
+  local hyphen
+
+  if [[ ${yb_is_raw} == true || ${yb_is_sequence} == false ]]; then
+    level="${line_print["level"]}"
+  else
+    local base_level="${yb_key_base_level-}"
+    local line_level=${line_print["level"]}
+    level=$(( $line_level - $base_level - 1 ))
+  fi
+
+  for (( i = 0; i < "${level}"; i++ )); do
+    spacer+="  "
+  done
+
+  if [[ "${line_print["type"]}" == "empty" ]]; then
+    if [[ ${yb_is_raw} == true ]]; then
+      echo "${spacer}"
+    else
+      echo "${spacer}"
+    fi
+  elif [[ "${line_print["type"]}" == "comment" ]]; then
+    if [[ ${yb_is_raw} == true ]]; then
+      echo "${spacer}${line_print["value"]}"
+    else
+      value=$(_to_color "${line_print["value"]}" "${yb_grey}")
+      echo -e "${spacer}${value}"
+    fi
+  elif [[ "${line_print["type"]}" == "key" ]]; then
+    if [[ ${yb_is_raw} == true ]]; then
+      echo "${spacer}${line_print["key"]}:"
+    else
+      key=$(_to_color "${line_print["key"]}" "${yb_blue}")
+      echo -e "${spacer}${key}:"
+    fi
+  elif [[ "${line_print["type"]}" == "key:value" ]]; then
+    if [[ ${yb_is_raw} == true ]]; then
+      echo "${spacer}${line_print["key"]}: ${line_print["value"]}"
+    else
+      key=$(_to_color "${line_print["key"]}" "${yb_blue}")
+      echo -e "${spacer}${key}: ${line_print["value"]}"
+    fi
+  elif [[ "${line_print["type"]}" == "list-value" ]]; then
+    if [[ ${yb_is_raw} == true ]]; then
+      echo "${spacer}- ${line_print["value"]}"
+    else
+      hyphen=$(_to_color "-" "${yb_blue}")
+      echo -e "${spacer}${hyphen} ${line_print["value"]}"
+    fi
+  elif [[ "${line_print["type"]}" == "list-key" ]]; then
+    if [[ ${yb_is_raw} == true ]]; then
+      echo "${spacer}- ${line_print["key"]}"
+    else
+      key=$(_to_color "- ${line_print['key']}" "${yb_blue}")
+      echo -e "${spacer}${key}"
+    fi
+  elif [[ "${line_print["type"]}" == "list-key:value" ]]; then
+    if [[ ${yb_is_raw} == true ]]; then
+      echo "${spacer}- ${line_print["key"]}: ${line_print["value"]}"
+    else
+      key=$(_to_color "- ${line_print['key']}" "${yb_blue}")
+      echo -e "${spacer}${key}: ${line_print['value']}"
+    fi
+  fi
+}
+
+########################################
 # Trim leading and trailing spaces
 # Attributes:
 #   $1 # string
 ########################################
-trim_space(){
+_trim_space(){
   local string="${@-}"
 
   string=$(echo "$string" | sed -E 's/^ +//')
   string=$(echo "$string" | sed -E 's/ +$//')
 
-  if [[ "${option_color}" == true ]]; then
-    echo -e "${string}"
-  else 
-    echo "${string}"
-  fi
+  echo "${string}"
 }
 
 ########################################
-# Trim a leading hyphen and space
+# Trim a leading hyphen and one space
 # Attributes:
 #   $1 # string
 ########################################
-trim_hyphen(){
+_trim_hyphen(){
   local string="${@-}"
   string="${string##*- }"
-  if [[ "${option_color}" == true ]]; then
-    to_color "${string}"
-  else 
-    to_screen "${string}"
-  fi
+
+  echo "${string}"
 }
 
 ########################################
@@ -170,175 +342,68 @@ trim_hyphen(){
 #   $1 # string
 #   $2 # an ANSI format color
 ########################################
-to_color(){
+_to_color(){
   local text="${1-}"
   local color="${2-}"
-    echo -e "${color}${text}\033[0m"
-  # if [[ "${option_color}" == true ]]; then
-  # fi
+
+  echo "${color}${text}\033[0m"
 }
 
 ########################################
-# Echo a string to the terminal
-# Attributes:
-#   $1 # string
-#   $2 # an ANSI format color
+# Prepare globals for sequence search
 ########################################
-to_screen(){
-  local text="${1-}"
-  local color="${2-}"
-  echo -e "${color}${text}\033[0m"
-}
-
-########################################
-# Echo a string to the terminal
-# Attributes:
-#   $1 # string
-#   $2 # an ANSI format color
-########################################
-message(){
-echo "getting messages"
-
-  local type="${1-}"
-  local string_part_a="${2-}"
-  local string_part_b="${3-}"
-
-  # echo "$yb_is_sequence"
-  # echo $yb_is_sequence
-
-  echo "string_part_a"
-  echo "${string_part_a}"
-  echo "key"
-  echo "${yb_key[0]}"
-  echo "${yb_key[1]}"
-  echo "${yb_key["${yb_key_step}"]}"
-  echo "key-step"
-        echo "${yb_key_step}"
-
-  if [[ "${yb_is_sequence}" == true ]]; then
-      echo "is sequence"
-
-      if [[ "${string_part_a}" == "${yb_key["${yb_key_step}"]}" ]]; then
-        echo "YES"
-        ((yb_key_step += 1))
-
-        if [[ "${yb_key_step}" -eq "${yb_key_length}" ]]; then
-          echo "getting value"
-        fi
-        echo "key-step-inc"
-        echo "${yb_key_step}"
-      fi
-  fi
-
-
-  if [[ "${type}" == "empty" ]]; then
-    echo "${string_part_a}"
-  elif [[ "${type}" == "comment" ]]; then
-    echo "${string_part_a}"
-  elif [[ "${type}" == "key" ]]; then
-    echo "${string_part_a}:"
-  elif [[ "${type}" == "key:value" ]]; then
-    echo "${string_part_a}: ${string_part_b}"
-  elif [[ "${type}" == "list-value" ]]; then
-    echo "- ${string_part_a}"
-  fi
-}
-
-########################################
-# Echo a string to the terminal
-# Attributes:
-#   $1 # string
-#   $2 # an ANSI format color
-########################################
-# sequence(){
-#   local text="${1-}"
-#   local color="${2-}"
-#   echo -e "${color}${text}\033[0m"
-# }
-
-########################################
-# Echo a string to the terminal
-# Attributes:
-#   $1 # string
-#   $2 # an ANSI format color
-########################################
-sequence(){
-  local file="${1-}"
-  local selector="${2-}"
-  local value
-
-  echo "sequence"
-  # parse_yaml "${file}" "${selector}"
-
-  # value=$(parse_yaml "${file}" "${selector}")
-
-  # echo -e ${value}
-
-
+_sequence(){
+  # set flags
   yb_is_sequence=true
+  yb_retrieve=false
 
-  # selector=($(tr "." "${selector}"))
+  # get selector key details
   yb_key=($(echo "${yb_key}" | tr -s '.' ' '))
-
-  # echo "${selector[@]}"
-
   yb_key_length="${#yb_key[@]}"
-
-  echo "${yb_key_length}"
-
-  # for sub_key in "${selector[@]}"; do
-  #   echo "${sub_key}"
-  # done
-
-  # echo "parse"
-  parse_yaml "${yb_file}"
-
-}
-
-globals(){
-  echo "#GLOBALS"
-  declare -g YBTEST
-  declare -g yb_is_sequence
-  declare -g yb_file_line_number
-  declare -g yb_key_length
-  declare -g yb_key_step
 }
 
 ########################################
-# Echo a string to the terminal
+# Parse script options
 # Attributes:
-#   $1 # string
-#   $2 # an ANSI format color
+#   $@ # getopts options
 ########################################
-parse_options(){
+_parse_options(){
   local file="${yb_file}"
-  local key="${yb_key}"
+  local key="${yb_key-}"
 
-  if [[ -z "${key}" ]]; then
-    parse_yaml "${file}"
-  else
-    sequence "${file}" "${key}"
+  if [[ -n "${key}" ]]; then
+    _sequence
   fi
 }
 
-# A: add
-# R: remove
-# C: change
-# F: "raw, array"
-cli(){
-  while getopts "f:k:v:s:" arg; do
+########################################
+# Initialize the cli
+# Attributes:
+#   $@ # script user options
+########################################
+_cli(){
+  while getopts "Af:Fk:Rv:s:" arg; do
     case $arg in
+      A)
+        yb_is_array=true
+        ;;
       f)
-        yb_file=$OPTARG
+        yb_file="${OPTARG}"
+        ;;
+      F)
+        yb_format=true
         ;;
       k)
-        yb_key=$OPTARG
+        yb_key="${OPTARG}"
+        ;;
+      R)
+        yb_is_raw=true
         ;;
       v)
-        yb_value=$OPTARG
+        yb_value="${OPTARG}"
         ;;
       s)
-        yb_spacing=$OPTARG
+        yb_spacing="${OPTARG}"
         ;;
     esac
   done
@@ -356,12 +421,23 @@ cli(){
   fi
 }
 
+########################################
+# Main function
+# Attributes:
+#   $@ # script user options
+########################################
 main(){
-  globals
-  cli "${@}"
-  parse_options "${@}"
+  _globals "${@}"
+  _cli "${@}"
+  _parse_options "${@}"
+  _parse_yaml "${yb_file}"
+
+  if [[ "${yb_is_array}" == true ]]; then
+    echo "${yb_array[@]}"
+  fi
 }
 
+# Launch main function
 main "${@}"
 
 # Unsetting the eu flag

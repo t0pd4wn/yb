@@ -5,7 +5,13 @@ This is an effort at providing a pure bash solution to the yaml parsing problem.
 ## Usage:
 
 ```bash
-yb <yaml_file>
+./yb -FRA -f <yaml_file> -k <key> -s <spacer value>
+```
+
+Example:
+
+```bash
+./yb -f file.yaml -k "key.childkey"
 ```
 
 ## Todo:
@@ -20,6 +26,7 @@ yb <yaml_file>
 - [x] `-R` raw option (no formatting)
 - [x] `-F` format option
 - [x] `-A` array option (needs -F)
+- [x] `-s` spacer option
 - [ ] `-v` value option (limit to value(s))
 - [ ] `-w` write to file option
 - [ ] `---` group selection support

@@ -139,7 +139,6 @@ _parse_yaml() {
       [suffix]="${suffix-}"
     )
 
-
     # send the reference
     _manage line_struct
 
@@ -257,11 +256,17 @@ _format(){
 ########################################
 _print(){
   local -n line_print="$1"
+
+  local level=${line_print["level"]}
+  local type="${line_print["type"]}"
+  local key="${line_print["key"]}"
+  local value="${line_print["value"]}"
+  local prefix="${line_print["prefix"]}"
+  local suffix="${line_print["suffix"]}"
+  local line_number="${line_print["line_number"]}"
+  local line_spacer="{{line}}"
+  local line_number_spacer="{{${line_number}}}"
   local spacer=""
-  local level
-  local key
-  local value
-  local hyphen
 
   if [[ ${yb_is_raw} == true || ${yb_is_sequence} == false ]]; then
     level="${line_print["level"]}"
@@ -275,55 +280,17 @@ _print(){
     spacer+="  "
   done
 
-  if [[ "${line_print["type"]}" == "empty" ]]; then
-    if [[ ${yb_is_raw} == true ]]; then
-      echo "${spacer}"
-    else
-      echo "${spacer}"
-    fi
-  elif [[ "${line_print["type"]}" == "comment" ]]; then
-    if [[ ${yb_is_raw} == true ]]; then
-      echo "${spacer}${line_print["value"]}"
-    else
-      value=$(_to_color "${line_print["value"]}" "${yb_grey}")
-      echo -e "${spacer}${value}"
-    fi
-  elif [[ "${line_print["type"]}" == "key" ]]; then
-    if [[ ${yb_is_raw} == true ]]; then
-      echo "${spacer}${line_print["key"]}:"
-    else
-      key=$(_to_color "${line_print["key"]}" "${yb_blue}")
-      echo -e "${spacer}${key}:"
-    fi
-  elif [[ "${line_print["type"]}" == "key:value" ]]; then
-    if [[ ${yb_is_raw} == true ]]; then
-      echo "${spacer}${line_print["key"]}: ${line_print["value"]}"
-    else
-      key=$(_to_color "${line_print["key"]}" "${yb_blue}")
-      echo -e "${spacer}${key}: ${line_print["value"]}"
-    fi
-  elif [[ "${line_print["type"]}" == "list-value" ]]; then
-    if [[ ${yb_is_raw} == true ]]; then
-      echo "${spacer}- ${line_print["value"]}"
-    else
-      hyphen=$(_to_color "-" "${yb_blue}")
-      echo -e "${spacer}${hyphen} ${line_print["value"]}"
-    fi
-  elif [[ "${line_print["type"]}" == "list-key" ]]; then
-    if [[ ${yb_is_raw} == true ]]; then
-      echo "${spacer}- ${line_print["key"]}"
-    else
-      key=$(_to_color "- ${line_print['key']}" "${yb_blue}")
-      echo -e "${spacer}${key}"
-    fi
-  elif [[ "${line_print["type"]}" == "list-key:value" ]]; then
-    if [[ ${yb_is_raw} == true ]]; then
-      echo "${spacer}- ${line_print["key"]}: ${line_print["value"]}"
-    else
-      key=$(_to_color "- ${line_print['key']}" "${yb_blue}")
-      echo -e "${spacer}${key}: ${line_print['value']}"
+  # if '-R' is false, use colors
+  if [[ "${yb_is_raw}" == false ]]; then
+    if [[ "${line_print["type"]}" == "comment" ]]; then
+        value=$(_to_color "${line_print["value"]}" "${yb_grey}")
+    elif [[ "${line_print["type"]}" == *"key"* ]]; then
+        key=$(_to_color "${line_print["key"]}" "${yb_blue}")
+        prefix=$(_to_color "${line_print["prefix"]}" "${yb_blue}")
     fi
   fi
+
+  echo -e "${spacer}${prefix}${key}${suffix}${value}"
 }
 
 ########################################
@@ -396,7 +363,6 @@ _parse_options(){
     echo "YAML file needs to be provided through the '-f' option."
     exit
   fi
-
 }
 
 ########################################

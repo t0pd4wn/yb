@@ -242,7 +242,7 @@ _format(){
         fi
       fi
     else
-      echo "${spacer}${prefix}${key}${suffix}${value}"
+      echo "${spacer}${prefix}${key}${suffix}${value}${outer}"
     fi
   else
     _print line_format

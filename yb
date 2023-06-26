@@ -6,7 +6,6 @@
 # Setting the eu flag
 set -eu
 
-
 ########################################
 # Declare globals
 # Attributes:
@@ -20,6 +19,8 @@ _globals(){
   declare -g yb_format=false
   declare -g yb_is_array=false
   declare -g yb_is_raw=false
+  declare -g yb_show_line=false
+  declare -g yb_show_line_number=false
   declare -ga yb_array
   # declare -A yb_line
   declare -g yb_file_line_number
@@ -47,9 +48,12 @@ _parse_yaml() {
   local spaces
   local level
   local type
-  local key
+  local key=""
+  local value=""
   local option_color=true
   local line_number=0
+  local prefix
+  local suffix
 
   # global associative array
   declare -A line_struct
@@ -64,6 +68,12 @@ _parse_yaml() {
   while IFS= read -r line; do
     # keep track of current line number
     ((line_number += 1))
+
+    # reset variables values
+    key=""
+    value=""
+    suffix=""
+    prefix=""
 
     # Count the leading spaces to determine the indentation level
     spaces="${line%%[^[:space:]]*}"
@@ -89,6 +99,7 @@ _parse_yaml() {
       value="${line#*:}"
       key=$(_trim_space $key)
       value=$(_trim_space $value)
+      suffix=": "
     elif [[ "${line}" == "- "*": "* ]]; then
         type="list-key:value"
         key=$(_trim_space "${line}")
@@ -96,17 +107,21 @@ _parse_yaml() {
         key="${key%%:*}"
         value="${line#*:}"
         value=$(_trim_space "${value}")
+        prefix="- "
+        suffix=": "
     elif [[ "${line}" == "- "* ]]; then
       if [[ ${level} -eq 0 ]]; then
         type="list-key"
         # Trim leading space and list hyphen
         key=$(_trim_space "${line}")
         key=$(_trim_hyphen "${line}")
+        prefix="- "
       else
         type="list-value"
         # Trim leading space and list hyphen
         value=$(_trim_space "${line}")
         value=$(_trim_hyphen "${line}")
+        prefix="- "
       fi
     else
       type="other"
@@ -120,7 +135,10 @@ _parse_yaml() {
       [line_number]="${line_number}"
       [key]="${key-}"
       [value]="${value-}"
+      [prefix]="${prefix-}"
+      [suffix]="${suffix-}"
     )
+
 
     # send the reference
     _manage line_struct
@@ -137,20 +155,22 @@ _parse_yaml() {
 #   $1 # an associative array reference
 ########################################
 _manage(){
-  local -n line="$1"
+  local -n line_manage="$1"
+
   # if a sequence and not being retrieved
   if [[ "${yb_is_sequence}" == true && "${yb_retrieve}" == false ]]; then
     # if sequence hasn't been found yet
     if [[ "${yb_is_retrieved}" == false ]]; then
-      if [[ "${line["key"]}" == "${yb_key["${yb_key_step}"]}" ]]; then
+      if [[ "${line_manage["key"]}" == "${yb_key["${yb_key_step}"]}" ]]; then
+        # if sequence is found
         ((yb_key_step += 1))
         # if value is on a sub level, retrieve it
         if [[ "${yb_key_step}" -eq "${yb_key_length}" ]]; then
           yb_retrieve=true
-          yb_key_base_level="${line["level"]}"
-          # if value is key:value, retrieve only once
-          if [[ "${line["type"]}" == "key:value" ]]; then
-            _format line
+          yb_key_base_level="${line_manage["level"]}"
+          # if value is *key:value, retrieve only once
+          if [[ "${line_manage["type"]}" == *"key:value" ]]; then
+            _format line_manage
             # sequence is over, reset flags
             yb_key_step=0
             yb_is_retrieved=false
@@ -161,7 +181,7 @@ _manage(){
     fi
   elif [[  "${yb_is_sequence}" == true && "${yb_retrieve}" == true ]]; then
     if [[ "${level}" -gt "${yb_key_base_level}"  ]]; then
-      _format line
+      _format line_manage
     else 
       # if the level is lower or equal the key level
       # sequence is over, reset flags
@@ -171,7 +191,7 @@ _manage(){
     fi
   else
     # current parsing is not a selection
-    _format line
+    _format line_manage
   fi
 }
 
@@ -181,56 +201,52 @@ _manage(){
 #   $1 # an associative array reference
 ########################################
 _format(){
-  local -n line_prepare="$1"
-  local level=${line_prepare["level"]}
+  local -n line_format="${1-}"
+  local level=${line_format["level"]}
+  local type="${line_format["type"]}"
+  local key="${line_format["key"]}"
+  local value="${line_format["value"]}"
+  local prefix="${line_format["prefix"]}"
+  local suffix="${line_format["suffix"]}"
+  local line_number="${line_format["line_number"]}"
+  local line_spacer="{{line}}"
+  local line_number_spacer="{{${line_number}}}"
   local spacer=""
-
-  if [[ ${yb_is_sequence} == true ]]; then
-    local base_level="${yb_key_base_level-}"
-    level=$(( $level - $base_level ))
-  fi
+  local outer=""
 
   if [[ "${yb_format}" == true ]]; then
-
-    for (( i = 0; i < ${level}; i++ )); do
-      spacer+="."
-    done
-
-    if [[ "${line_prepare["type"]}" == "key" ]]; then
-      if [[ "${yb_is_array}" == true ]]; then
-        yb_array+=("${spacer}${line_prepare["key"]}")
-      else
-        echo "${spacer}${line_prepare["key"]}:"
+    # if a sequence, substract base indentation
+    if [[ ${yb_is_sequence} == true ]]; then
+      local base_level="${yb_key_base_level-}"
+      level=$(( $level - $base_level ))
+    fi    
+    # add a spacer '.' for each key line
+    if [[ "${type}" == *"key"* ]]; then
+      for (( i = 0; i < $(( $level + 1 )); i++ )); do
+        spacer+="."
+      done
+    fi    
+    # add an outer {{line}} for each line
+    if [[ "${yb_show_line}" == true ]]; then
+      outer+="${line_spacer}"
+    fi    
+    # add an outer {{$line_number}} for each line
+    if [[ "${yb_show_line_number}" == true ]]; then
+      outer+="${line_number_spacer}"
+    fi
+    if [[ "${yb_is_array}" == true ]]; then
+      if [[ "${type}" != "comment" && "${type}" != "empty" ]]; then
+        if [[ "${type}" == *"key:value" ]]; then
+          yb_array+=("${spacer}${key} ${value}${outer}")
+        else
+          yb_array+=("${spacer}${key}${value}${outer}")
+        fi
       fi
-    elif [[ "${line_prepare["type"]}" == "key:value" ]]; then
-      if [[ "${yb_is_array}" == true ]]; then
-        yb_array+=("${spacer}${line_prepare["key"]}")
-        yb_array+=("${line_prepare["value"]}")
-      else
-        echo "${spacer}${line_prepare["key"]}: ${line_prepare["value"]}"
-      fi
-    elif [[ "${line_prepare["type"]}" == "list-key:value" ]]; then
-      if [[ "${yb_is_array}" == true ]]; then
-        yb_array+=("${spacer}${line_prepare["key"]}")
-        yb_array+=("${line_prepare["value"]}")
-      else
-        echo "- ${line_prepare["key"]}: ${line_prepare["value"]}"
-      fi
-    elif [[ "${line_prepare["type"]}" == "list-value" ]]; then
-      if [[ "${yb_is_array}" == true ]]; then
-        yb_array+=("${line_prepare["value"]}")
-      else
-        echo "- ${line_prepare["value"]} "
-      fi
-    elif [[ "${line_prepare["type"]}" == "list-key" ]]; then
-      if [[ "${yb_is_array}" == true ]]; then
-        yb_array+=("${line_prepare["key"]}")
-      else
-        echo "- ${line_prepare["key"]} "
-      fi
+    else
+      echo "${spacer}${prefix}${key}${suffix}${value}"
     fi
   else
-    _print line_prepare
+    _print line_format
   fi
 }
 
@@ -331,6 +347,7 @@ _trim_space(){
 ########################################
 _trim_hyphen(){
   local string="${@-}"
+  
   string="${string##*- }"
 
   echo "${string}"
@@ -368,12 +385,18 @@ _sequence(){
 #   $@ # getopts options
 ########################################
 _parse_options(){
-  local file="${yb_file}"
+  local file="${yb_file-}"
   local key="${yb_key-}"
 
-  if [[ -n "${key}" ]]; then
-    _sequence
+  if [[ -f ${file} ]]; then
+    if [[ -n "${key}" ]]; then
+      _sequence
+    fi
+  else
+    echo "YAML file needs to be provided through the '-f' option."
+    exit
   fi
+
 }
 
 ########################################
@@ -382,7 +405,7 @@ _parse_options(){
 #   $@ # script user options
 ########################################
 _cli(){
-  while getopts "Af:Fk:Rv:s:" arg; do
+  while getopts "Af:Fk:lnRv:s:" arg; do
     case $arg in
       A)
         yb_is_array=true
@@ -395,6 +418,12 @@ _cli(){
         ;;
       k)
         yb_key="${OPTARG}"
+        ;;
+      l)
+        yb_show_line=true
+        ;;
+      n)
+        yb_show_line_number=true
         ;;
       R)
         yb_is_raw=true

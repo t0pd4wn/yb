@@ -267,6 +267,7 @@ _print(){
   local line_spacer="{{line}}"
   local line_number_spacer="{{${line_number}}}"
   local spacer=""
+  local string=""
 
   if [[ ${yb_is_raw} == true || ${yb_is_sequence} == false ]]; then
     level="${line_print["level"]}"
@@ -282,15 +283,20 @@ _print(){
 
   # if '-R' is false, use colors
   if [[ "${yb_is_raw}" == false ]]; then
-    if [[ "${line_print["type"]}" == "comment" ]]; then
-        value=$(_to_color "${line_print["value"]}" "${yb_grey}")
+    if [[ "${type}" == "comment" ]]; then
+        value=$(_to_color "${value}" "${yb_grey}")
     elif [[ "${line_print["type"]}" == *"key"* ]]; then
-        key=$(_to_color "${line_print["key"]}" "${yb_blue}")
-        prefix=$(_to_color "${line_print["prefix"]}" "${yb_blue}")
+        key=$(_to_color "${key}" "${yb_blue}")
+        prefix=$(_to_color "${prefix}" "${yb_blue}")
     fi
   fi
 
-  echo -e "${spacer}${prefix}${key}${suffix}${value}"
+  if [[ "${type}" == "comment" ]]; then
+    printf "${value-}\n"
+  else
+    string=$(echo -e "${spacer}${prefix}${key}${suffix}" && echo "${value}")
+    echo "${spacer}"${string}
+  fi
 }
 
 ########################################

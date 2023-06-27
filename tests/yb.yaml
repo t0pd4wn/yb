@@ -1,0 +1,34 @@
+# yb - a bash yaml parser
+y: b
+yb:
+  yaml:
+    bash:
+      - IFS
+      - BASED
+      - PARSER
+    yaml:
+      bash:
+        - IFS
+      bash:
+        - BASED
+      bash:
+        bash:
+          - PARSER
+yaml:
+  yb:
+  yaml:
+    bash:
+      - IFS: BASED PARSER
+    yaml:
+      bash:
+        - IFS:
+          - BASED:
+            - PARSER
+
+complex:
+  strings:
+    - \033[0;30m
+    - \n
+    - \"Complex\" \t\t\t\t tabs, newlines\n\n, and \$(special) $(very special) characters.
+
+- yb: yaml bash parser

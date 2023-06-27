@@ -22,8 +22,9 @@ Example:
 - [x] `-f` file option 
 - [ ] `-a` add option 
 - [ ] `-r` remove option
-- [x] `-k` key option (limit to key(s))
+- [x] `-k` key selection
 - [x] `-R` raw option (no colors code in the output)
+- [x] `-d` depth option (keep orginal depth)
 - [x] `-F` format option
 - [x] `-A` array option (needs -F)
 - [x] `-l` line spacer option (needs -F)

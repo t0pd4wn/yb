@@ -16,13 +16,13 @@ _globals(){
   declare -g yb_grey="\033[0;30m"
   declare -g yb_blue="\033[1;36m"
   declare -g yb_orange="\033[1;33m"
+  declare -g yb_depth=false
   declare -g yb_format=false
   declare -g yb_is_array=false
   declare -g yb_is_raw=false
   declare -g yb_show_line=false
   declare -g yb_show_line_number=false
   declare -ga yb_array
-  # declare -A yb_line
   declare -g yb_file_line_number
   declare -g yb_is_sequence=false
   declare -g yb_key_length=0
@@ -39,8 +39,6 @@ _globals(){
 ########################################
 _parse_yaml() {
   local file="${1-}"
-  local bold_colon="$(_to_color ":" "\033[1m")"
-  local hyphen="$(_to_color "-" "\033[1m")"
   local comment
   local yaml
   local separator
@@ -50,7 +48,6 @@ _parse_yaml() {
   local type
   local key=""
   local value=""
-  local option_color=true
   local line_number=0
   local prefix
   local suffix
@@ -191,7 +188,7 @@ _manage(){
     fi
   else
     # current parsing is not a selection
-    _format line_manage
+      _format line_manage
   fi
 }
 
@@ -214,7 +211,7 @@ _format(){
   local spacer=""
   local outer=""
 
-  if [[ "${yb_format}" == true ]]; then
+if [[ "${yb_format}" == true ]]; then
     # if a sequence, substract base indentation
     if [[ ${yb_is_sequence} == true ]]; then
       local base_level="${yb_key_base_level-}"
@@ -245,8 +242,10 @@ _format(){
     else
       echo "${spacer}${prefix}${key}${suffix}${value}${outer}"
     fi
-  else
-    _print line_format
+
+    else
+      # if not formatted, send to print
+      _print "${1-}"
   fi
 }
 
@@ -270,7 +269,7 @@ _print(){
   local spacer=""
   local string=""
 
-  if [[ ${yb_is_raw} == true || ${yb_is_sequence} == false ]]; then
+  if [[ ${yb_is_sequence} == false || ${yb_depth} == true ]]; then
     level="${line_print["level"]}"
   else
     local base_level="${yb_key_base_level-}"
@@ -307,10 +306,8 @@ _print(){
 ########################################
 _trim_space(){
   local string="${@-}"
-
   string=$(echo "$string" | sed -E 's/^ +//')
   string=$(echo "$string" | sed -E 's/ +$//')
-
   echo "${string}"
 }
 
@@ -321,9 +318,7 @@ _trim_space(){
 ########################################
 _trim_hyphen(){
   local string="${@-}"
-  
   string="${string##*- }"
-
   echo "${string}"
 }
 
@@ -336,7 +331,6 @@ _trim_hyphen(){
 _to_color(){
   local text="${1-}"
   local color="${2-}"
-
   echo "${color}${text}\033[0m"
 }
 
@@ -347,7 +341,6 @@ _sequence(){
   # set flags
   yb_is_sequence=true
   yb_retrieve=false
-
   # get selector key details
   yb_key=($(echo "${yb_key}" | tr -s '.' ' '))
   yb_key_length="${#yb_key[@]}"
@@ -361,7 +354,6 @@ _sequence(){
 _parse_options(){
   local file="${yb_file-}"
   local key="${yb_key-}"
-
   if [[ -f ${file} ]]; then
     if [[ -n "${key}" ]]; then
       _sequence
@@ -378,10 +370,13 @@ _parse_options(){
 #   $@ # script user options
 ########################################
 _cli(){
-  while getopts "Af:Fk:lnRv:s:" arg; do
+  while getopts "Adf:Fk:lnRv:s:" arg; do
     case $arg in
       A)
         yb_is_array=true
+        ;;
+      d)
+        yb_depth=true
         ;;
       f)
         yb_file="${OPTARG}"
@@ -409,7 +404,6 @@ _cli(){
         ;;
     esac
   done
-
   # if no options were provided
   if [[ "${OPTIND}" -eq 1 ]]; then
     # if arguments were provided
@@ -441,6 +435,5 @@ main(){
 
 # Launch main function
 main "${@}"
-
 # Unsetting the eu flag
 set +eu

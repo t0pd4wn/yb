@@ -5,7 +5,7 @@ This is an effort at providing a pure bash solution to the yaml parsing problem.
 ## Usage:
 
 ```bash
-./yb -FRAlLd -f <yaml_file> -k <key> -s <spacer_value>
+./yb -FRAlnd -f <yaml_file> -k <key> -s <spacer_value>
 ```
 
 Example:
@@ -36,8 +36,8 @@ To launch them, run the below command from the repository root level :
 - [x] `-d` depth option (keep orginal depth)
 - [x] `-F` format option
 - [x] `-A` array option (needs -F)
-- [x] `-l` line spacer option (needs -F)
-- [x] `-L` line number spacer option (needs -F)
+- [x] `-l` line spacer option
+- [x] `-n` line number spacer option
 - [x] `-s` spacer option
 - [ ] `-v` value option (limit to value(s))
 - [ ] `-w` write to file option

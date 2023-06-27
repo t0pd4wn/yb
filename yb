@@ -211,7 +211,17 @@ _format(){
   local spacer=""
   local outer=""
 
-if [[ "${yb_format}" == true ]]; then
+  # add an outer {{line}} for each line
+  if [[ "${yb_show_line}" == true ]]; then
+    outer+="${line_spacer}"
+  fi    
+  # add an outer {{$line_number}} for each line
+  if [[ "${yb_show_line_number}" == true ]]; then
+    outer+="${line_number_spacer}"
+  fi
+  line_format["outer"]="${outer}"
+
+  if [[ "${yb_format}" == true ]]; then
     # if a sequence, substract base indentation
     if [[ ${yb_is_sequence} == true ]]; then
       local base_level="${yb_key_base_level-}"
@@ -223,14 +233,6 @@ if [[ "${yb_format}" == true ]]; then
         spacer+="."
       done
     fi    
-    # add an outer {{line}} for each line
-    if [[ "${yb_show_line}" == true ]]; then
-      outer+="${line_spacer}"
-    fi    
-    # add an outer {{$line_number}} for each line
-    if [[ "${yb_show_line_number}" == true ]]; then
-      outer+="${line_number_spacer}"
-    fi
     if [[ "${yb_is_array}" == true ]]; then
       if [[ "${type}" != "comment" && "${type}" != "empty" ]]; then
         if [[ "${type}" == *"key:value" ]]; then
@@ -243,9 +245,9 @@ if [[ "${yb_format}" == true ]]; then
       echo "${spacer}${prefix}${key}${suffix}${value}${outer}"
     fi
 
-    else
-      # if not formatted, send to print
-      _print "${1-}"
+  else
+    # if not formatted, send to print
+    _print line_format
   fi
 }
 
@@ -264,6 +266,7 @@ _print(){
   local prefix="${line_print["prefix"]}"
   local suffix="${line_print["suffix"]}"
   local line_number="${line_print["line_number"]}"
+  local outer="${line_print["outer"]}"
   local line_spacer="{{line}}"
   local line_number_spacer="{{${line_number}}}"
   local spacer=""
@@ -294,7 +297,7 @@ _print(){
   if [[ "${type}" == "comment" ]]; then
     printf "${value-}\n"
   else
-    string=$(echo -e "${spacer}${prefix}${key}${suffix}" && echo "${value}")
+    string=$(echo -e "${spacer}${prefix}${key}${suffix}" && echo "${value}${outer}")
     echo "${spacer}"${string}
   fi
 }

@@ -5,13 +5,22 @@ This is an effort at providing a pure bash solution to the yaml parsing problem.
 ## Usage:
 
 ```bash
-./yb -FRAlL -f <yaml_file> -k <key> -s <spacer_value>
+./yb -FRAlLd -f <yaml_file> -k <key> -s <spacer_value>
 ```
 
 Example:
 
 ```bash
 ./yb -f file.yaml -k "key.childkey"
+```
+
+## Tests:
+
+A simple test suit is made available through a `yb.yaml` and `yb_test.sh` files in the `tests/` folder.
+
+To launch them, run the below command from the repository root level :
+```bash
+./tests/yb_test.sh   
 ```
 
 ## Todo:

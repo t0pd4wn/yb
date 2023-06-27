@@ -169,7 +169,8 @@ _manage(){
           yb_key_base_level="${line_manage["level"]}"
           # if value is *key:value, retrieve only once
           if [[ "${line_manage["type"]}" == *"key:value" ]]; then
-            _format line_manage
+            # _format line_manage
+            echo "${line_manage["value"]}"
             # sequence is over, reset flags
             yb_key_step=0
             yb_is_retrieved=false

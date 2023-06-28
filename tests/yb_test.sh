@@ -44,15 +44,30 @@ tests(){
 - PARSER
 ..- IFS: BASED PARSER" "${parse}"
 
-    echo -e "\U1F4AC Test 7 : parse file with key chain and Array option"
+    echo -e "\U1F4AC Test 8 : parse file with key chain and Array option"
 	parse=$(./yb -FAf tests/yb.yaml -k "yb.yaml.bash")
 	check_test "IFS BASED PARSER ..IFS BASED PARSER" "${parse}"
+
+	echo -e "\U1F4AC Test 7 : parse file with all -lLn outer options"
+	parse=$(./yb -RlLnf tests/yb.yaml -k "yb.yaml.bash")
+	check_test "- IFS{{line}}{{3}}{{6}}
+- BASED{{line}}{{3}}{{7}}
+- PARSER{{line}}{{3}}{{8}}
+- IFS: BASED PARSER{{line}}{{3}}{{21}}" "${parse}"
 
 
 	echo ""
 	echo "End of yb tests :"
 	echo "Tests passed : ${passed_num}"
 	echo "Total tests : ${total_num}"
+
+
+
+
+	   - IFS{{line}}{{3}}{{6}}
+       - BASED{{line}}{{3}}{{7}}
+       - PARSER{{line}}{{3}}{{8}}
+       - IFS: BASED PARSER{{line}}{{3}}{{21}}
 }
 
 check_test(){

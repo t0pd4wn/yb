@@ -20,6 +20,7 @@ _globals(){
   declare -g yb_format=false
   declare -g yb_is_array=false
   declare -g yb_is_raw=false
+  declare -g yb_show_level=false
   declare -g yb_show_line=false
   declare -g yb_show_line_number=false
   declare -ga yb_array
@@ -207,6 +208,7 @@ _format(){
   local suffix="${line_format["suffix"]}"
   local line_number="${line_format["line_number"]}"
   local line_spacer="{{line}}"
+  local line_level_spacer="{{${level}}}"
   local line_number_spacer="{{${line_number}}}"
   local spacer=""
   local outer=""
@@ -214,7 +216,11 @@ _format(){
   # add an outer {{line}} for each line
   if [[ "${yb_show_line}" == true ]]; then
     outer+="${line_spacer}"
-  fi    
+  fi
+  # add an outer {{$level}} for each line
+  if [[ "${yb_show_level}" == true ]]; then
+    outer+="${line_level_spacer}"
+  fi
   # add an outer {{$line_number}} for each line
   if [[ "${yb_show_line_number}" == true ]]; then
     outer+="${line_number_spacer}"
@@ -373,7 +379,7 @@ _parse_options(){
 #   $@ # script user options
 ########################################
 _cli(){
-  while getopts "Adf:Fk:lnRv:s:" arg; do
+  while getopts "Adf:Fk:lLnRv:s:" arg; do
     case $arg in
       A)
         yb_is_array=true
@@ -392,6 +398,9 @@ _cli(){
         ;;
       l)
         yb_show_line=true
+        ;;
+      L)
+        yb_show_level=true
         ;;
       n)
         yb_show_line_number=true

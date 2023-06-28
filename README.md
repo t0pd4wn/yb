@@ -37,6 +37,7 @@ To launch them, run the below command from the repository root level :
 - [x] `-F` format option
 - [x] `-A` array option (needs -F)
 - [x] `-l` line spacer option
+- [x] `-L` level spacer option
 - [x] `-n` line number spacer option
 - [x] `-s` spacer option
 - [ ] `-v` value option (limit to value(s))

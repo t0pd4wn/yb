@@ -5,7 +5,7 @@ This is an effort at providing a pure bash solution to the yaml parsing problem.
 ## Usage:
 
 ```bash
-./yb -FRAlnd -f <yaml_file> -k <key> -s <spacer_value>
+./yb -FRAlLnd -f <yaml_file> -k <key> -s <spacer_value>
 ```
 
 Example:
@@ -20,7 +20,7 @@ A simple test suit is made available through a `yb.yaml` and `yb_test.sh` files 
 
 To launch them, run the below command from the repository root level :
 ```bash
-./tests/yb_test.sh   
+./tests/yb_test.sh
 ```
 
 ## Todo:
@@ -35,11 +35,11 @@ To launch them, run the below command from the repository root level :
 - [x] `-R` raw option (no colors code in the output)
 - [x] `-d` depth option (keep orginal depth)
 - [x] `-F` format option
-- [x] `-A` array option (needs -F)
+- [x] `-A` array option
 - [x] `-l` line spacer option
 - [x] `-L` level spacer option
 - [x] `-n` line number spacer option
-- [x] `-s` spacer option
+- [x] `-s` spacer option (in case your file has 4 spaces indentation)
 - [ ] `-v` value option (limit to value(s))
 - [ ] `-w` write to file option
 - [ ] `---` group selection support

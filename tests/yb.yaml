@@ -25,8 +25,14 @@ yaml:
           - BASED:
             - PARSER
 
+not:
+  to:
+    be:
+      - found: true
+
 complex:
   strings:
+    - trick:
     - \033[0;30m
     - \n
     - \"Complex\" \t\t\t\t tabs, newlines\n\n, and \$(special) $(very special) characters.

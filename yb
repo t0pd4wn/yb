@@ -3,7 +3,7 @@
 # yb | yaml bash parser
 #---------------------------------------
 
-# Setting the eu flag
+# Set the eu flag
 set -eu
 
 ########################################
@@ -23,14 +23,16 @@ _globals(){
   declare -g yb_show_level=false
   declare -g yb_show_line=false
   declare -g yb_show_line_number=false
-  declare -ga yb_array
-  declare -g yb_file_line_number
   declare -g yb_is_sequence=false
   declare -g yb_key_length=0
   declare -g yb_key_step=0
   declare -g yb_key_base_level=0
-  declare -g yb_retrieve
+  declare -g yb_retrieve=false
   declare -g yb_is_retrieved=false
+  declare -g yb_is_print=false
+  declare -g yb_one_line=false
+  declare -g yb_previous_parent=""
+  declare -ga yb_array
 }
 
 ########################################
@@ -49,12 +51,13 @@ _parse_yaml() {
   local type
   local key=""
   local value=""
+  local parent=""
   local line_number=0
   local prefix
   local suffix
 
   # global associative array
-  declare -A line_struct
+  declare -A line_structure
 
   # Read the YAML file
   yaml=$(<"${file}")
@@ -76,7 +79,7 @@ _parse_yaml() {
     # Count the leading spaces to determine the indentation level
     spaces="${line%%[^[:space:]]*}"
     level="${#spaces}"
-    level="$(( level / yb_spacing ))"
+    level="$(( level / yb_spacing + 1 ))"
 
     # Remove the leading and trailing spaces
     line=$(_trim_space "${line}")
@@ -87,58 +90,66 @@ _parse_yaml() {
     elif [[ "${line}" == "#"* ]]; then
       type="comment"
       value="${line}"
-    elif [[ "${line}" == *":" && $line != *:*:* ]]; then
+    elif [[ "${line}" == *":" && "${line}" != "-"*":"* ]]; then
       type="key"
       key="${line%%:*}"
+      parent="${key}"
+      yb_previous_parent="${key}"
+      suffix=": "
     elif [[ "${line}" == *": "* && ${line} != "- "* ]]; then
       type="key:value"
-      # echo "key-value"
       key="${line%%:*}"
       value="${line#*:}"
-      key=$(_trim_space $key)
-      value=$(_trim_space $value)
+      key=$(_trim_space "${key}")
+      value=$(_trim_space "${value}")
+      parent="${key}"
       suffix=": "
     elif [[ "${line}" == "- "*": "* ]]; then
-        type="list-key:value"
-        key=$(_trim_space "${line}")
-        key=$(_trim_hyphen "${key}")
-        key="${key%%:*}"
-        value="${line#*:}"
-        value=$(_trim_space "${value}")
-        prefix="- "
-        suffix=": "
-    elif [[ "${line}" == "- "* ]]; then
-      if [[ ${level} -eq 0 ]]; then
+      type="list-key:value"
+      key=$(_trim_space "${line}")
+      key=$(_trim_hyphen "${key}")
+      key="${key%%:*}"
+      value="${line#*:}"
+      value=$(_trim_space "${value}")
+      prefix="- "
+      suffix=": "
+      # in this case, the parent is on the previous line
+      parent="${yb_previous_parent}"
+    elif [[ "${line}" == "-"*":" ]]; then
+      # if [[ ${level} -eq 0 ]]; then
         type="list-key"
         # Trim leading space and list hyphen
         key=$(_trim_space "${line}")
         key=$(_trim_hyphen "${line}")
+        key="${key%%:*}"
         prefix="- "
-      else
+        parent="${key}"
+        yb_previous_parent="${key}"
+      elif [[ "${line}" == "-"* ]]; then
         type="list-value"
         # Trim leading space and list hyphen
         value=$(_trim_space "${line}")
         value=$(_trim_hyphen "${line}")
         prefix="- "
-      fi
     else
       type="other"
       value="${line}"
     fi
 
     # populate the associative array
-    line_struct=(
+    line_structure=(
       [type]="${type}"
       [level]="${level}"
       [line_number]="${line_number}"
       [key]="${key-}"
       [value]="${value-}"
+      [parent]="${parent-}"
       [prefix]="${prefix-}"
       [suffix]="${suffix-}"
     )
 
     # send the reference
-    _manage line_struct
+    _manage line_structure
 
   done <<< "${yaml}"
 
@@ -153,79 +164,144 @@ _parse_yaml() {
 ########################################
 _manage(){
   local -n line_manage="$1"
-
-  line_manage["spacer"]=$(_spacer "${line_manage["level"]}" "${line_manage["type"]}")
+  # build $spacer and $outer
+  line_manage["spacer"]=$(_spacer "${line_manage["level"]}" "${line_manage["type"]}" "${line_manage["parent"]}")
   line_manage["outer"]=$(_outer "${line_manage["level"]}" "${line_manage["line_number"]}")
+  # if a sequence, search if the path is correct
+  if [[ "${yb_is_sequence}" == true ]]; then
+     _search "${line_manage["key"]}" "${line_manage["level"]}" "${line_manage["type"]}"
+  fi
 
-  # if a sequence and not being retrieved
-  if [[ "${yb_is_sequence}" == true && "${yb_retrieve}" == false ]]; then
-    # if sequence hasn't been found yet
-    if [[ "${yb_is_retrieved}" == false ]]; then
-      if [[ "${line_manage["key"]}" == "${yb_key["${yb_key_step}"]}" ]]; then
-        # if sequence is found
-        ((yb_key_step += 1))
-        # if value is on a sub level, retrieve it
-        if [[ "${yb_key_step}" -eq "${yb_key_length}" ]]; then
-          yb_retrieve=true
-          yb_key_base_level="${line_manage["level"]}"
-          # if value is *key:value, retrieve only once
-          if [[ "${line_manage["type"]}" == *"key:value" ]]; then
-            # _format line_manage
-            echo "${line_manage["value"]}${line_manage["outer"]}"
-            # sequence is over, reset flags
-            yb_key_step=0
-            # yb_is_retrieved=false
-            yb_retrieve=false
-          fi
+  # if correct path, or if regular print, print
+  if [[ "${yb_is_print}" == true ]]; then
+    _print line_manage
+  fi
+
+  if [[ "${yb_is_sequence}" == false ]]; then
+    _print line_manage
+  fi
+}
+
+########################################
+# Search the correct key path
+# Attributes:
+#   $1 # current $key
+#   $2 # current $level
+#   $3 # current $type
+########################################
+_search(){
+  local key="${1-}"
+  local level="${2-}"
+  local type="${3-}"
+
+  # if sequence hasn't been found yet
+  if [[ "${yb_retrieve}" == false ]]; then
+    if [[ "${key}" == "${yb_key["${yb_key_step}"]}" ]]; then
+      # if sequence is found
+      ((yb_key_step += 1))
+      # if value is on a sub level, retrieve it
+      if [[ "${yb_key_step}" -eq "${yb_key_length}" ]]; then
+        yb_retrieve=true
+        yb_key_base_level="${level}"
+        # if value is *key:value, retrieve only once
+        if [[ "${type}" == "key:value" ]]; then
+          # search result is only one line
+          yb_one_line=true
+          # sequence is over, reset flags
+          yb_key_step=0
+          # yb_is_retrieved=false
+          yb_retrieve=false
+          # send a true signal to print the current line
+          yb_is_print=true
         fi
       fi
     fi
-  elif [[  "${yb_is_sequence}" == true && "${yb_retrieve}" == true ]]; then
-    if [[ "${level}" -gt "${yb_key_base_level}"  ]]; then
-      _format line_manage
-    else 
-      # if the level is lower or equal the key level
-      # sequence is over, reset flags
-      yb_key_step=0
-      # yb_is_retrieved=false
-      yb_retrieve=false
-    fi
+  elif [[ "${yb_retrieve}" == true && "${level}" -gt "${yb_key_base_level}" ]]; then
+    # send a true signal to print the current line
+    yb_one_line=false
+    yb_is_print=true
   else
-    # current parsing is not a selection
-      _format line_manage
+    yb_one_line=false
+    yb_is_print=false
+    # if the level is lower or equal the key level
+    # sequence is over, reset flags
+    yb_key_step=0
+    # yb_is_retrieved=false
+    yb_retrieve=false
   fi
 }
 
+########################################
+# Build the spacer that comes before a key or value
+# Attributes:
+#   $1 # current $level
+#   $2 # current $type
+########################################
 _spacer(){
   local level=${1-}
   local type=${2-}
+  local parent=${3-}
+  local style=""
   local separator=""
   local spacer=""
 
+  # switch the separator type
   if [[  "${yb_format}" == true ]]; then
-    separator="."
-    level=$(( $level + 1 ))
+    style="."
+    level=$(( $level ))
+    separator="${style}"
   else
-    separator="  "
+    style=" "
     level=$(( $level - 1 ))
-  fi
-
-  if [[ ${yb_is_sequence} == false || ${yb_depth} == true ]]; then
-    # reset level value to original
-    level="${1-}"
-  else
-    local base_level="${yb_key_base_level}"
-    level=$(( $level - $base_level ))
-  fi
-
-  if [[ "${type}" == *"key"* || "${yb_format}" == false ]]; then
-    for (( i = 0; i < ${level}; i++ )); do
-      spacer+="${separator}"
+    # set the separator length based one
+    for (( i = 0; i < $yb_spacing; i++ )); do
+      separator+="${style}"
     done
   fi
+
+  level=$(set_level "${level}")
+
+  for (( i = 0; i < $level; i++ )); do
+    spacer+="${separator}"
+  done
+    
+  if [[ "${type}" == *"value"* && "${yb_format}" == true ]]; then
+      spacer+="${parent}_"
+  fi
+
   echo "${spacer}"
 }
 
+########################################
+# Set the correct level depending on -options
+# Attributes:
+#   $1 # current $level
+########################################
+set_level(){
+  local level="${1-}"
+
+  # set the correct level number
+  if [[ ${yb_is_sequence} == false ]]; then
+    level=$(( $level -1 ))
+    echo "${level}"
+  elif [[ ${yb_depth} == true ]]; then
+    echo "${level}"
+  elif [[ "${yb_is_array}" == true && "${yb_format}" == false ]]; then
+    level=0
+    echo "${level}"
+  elif [[ "${yb_is_sequence}" == true ]]; then
+    local base_level="${yb_key_base_level}"
+    level=$(( $level - $base_level ))
+    echo "${level}"
+  fi
+}
+
+########################################
+# Build the outer that comes after a key or value
+# Attributes:
+#   $1 # current $level
+#   $2 # current $type
+########################################
 _outer(){
   local outer=""
   local line_spacer="{{line}}"
@@ -248,49 +324,12 @@ _outer(){
 }
 
 ########################################
-# Format structures depending on output
-# Attributes:
-#   $1 # an associative array reference
-########################################
-_format(){
-  local -n line_format="${1-}"
-  local level=${line_format["level"]}
-  local type="${line_format["type"]}"
-  local key="${line_format["key"]}"
-  local value="${line_format["value"]}"
-  local prefix="${line_format["prefix"]}"
-  local suffix="${line_format["suffix"]}"
-  local line_number="${line_format["line_number"]}"
-  local spacer="${line_format["spacer"]}"
-  local outer="${line_format["outer"]}"
-
-  if [[ "${yb_format}" == true ]]; then
-    if [[ "${yb_is_array}" == true ]]; then
-      if [[ "${type}" != "comment" && "${type}" != "empty" ]]; then
-        if [[ "${type}" == *"key:value" ]]; then
-          yb_array+=("${spacer}${key} ${value}${outer}")
-        else
-          yb_array+=("${spacer}${key}${value}${outer}")
-        fi
-      fi
-    else
-      echo "${spacer}${prefix}${key}${suffix}${value}${outer}"
-    fi
-
-  else
-    # if not formatted, send to print
-    _print line_format
-  fi
-}
-
-########################################
 # Print to terminal
 # Attributes:
 #   $1 # an associative array reference
 ########################################
 _print(){
   local -n line_print="$1"
-
   local level=${line_print["level"]}
   local type="${line_print["type"]}"
   local key="${line_print["key"]}"
@@ -298,27 +337,50 @@ _print(){
   local prefix="${line_print["prefix"]}"
   local suffix="${line_print["suffix"]}"
   local line_number="${line_print["line_number"]}"
+  local spacer="${line_print["spacer"]}"
   local outer="${line_print["outer"]}"
-  local line_spacer="{{line}}"
-  local line_number_spacer="{{${line_number}}}"
-  local spacer="${line_format["spacer"]}"
-  local string="${line_format["outer"]}"
+  local string=""
+  local has_colors=""
 
-  # if '-R' is false, use colors
-  if [[ "${yb_is_raw}" == false ]]; then
-    if [[ "${type}" == "comment" ]]; then
-        value=$(_to_color "${value}" "${yb_grey}")
-    elif [[ "${line_print["type"]}" == *"key"* ]]; then
-        key=$(_to_color "${key}" "${yb_blue}")
-        prefix=$(_to_color "${prefix}" "${yb_blue}")
+  if [[ "${yb_is_array}" == true ]]; then
+    if [[ "${type}" != "comment" && "${type}" != "empty" ]]; then
+      if [[ "${type}" == *"key"* ]]; then
+        if [[ "${type}" == "list-key:value" ]]; then
+          yb_array+=("${spacer}${key}_ ${value}${outer}")
+        else
+          yb_array+=("${spacer}${key}_${value}${outer}")
+        fi
+      else
+        yb_array+=("${spacer}${value}${outer}")
+      fi
     fi
-  fi
-
-  if [[ "${type}" == "comment" ]]; then
-    printf "${value-}\n"
   else
-    string=$(echo -e "${spacer}${prefix}${key}${suffix}" && echo "${value}${outer}")
-    echo "${spacer}"${string}
+    # if '-R' is false, use colors
+    if [[ "${yb_is_raw}" == false ]] && [[ "${yb_format}" == false ]]; then
+      if [[ "${type}" == "comment" ]]; then
+          value=$(_to_color "${value}" "${yb_grey}")
+      elif [[ "${line_print["type"]}" == *"key"* ]]; then
+          key=$(_to_color "${key}" "${yb_blue}")
+          prefix=$(_to_color "${prefix}" "${yb_blue}")
+      fi
+    fi
+
+    if [[ "${yb_is_sequence}" == true && "${yb_one_line}" == true ]]; then
+      if [[ "${type}" == *"key:value" ]]; then
+        string=$(echo -e "${value}${outer}")
+        yb_one_line=false
+        yb_is_print=false
+        echo "${spacer}"${string}
+      fi
+    else
+      if [[ "${type}" == "comment" ]]; then
+        string=$(echo -e "${prefix}${value}${outer}")
+        echo "${spacer}"${string}
+      else
+        string=$(echo -e "${prefix}${key}${suffix}" && echo "${value}${outer}")
+        echo "${spacer}"${string}
+      fi
+    fi
   fi
 }
 
@@ -395,6 +457,9 @@ _parse_options(){
 _cli(){
   while getopts "Adf:Fk:lLnRv:s:" arg; do
     case $arg in
+      a)
+        yb_add=true
+        ;;
       A)
         yb_is_array=true
         ;;
@@ -449,7 +514,7 @@ _cli(){
 #   $@ # script user options
 ########################################
 main(){
-  _globals "${@}"
+  _globals
   _cli "${@}"
   _parse_options "${@}"
   _parse_yaml "${yb_file}"
@@ -461,5 +526,5 @@ main(){
 
 # Launch main function
 main "${@}"
-# Unsetting the eu flag
+# Unset the eu flag
 set +eu

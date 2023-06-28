@@ -28,7 +28,7 @@ _globals(){
   declare -g yb_is_sequence=false
   declare -g yb_key_length=0
   declare -g yb_key_step=0
-  declare -g yb_key_base_level
+  declare -g yb_key_base_level=0
   declare -g yb_retrieve
   declare -g yb_is_retrieved=false
 }
@@ -154,6 +154,9 @@ _parse_yaml() {
 _manage(){
   local -n line_manage="$1"
 
+  line_manage["spacer"]=$(_spacer "${line_manage["level"]}" "${line_manage["type"]}")
+  line_manage["outer"]=$(_outer "${line_manage["level"]}" "${line_manage["line_number"]}")
+
   # if a sequence and not being retrieved
   if [[ "${yb_is_sequence}" == true && "${yb_retrieve}" == false ]]; then
     # if sequence hasn't been found yet
@@ -168,10 +171,10 @@ _manage(){
           # if value is *key:value, retrieve only once
           if [[ "${line_manage["type"]}" == *"key:value" ]]; then
             # _format line_manage
-            echo "${line_manage["value"]}"
+            echo "${line_manage["value"]}${line_manage["outer"]}"
             # sequence is over, reset flags
             yb_key_step=0
-            yb_is_retrieved=false
+            # yb_is_retrieved=false
             yb_retrieve=false
           fi
         fi
@@ -184,13 +187,64 @@ _manage(){
       # if the level is lower or equal the key level
       # sequence is over, reset flags
       yb_key_step=0
-      yb_is_retrieved=false
+      # yb_is_retrieved=false
       yb_retrieve=false
     fi
   else
     # current parsing is not a selection
       _format line_manage
   fi
+}
+
+_spacer(){
+  local level=${1-}
+  local type=${2-}
+  local separator=""
+  local spacer=""
+
+  if [[  "${yb_format}" == true ]]; then
+    separator="."
+    level=$(( $level + 1 ))
+  else
+    separator="  "
+    level=$(( $level - 1 ))
+  fi
+
+  if [[ ${yb_is_sequence} == false || ${yb_depth} == true ]]; then
+    # reset level value to original
+    level="${1-}"
+  else
+    local base_level="${yb_key_base_level}"
+    level=$(( $level - $base_level ))
+  fi
+
+  if [[ "${type}" == *"key"* || "${yb_format}" == false ]]; then
+    for (( i = 0; i < ${level}; i++ )); do
+      spacer+="${separator}"
+    done
+  fi
+  echo "${spacer}"
+}
+
+_outer(){
+  local outer=""
+  local line_spacer="{{line}}"
+  local line_level_spacer="{{${1-}}}"
+  local line_number_spacer="{{${2-}}}"
+
+  # add an outer {{line}} for each line
+  if [[ "${yb_show_line}" == true ]]; then
+    outer+="${line_spacer}"
+  fi
+  # add an outer {{$level}} for each line
+  if [[ "${yb_show_level}" == true ]]; then
+    outer+="${line_level_spacer}"
+  fi
+  # add an outer {{$line_number}} for each line
+  if [[ "${yb_show_line_number}" == true ]]; then
+    outer+="${line_number_spacer}"
+  fi
+  echo "${outer}"
 }
 
 ########################################
@@ -207,38 +261,10 @@ _format(){
   local prefix="${line_format["prefix"]}"
   local suffix="${line_format["suffix"]}"
   local line_number="${line_format["line_number"]}"
-  local line_spacer="{{line}}"
-  local line_level_spacer="{{${level}}}"
-  local line_number_spacer="{{${line_number}}}"
-  local spacer=""
-  local outer=""
-
-  # add an outer {{line}} for each line
-  if [[ "${yb_show_line}" == true ]]; then
-    outer+="${line_spacer}"
-  fi
-  # add an outer {{$level}} for each line
-  if [[ "${yb_show_level}" == true ]]; then
-    outer+="${line_level_spacer}"
-  fi
-  # add an outer {{$line_number}} for each line
-  if [[ "${yb_show_line_number}" == true ]]; then
-    outer+="${line_number_spacer}"
-  fi
-  line_format["outer"]="${outer}"
+  local spacer="${line_format["spacer"]}"
+  local outer="${line_format["outer"]}"
 
   if [[ "${yb_format}" == true ]]; then
-    # if a sequence, substract base indentation
-    if [[ ${yb_is_sequence} == true ]]; then
-      local base_level="${yb_key_base_level-}"
-      level=$(( $level - $base_level ))
-    fi    
-    # add a spacer '.' for each key line
-    if [[ "${type}" == *"key"* ]]; then
-      for (( i = 0; i < $(( $level + 1 )); i++ )); do
-        spacer+="."
-      done
-    fi    
     if [[ "${yb_is_array}" == true ]]; then
       if [[ "${type}" != "comment" && "${type}" != "empty" ]]; then
         if [[ "${type}" == *"key:value" ]]; then
@@ -275,20 +301,8 @@ _print(){
   local outer="${line_print["outer"]}"
   local line_spacer="{{line}}"
   local line_number_spacer="{{${line_number}}}"
-  local spacer=""
-  local string=""
-
-  if [[ ${yb_is_sequence} == false || ${yb_depth} == true ]]; then
-    level="${line_print["level"]}"
-  else
-    local base_level="${yb_key_base_level-}"
-    local line_level=${line_print["level"]}
-    level=$(( $line_level - $base_level - 1 ))
-  fi
-
-  for (( i = 0; i < "${level}"; i++ )); do
-    spacer+="  "
-  done
+  local spacer="${line_format["spacer"]}"
+  local string="${line_format["outer"]}"
 
   # if '-R' is false, use colors
   if [[ "${yb_is_raw}" == false ]]; then

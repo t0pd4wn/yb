@@ -171,8 +171,8 @@ _parse_yaml() {
 
 ########################################
 # Manage lines structures depending on action
-# Attributes:
-#   $1 # an associative array reference
+# Inherit:
+#   ${line_structure[@]}
 ########################################
 _manage(){
   local query_prefix="L${line_structure["level"]}_N${line_structure["line_number"]}"
@@ -347,12 +347,12 @@ _check_child_keys(){
   local check_child="${1-}"
   local parent_index="${2-}"
   local parent_level="${3-}"
-  local parent_line="${4-}"
+  local parent_line_number="${4-}"
 
   if [[ "${check_child}" == true ]]; then
-    _is_child_key "${parent_index}" "${parent_level}" "${parent_line}"
+    _is_child_key "${parent_index}" "${parent_level}" "${parent_line_number}"
   else
-    echo "${parent_index}_${parent_level}_${parent_line}"
+    echo "I${parent_index}_L${parent_level}_N${parent_line_number}"
   fi
 }
 
@@ -397,17 +397,13 @@ _manage_add_key(){
   declare -a coordinates
   coordinates=("${@-}")
 
-  local has_key
   local key_index
   local key_line
-  local one
-  local two
-  local key_lines
-  local child_index
-  local child_index_level
-  declare -a child_structure
+  local key_level
+  local local_index
+  local addition_number
   declare -A structure
-  declare -a anchor
+  declare -a anchors
 
   # build the dictionary
   for coordinate in "${coordinates[@]}"; do
@@ -420,48 +416,80 @@ _manage_add_key(){
   done
 
   for coordinate in "${coordinates[@]}"; do
-
     key_index="${coordinate%%_L*}"
-      key_index="${key_index#*I}"
-      key_level="${coordinate%%_N*}"
-      key_level="${key_level#*L}"
-      key_line="${coordinate#*N}"
+    key_index="${key_index#*I}"
+    key_level="${coordinate%%_N*}"
+    key_level="${key_level#*L}"
+    key_line="${coordinate#*N}"
 
-    # case were addition is from LEVEL1
+    # case were addition is made from root level
     if [[ "${key_index}" -eq "0" ]]; then
-      anchor+=($(_check_child_keys true "${key_index}" "${key_level}" "${key_line}"))
+      anchors+=($(_check_child_keys true "${key_index}" "${key_level}" "${key_line}"))
     fi
   done
-  echo "${anchor[@]}"
-  # next...
+
+  local_index=0
+  for anchor in "${anchors[@]}"; do
+    key_index="${anchor%%_L*}"
+    key_index="${key_index#*I}"
+    key_index=$(( $key_index + 1 ))
+    key_level="${anchor%%_N*}"
+    key_level="${key_level#*L}"
+    key_line="${anchor#*N}"
+    key_line=$(( $key_line + $local_index ))
+    _add_in_file "${key_line}" "${key_level}" "${key_index}"
+    addition_number=$(( $yb_key_length - $key_index ))
+    # increment the local index to keep the new lines count
+    local_index=$(( $local_index + $addition_number ))
+  done
+
+  # reset cached yaml
+  _cache_yaml "${yb_file}"
+}
+
+########################################
+# Add key(s) in a file
+# Attributes:
+#   $1 # line number
+#   $2 # level
+#   $3 # index
+# Globals:
+#   yb_key
+#   yb_key_length
+########################################
+_add_in_file(){
+  local parent_line_number="${1-}"
+  local parent_level="${2-}"
+  local parent_index="${3-}"
+  local spacing="\ \ "
+  local spacer
+
+  for (( i = $parent_index; i < $yb_key_length; i++ )); do 
+    spacer=""
+    for (( i = 0; i < $parent_level; i++ )); do
+      spacer+="${spacing}"
+    done
+    child_key="${spacer}${yb_key[${i}]}:"
+    sed -i "${parent_line_number} a ${child_key}" "${yb_file}"
+    parent_level=$(( $parent_level + 1 ))
+    parent_line_number=$(( $parent_line_number + 1 ))
+  done
 }
 
 ########################################
 # Add key(s) and/or value(s)
+# Globals:
+#   yb_key
 ########################################
 _add(){
   local has_key
-  local key_index
-  local key_line
-  local one
-  local two
-  local key_lines
-  local child_index
-  local child_index_level
-  declare -a child_structure
   declare -a coordinates
   has_key=$(_query "boolean" "${yb_key}")
 
-  if [[ "${has_key}" == true ]]; then
-    # key already exist
-    echo "exist"
-    exit 0
-  else
+  if [[ "${has_key}" == false ]]; then
     _key_to_array
     coordinates=($(_build_key_coordinates))
     _manage_add_key "${coordinates[@]}"
-    # todo
-    # capture everything, put in temp file, print
   fi
 }
 
@@ -558,11 +586,10 @@ _outer(){
 
 ########################################
 # Print to terminal
-# Attributes:
-#   $1 # an associative array reference
+# Inherit:
+#   ${line_structure[@]}
 ########################################
 _print(){
-  # local -n line_structure="$1"
   local level=${line_structure["level"]}
   local type="${line_structure["type"]}"
   local key="${line_structure["key"]}"
@@ -690,7 +717,6 @@ _parse_options(){
       exit 0
     elif [[ "${yb_add}" == true ]]; then
       _add
-      exit 0
     elif [[ -n "${key}" ]]; then
       _sequence
     fi
@@ -807,12 +833,14 @@ main(){
   _globals
   _cli "${@}"
   _parse_options "${@}"
-  _parse_yaml "${yb_file}"
+
+  if [[ "${yb_add}" == false && "${yb_query}" == false ]]; then
+    _parse_yaml "${yb_file}"
+  fi
 
   if [[ "${yb_is_array}" == true ]]; then
     echo "${yb_array[@]}"
   fi
-
 }
 
 # Launch main function

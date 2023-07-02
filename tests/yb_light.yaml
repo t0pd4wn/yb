@@ -1,0 +1,9 @@
+# yb - a bash yaml parser
+y: b
+yb:
+  yaml:
+    unix:
+    bash:
+      - IFS
+      - BASED
+      - PARSER

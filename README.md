@@ -1,11 +1,11 @@
 # yb - a bash yaml parser
 
-This is an effort at providing a pure bash solution to the yaml parsing problem. It proposes an iterative approach based on IFS. ***Currently in its early prototyping.***
+`yb` provides a pure bash solution to the yaml parsing problem. *Currently in its early prototype version.*
 
 ## Usage:
 
 ```bash
-./yb -FRAlLndq -f <yaml_file> -k <key> -s <spacer_value>
+./yb -FRaAlLndq -f <yaml_file> -k <key> -s <spacer_value>
 ```
 
 Example:
@@ -16,9 +16,9 @@ Example:
 
 ## Tests:
 
-A simple test suit is made available through a `yb.yaml` and a `yb_test.sh` files in the `tests/` folder.
+A simple test suit is made available in the `tests/` folder. It presents the various `yb` use cases.
 
-To launch them, run the below command from the repository root level :
+To launch it, run the below command from the repository root level :
 ```bash
 ./tests/yb_test.sh
 ```
@@ -29,7 +29,7 @@ To launch them, run the below command from the repository root level :
 - [x] `<key.childkey>` selection
 - [ ] `<key` perimeter operators options
 - [x] `-f` file option 
-- [ ] `-a` add option 
+- [ ] `-a` add option (currently being implemented)
 - [ ] `-r` remove option
 - [x] `-k` key selection
 - [x] `-R` raw option (no colors code in the output)
@@ -46,6 +46,8 @@ To launch them, run the below command from the repository root level :
 - [ ] `-t` color themes option
 - [ ] `---` group selection support
 - [ ] complex sets and mappings
+- [ ] error code propagation
+- [ ] improve nested keys support
 
 ## License
 

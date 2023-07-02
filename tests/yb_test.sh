@@ -82,12 +82,12 @@ tests(){
 
   echo -e "\U1F4AC PART 2 - Querying "
 
-  echo -e "\U1F4AC Test 14: Query for a non-existing key"
+  echo -e "\U1F4AC Test 14: query for a non-existing key"
   
   parse=$(./yb -qf tests/yb.yaml -k "do.exist.not")
   check_test "false" "${parse}"
 
-  echo -e "\U1F4AC Test 15: Query for an existing key"
+  echo -e "\U1F4AC Test 15: query for an existing key"
   
   parse=$(./yb -qf tests/yb.yaml -k "do.exist")
   check_test "true" "${parse}"
@@ -95,20 +95,20 @@ tests(){
   echo -e "\U1F4AC PART 3 - Addition "
 
   echo -e "\U1F4AC Test 16: add existing key"
-  # ./yb -af tests/yb.yaml -k "yb.yaml.bash"
+  # should be improved to retrieve error code
   parse=$(./yb -af tests/yb.yaml -k "do.exist")
-  check_test "- IFS
-- BASED
-- PARSER
-- IFS: BASED PARSER" "${parse}"
+  check_test "" "${parse}"
 
   echo -e "\U1F4AC Test 17: add non-existing key"
-  # ./yb -af tests/yb.yaml -k "yb.yaml.bash"
-  parse=$(./yb -f tests/yb.yaml -k "do.not")
-  check_test "- IFS
-- BASED
-- PARSER
-- IFS: BASED PARSER" "${parse}"
+  ./yb -af tests/yb.yaml -k "do.exist.not"
+  parse=$(./yb -qf tests/yb.yaml -k "do.exist.not")
+
+  check_test "true" "${parse}"
+
+  # clean yaml file
+  sed -i '35,35d' tests/yb.yaml
+  sed -i '38,39d' tests/yb.yaml
+  sed -i '41,42d' tests/yb.yaml
 
   # end message
   echo ""

@@ -78,11 +78,28 @@ tests(){
   echo -e "\U1F4AC Test 13 : parse file with all options"
   parse=$(./yb -FARldLnf tests/yb.yaml -k "yb.yaml.bash")
   check_test "....bash_IFS{{line}}{{4}}{{6}} ....bash_BASED{{line}}{{4}}{{7}} ....bash_PARSER{{line}}{{4}}{{8}} ....bash_IFS_ BASED PARSER{{line}}{{4}}{{21}}" "${parse}"    
+
+  echo -e "\U1F4AC Test 14 : add existing key"
+  ./yb -af tests/yb.yaml -k "yb.yaml.bash"
+  parse=$(./yb -f tests/yb.yaml -k "do.exist")
+  check_test "- IFS
+- BASED
+- PARSER
+- IFS: BASED PARSER" "${parse}"
+
+  echo -e "\U1F4AC Test 14 : add non-existing key"
+  ./yb -af tests/yb.yaml -k "yb.yaml.bash"
+  parse=$(./yb -f tests/yb.yaml -k "do.not")
+  check_test "- IFS
+- BASED
+- PARSER
+- IFS: BASED PARSER" "${parse}"
+
   # end message
-	echo ""
-	echo "End of yb tests :"
-	echo "Tests passed : ${passed_num}"
-	echo "Total tests : ${total_num}"
+  echo ""
+  echo "End of yb tests :"
+  echo "Tests passed : ${passed_num}"
+  echo "Total tests : ${total_num}"
 }
 
 check_test(){
@@ -102,4 +119,4 @@ globals(){
 	declare -g passed_num=0
 }
 
-tests
+time tests

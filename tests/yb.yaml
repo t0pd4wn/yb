@@ -30,10 +30,33 @@ not:
     be:
       - found: true
 
+do:
+  exist:
+    - true
+
+do:
+    - true
+
+do:
+  do:
+    - true
+
+as:
+  deep:
+    as:
+      the:
+        ocean:
+          - true
+
+is:
+  empty:
+
 complex:
   strings:
     - trick:
     - \033[0;30m
+    - I am: a complex string
+    - key: or string
     - \n
     - \"Complex\" \t\t\t\t tabs, newlines\n\n, and \$(special) $(very special) characters.
 

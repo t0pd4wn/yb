@@ -16,6 +16,11 @@ _globals(){
   declare -g yb_grey="\033[0;30m"
   declare -g yb_blue="\033[1;36m"
   declare -g yb_orange="\033[1;33m"
+  declare -g yb_add=false
+  declare -g yb_query=false
+  declare -g yb_boolean_query=false
+  declare -g yb_line_number_query=false
+  declare -g yb_line_number_query_result=()
   declare -g yb_depth=false
   declare -g yb_format=false
   declare -g yb_is_array=false
@@ -24,6 +29,9 @@ _globals(){
   declare -g yb_show_line=false
   declare -g yb_show_line_number=false
   declare -g yb_is_sequence=false
+  declare -g yb_sequence_retrieved=0
+  declare -g yb_is_empty=true
+  declare -g yb_has_key=false
   declare -g yb_key_length=0
   declare -g yb_key_step=0
   declare -g yb_key_base_level=0
@@ -32,6 +40,8 @@ _globals(){
   declare -g yb_is_print=false
   declare -g yb_one_line=false
   declare -g yb_previous_parent=""
+  declare -g yb_value=""
+  declare -g yb_key=""
   declare -ga yb_array
 }
 
@@ -153,8 +163,13 @@ _parse_yaml() {
 
   done <<< "${yaml}"
 
-  # Reset IFS to default value
+  # reset IFS to default value
   unset IFS
+
+  # if a line-number query
+  if [[ "${yb_line_number_query}" == true ]]; then
+    echo "${yb_line_number_query_result[@]}"
+  fi
 }
 
 ########################################
@@ -163,22 +178,21 @@ _parse_yaml() {
 #   $1 # an associative array reference
 ########################################
 _manage(){
-  local -n line_manage="$1"
+  local query_prefix="L${line_structure["level"]}_N${line_structure["line_number"]}"
   # build $spacer and $outer
-  line_manage["spacer"]=$(_spacer "${line_manage["level"]}" "${line_manage["type"]}" "${line_manage["parent"]}")
-  line_manage["outer"]=$(_outer "${line_manage["level"]}" "${line_manage["line_number"]}")
+  line_structure["spacer"]=$(_spacer "${line_structure["level"]}" "${line_structure["type"]}" "${line_structure["parent"]}")
+  line_structure["outer"]=$(_outer "${line_structure["level"]}" "${line_structure["line_number"]}")
   # if a sequence, search if the path is correct
   if [[ "${yb_is_sequence}" == true ]]; then
-     _search "${line_manage["key"]}" "${line_manage["level"]}" "${line_manage["type"]}"
+     _search "${line_structure["key"]}" "${line_structure["level"]}" "${line_structure["type"]}" "${query_prefix}"
+    # if correct path, print
+    if [[ "${yb_is_print}" == true ]]; then
+      _print
+    fi
   fi
-
-  # if correct path, or if regular print, print
-  if [[ "${yb_is_print}" == true ]]; then
-    _print line_manage
-  fi
-
+  # if regular print, print
   if [[ "${yb_is_sequence}" == false ]]; then
-    _print line_manage
+    _print
   fi
 }
 
@@ -188,11 +202,13 @@ _manage(){
 #   $1 # current $key
 #   $2 # current $level
 #   $3 # current $type
+#   $4 # prefix for -q option
 ########################################
 _search(){
   local key="${1-}"
   local level="${2-}"
   local type="${3-}"
+  local query_prefix="${4-}"
 
   # if sequence hasn't been found yet
   if [[ "${yb_retrieve}" == false ]]; then
@@ -201,18 +217,37 @@ _search(){
       ((yb_key_step += 1))
       # if value is on a sub level, retrieve it
       if [[ "${yb_key_step}" -eq "${yb_key_length}" ]]; then
+        if [[ "${yb_boolean_query}" == true ]]; then
+          # if looking for the key existence confirm and exit
+          echo true
+          exit 0
+        elif [[ "${yb_line_number_query}" == true ]]; then
+          # if looking for the key coordinates
+          yb_line_number_query_result+=("${query_prefix}")
+        fi
+
         yb_retrieve=true
         yb_key_base_level="${level}"
+        # assume the key exist
+        yb_has_key=true
+
         # if value is *key:value, retrieve only once
         if [[ "${type}" == "key:value" ]]; then
-          # search result is only one line
-          yb_one_line=true
-          # sequence is over, reset flags
-          yb_key_step=0
-          # yb_is_retrieved=false
-          yb_retrieve=false
-          # send a true signal to print the current line
-          yb_is_print=true
+          # echo "key:value"
+            # search result is only one line
+            yb_one_line=true
+            # sequence is over, reset flags
+            yb_key_step=0
+            # yb_is_retrieved=false
+            yb_retrieve=false
+            # send a true signal to print the current line
+            yb_is_print=true
+            # add one to the number of retrieved sequences
+            # echo "${yb_sequence_retrieved}"
+            yb_sequence_retrieved=$(( yb_sequence_retrieved + 1 ))
+            # assume the value was filled once
+            yb_is_empty=false
+            return 0
         fi
       fi
     fi
@@ -220,6 +255,8 @@ _search(){
     # send a true signal to print the current line
     yb_one_line=false
     yb_is_print=true
+    # assume the value was filled once
+    yb_is_empty=false
   else
     yb_one_line=false
     yb_is_print=false
@@ -228,6 +265,207 @@ _search(){
     yb_key_step=0
     # yb_is_retrieved=false
     yb_retrieve=false
+    # add one to the number of retrieved sequences
+    yb_sequence_retrieved=$(( yb_sequence_retrieved + 1 ))
+  fi
+}
+
+########################################
+# Transform original key option into an array
+# Globals:
+#   yb_key
+#   yb_key_length
+########################################
+_key_to_array(){
+  yb_key=($(echo "${yb_key}" | tr -s '.' ' '))
+  yb_key_length="${#yb_key[@]}"
+}
+
+########################################
+# Query file for an existing key
+# Attributes:
+#   $1 # mode (boolean verbose)
+#   $2 # a key
+########################################
+_query(){
+  local mode="${1-}"
+  local key="${2-}"
+  local result
+
+  if [[ "${mode}" == "boolean" ]]; then
+    yb_boolean_query=true
+  elif [[ "${mode}" == "line-number" ]]; then
+    yb_line_number_query=true
+  fi
+
+  _sequence "${key}"
+  result=$(_parse_yaml "${yb_file}")
+
+  if [[ "${mode}" == "boolean" ]]; then
+    if [[ -n "${result}" ]]; then
+      # has result
+      echo true
+    elif [[ "${yb_is_empty}" == false ]]; then
+      # has result but empty one
+      echo true
+    else
+      # no result
+      echo false
+    fi
+  else
+    echo "${result}"
+  fi
+}
+
+########################################
+# Build the key coordinates
+# Globals:
+#   yb_key
+#   yb_key_length
+########################################
+_build_key_coordinates(){
+  local has_key
+  declare -a coordinates
+
+  for (( i = 0; i < $yb_key_length ; i++ )); do
+    has_key=$(_query "line-number" "${yb_key[$i]}")
+    has_key=(${has_key})
+
+  for key_line in "${has_key[@]}"; do
+      coordinates+=("I${i}_${key_line}")
+    done
+  done
+
+  echo "${coordinates[@]}"
+}
+
+########################################
+# Check for existing child keys
+# Attributes:
+#   $1 # boolean
+#   $2 # key
+#   $3 # level
+#   $4 # line number
+########################################
+_check_child_keys(){
+  local check_child="${1-}"
+  local parent_index="${2-}"
+  local parent_level="${3-}"
+  local parent_line="${4-}"
+
+  if [[ "${check_child}" == true ]]; then
+    _is_child_key "${parent_index}" "${parent_level}" "${parent_line}"
+  else
+    echo "${parent_index}_${parent_level}_${parent_line}"
+  fi
+}
+
+########################################
+# Check if the current key as a child key
+# Attributes:
+#   $1 # key
+#   $2 # level
+#   $3 # line number
+########################################
+_is_child_key(){
+  local parent_index="${1}"
+  local parent_level="${2}"
+  local parent_line="${3}"
+  local child_index
+  local child_level
+  local child_line
+  declare -a child_structure
+
+  child_index=$(( $parent_index + 1 ))
+  child_level=$(( $parent_level + 1 ))
+  child_line=$(( $parent_line + 1 ))
+
+  if [[ -v "${structure[${child_line}]+_}" ]]; then
+    child_structure=($( echo "${structure[${child_line}]}"))
+    if [[ "${child_structure[1]}" -eq "${child_level}" ]]; then
+      # child key exist
+      _check_child_keys true "${child_index}" "${child_level}" "${child_line}"
+    fi
+  else 
+    # child key doesn't exist
+    _check_child_keys false "${parent_index}" "${parent_level}" "${parent_line}"
+  fi
+}
+
+########################################
+# Manage keys addition
+# Attributes:
+#   $@ # an array pf key coordinates (index, level, line number)
+########################################
+_manage_add_key(){
+  declare -a coordinates
+  coordinates=("${@-}")
+
+  local has_key
+  local key_index
+  local key_line
+  local one
+  local two
+  local key_lines
+  local child_index
+  local child_index_level
+  declare -a child_structure
+  declare -A structure
+  declare -a anchor
+
+  # build the dictionary
+  for coordinate in "${coordinates[@]}"; do
+    key_index="${coordinate%%_L*}"
+    key_index="${key_index#*I}"
+    key_level="${coordinate%%_N*}"
+    key_level="${key_level#*L}"
+    key_line="${coordinate#*N}"
+    structure+=(["${key_line}"]="${key_index} ${key_level}")
+  done
+
+  for coordinate in "${coordinates[@]}"; do
+
+    key_index="${coordinate%%_L*}"
+      key_index="${key_index#*I}"
+      key_level="${coordinate%%_N*}"
+      key_level="${key_level#*L}"
+      key_line="${coordinate#*N}"
+
+    # case were addition is from LEVEL1
+    if [[ "${key_index}" -eq "0" ]]; then
+      anchor+=($(_check_child_keys true "${key_index}" "${key_level}" "${key_line}"))
+    fi
+  done
+  echo "${anchor[@]}"
+  # next...
+}
+
+########################################
+# Add key(s) and/or value(s)
+########################################
+_add(){
+  local has_key
+  local key_index
+  local key_line
+  local one
+  local two
+  local key_lines
+  local child_index
+  local child_index_level
+  declare -a child_structure
+  declare -a coordinates
+  has_key=$(_query "boolean" "${yb_key}")
+
+  if [[ "${has_key}" == true ]]; then
+    # key already exist
+    echo "exist"
+    exit 0
+  else
+    _key_to_array
+    coordinates=($(_build_key_coordinates))
+    _manage_add_key "${coordinates[@]}"
+    # todo
+    # capture everything, put in temp file, print
   fi
 }
 
@@ -283,17 +521,16 @@ set_level(){
   # set the correct level number
   if [[ ${yb_is_sequence} == false ]]; then
     level=$(( $level -1 ))
-    echo "${level}"
   elif [[ ${yb_depth} == true ]]; then
-    echo "${level}"
+    level="${level}"
   elif [[ "${yb_is_array}" == true && "${yb_format}" == false ]]; then
     level=0
-    echo "${level}"
   elif [[ "${yb_is_sequence}" == true ]]; then
     local base_level="${yb_key_base_level}"
     level=$(( $level - $base_level ))
-    echo "${level}"
   fi
+
+  echo "${level}"
 }
 
 ########################################
@@ -329,18 +566,23 @@ _outer(){
 #   $1 # an associative array reference
 ########################################
 _print(){
-  local -n line_print="$1"
-  local level=${line_print["level"]}
-  local type="${line_print["type"]}"
-  local key="${line_print["key"]}"
-  local value="${line_print["value"]}"
-  local prefix="${line_print["prefix"]}"
-  local suffix="${line_print["suffix"]}"
-  local line_number="${line_print["line_number"]}"
-  local spacer="${line_print["spacer"]}"
-  local outer="${line_print["outer"]}"
+  # local -n line_structure="$1"
+  local level=${line_structure["level"]}
+  local type="${line_structure["type"]}"
+  local key="${line_structure["key"]}"
+  local value="${line_structure["value"]}"
+  local prefix="${line_structure["prefix"]}"
+  local suffix="${line_structure["suffix"]}"
+  local line_number="${line_structure["line_number"]}"
+  local spacer="${line_structure["spacer"]}"
+  local outer="${line_structure["outer"]}"
   local string=""
   local has_colors=""
+
+  # if a line-number query
+  if [[ "${yb_line_number_query}" == true ]]; then
+    return 1
+  fi
 
   if [[ "${yb_is_array}" == true ]]; then
     if [[ "${type}" != "comment" && "${type}" != "empty" ]]; then
@@ -359,7 +601,7 @@ _print(){
     if [[ "${yb_is_raw}" == false ]] && [[ "${yb_format}" == false ]]; then
       if [[ "${type}" == "comment" ]]; then
           value=$(_to_color "${value}" "${yb_grey}")
-      elif [[ "${line_print["type"]}" == *"key"* ]]; then
+      elif [[ "${line_structure["type"]}" == *"key"* ]]; then
           key=$(_to_color "${key}" "${yb_blue}")
           prefix=$(_to_color "${prefix}" "${yb_blue}")
       fi
@@ -421,13 +663,17 @@ _to_color(){
 
 ########################################
 # Prepare globals for sequence search
+# Attributes:
+#   $1 # a yaml key
 ########################################
+# key_sequence ?
 _sequence(){
+  local key=${1:-"${yb_key}"}
   # set flags
   yb_is_sequence=true
   yb_retrieve=false
   # get selector key details
-  yb_key=($(echo "${yb_key}" | tr -s '.' ' '))
+  yb_key=($(echo "${key}" | tr -s '.' ' '))
   yb_key_length="${#yb_key[@]}"
 }
 
@@ -440,9 +686,17 @@ _parse_options(){
   local file="${yb_file-}"
   local key="${yb_key-}"
   if [[ -f ${file} ]]; then
-    if [[ -n "${key}" ]]; then
+
+    if [[ "${yb_query}" == true ]]; then
+      _query "boolean"
+      exit 0
+    elif [[ "${yb_add}" == true ]]; then
+      _add
+      exit 0
+    elif [[ -n "${key}" ]]; then
       _sequence
     fi
+
   else
     echo "YAML file needs to be provided through the '-f' option."
     exit
@@ -455,7 +709,7 @@ _parse_options(){
 #   $@ # script user options
 ########################################
 _cli(){
-  while getopts "Adf:Fk:lLnRv:s:" arg; do
+  while getopts "aAdf:Fk:lLnqRv:s:" arg; do
     case $arg in
       a)
         yb_add=true
@@ -480,6 +734,9 @@ _cli(){
         ;;
       L)
         yb_show_level=true
+        ;;
+      q)
+        yb_query=true
         ;;
       n)
         yb_show_line_number=true
@@ -522,6 +779,7 @@ main(){
   if [[ "${yb_is_array}" == true ]]; then
     echo "${yb_array[@]}"
   fi
+
 }
 
 # Launch main function

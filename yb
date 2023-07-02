@@ -42,16 +42,16 @@ _globals(){
   declare -g yb_previous_parent=""
   declare -g yb_value=""
   declare -g yb_key=""
+  declare -g yb_YAML=""
   declare -ga yb_array
 }
 
 ########################################
 # Parse a yaml file
-# Attributes:
-#   $1 # /path/to/a/yaml/file 
+# Globals:
+#   yb_YAML
 ########################################
 _parse_yaml() {
-  local file="${1-}"
   local comment
   local yaml
   local separator
@@ -68,9 +68,6 @@ _parse_yaml() {
 
   # global associative array
   declare -A line_structure
-
-  # Read the YAML file
-  yaml=$(<"${file}")
 
   # Set whitespace as field separator
   IFS=$' \t\n'
@@ -161,7 +158,7 @@ _parse_yaml() {
     # send the reference
     _manage line_structure
 
-  done <<< "${yaml}"
+  done <<< "${yb_YAML}"
 
   # reset IFS to default value
   unset IFS
@@ -233,7 +230,6 @@ _search(){
 
         # if value is *key:value, retrieve only once
         if [[ "${type}" == "key:value" ]]; then
-          # echo "key:value"
             # search result is only one line
             yb_one_line=true
             # sequence is over, reset flags
@@ -687,6 +683,8 @@ _parse_options(){
   local key="${yb_key-}"
   if [[ -f ${file} ]]; then
 
+    _cache_yaml "${yb_file}"
+
     if [[ "${yb_query}" == true ]]; then
       _query "boolean"
       exit 0
@@ -701,6 +699,16 @@ _parse_options(){
     echo "YAML file needs to be provided through the '-f' option."
     exit
   fi
+}
+
+########################################
+# Cache yaml file into a global variable
+# Attributes:
+#   $1 # a yaml file path
+########################################
+_cache_yaml(){
+  local file="${1-}"
+  yb_YAML=$(<"${file}")
 }
 
 ########################################

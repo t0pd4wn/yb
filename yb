@@ -704,12 +704,36 @@ _parse_options(){
 }
 
 ########################################
+# Dump array, print an error and exit
+########################################
+_exit_dump() {
+  echo "${yb_array[@]}"
+  _error "${@-}"
+  exit 1
+}
+
+########################################
+# Print an error and exit
+########################################
+_exit() {
+  _error "${@-}"
+  exit 1
+}
+
+########################################
+# Print an error message in STDERR
+########################################
+_error() {
+  echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')]:: ${@-}" >&2 ":: ${*#"${@}"}"
+}
+
+########################################
 # Initialize the cli
 # Attributes:
 #   $@ # script user options
 ########################################
 _cli(){
-  while getopts "aAdf:Fk:lLnqRv:s:" arg; do
+  while getopts "aAdf:Fk:lLnqRs:v:" arg; do
     case $arg in
       a)
         yb_add=true
@@ -771,6 +795,7 @@ _cli(){
 #   $@ # script user options
 ########################################
 main(){
+  trap _exit_dump SIGINT
   _globals
   _cli "${@}"
   _parse_options "${@}"

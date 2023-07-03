@@ -509,14 +509,20 @@ _spacer(){
   local separator=""
   local spacer=""
 
+  # set the correct starting level
+  if [[ ${yb_is_sequence} == true ]]; then
+    level=$(( $level - 1 ))
+  else 
+    level=$(( $level ))
+  fi
+
   # switch the separator type
   if [[  "${yb_format}" == true ]]; then
     style="."
-    level=$(( $level ))
     separator="${style}"
+    level=$(( $level + 1 ))
   else
     style=" "
-    level=$(( $level - 1 ))
     # set the separator length based one
     for (( i = 0; i < $yb_spacing; i++ )); do
       separator+="${style}"
@@ -642,8 +648,6 @@ _print(){
   else
     # if '-R' is false, use colors
     if [[ "${yb_is_raw}" == false ]] && [[ "${yb_format}" == false ]]; then
-      
-
       # echo ${type}
       if [[ "${type}" == "comment" ]]; then
         value=$(_to_color "${value}" "${yb_grey}")
@@ -662,10 +666,13 @@ _print(){
 
     if [[ "${yb_is_sequence}" == true && "${yb_one_line}" == true ]]; then
       if [[ "${type}" == *"key:value" ]]; then
-        string=$(echo "${value}${outer}")
+        if [[ "${yb_is_colored}" == true ]]; then
+          echo -e "${value}${outer}"
+        else
+          echo "${value}${outer}"
+        fi
         yb_one_line=false
         yb_is_print=false
-        echo "${spacer}"${string}
       fi
     else
       if [[ "${type}" == "comment" ]]; then

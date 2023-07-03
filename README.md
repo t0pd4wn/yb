@@ -14,6 +14,11 @@ Example:
 ./yb -f file.yaml -k "key.childkey"
 ```
 
+You can do a quick try like so:
+```bash
+./yb -f ./tests/yb.yaml -k "yb"
+```
+
 ## Tests:
 
 A simple test suit is made available in the `tests/` folder. It presents the various `yb` use cases.

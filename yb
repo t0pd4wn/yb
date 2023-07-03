@@ -16,6 +16,7 @@ _globals(){
   declare -g yb_grey="\033[0;30m"
   declare -g yb_blue="\033[1;36m"
   declare -g yb_orange="\033[1;33m"
+  declare -g yb_red="\033[31m"
   declare -g yb_add=false
   declare -g yb_query=false
   declare -g yb_boolean_query=false
@@ -39,6 +40,7 @@ _globals(){
   declare -g yb_is_retrieved=false
   declare -g yb_is_print=false
   declare -g yb_one_line=false
+  declare -g yb_is_colored=false
   declare -g yb_previous_parent=""
   declare -g yb_value=""
   declare -g yb_key=""
@@ -585,6 +587,22 @@ _outer(){
 }
 
 ########################################
+# Check for a value type
+# Attributes:
+#   $1 # a value
+########################################
+_value_type(){
+  local value="${1-}"
+  if [[ "${value}" == "true" || "${value}" == "false" ]]; then
+    yb_value=$(_to_color "${value}" "${yb_red}")
+    yb_is_colored=true
+  elif [[ "${value}" =~ ^[0-9]+$ ]]; then
+    yb_value=$(_to_color "${value}" "${yb_orange}")
+    yb_is_colored=true
+  fi
+}
+
+########################################
 # Print to terminal
 # Inherit:
 #   ${line_structure[@]}
@@ -601,6 +619,8 @@ _print(){
   local outer="${line_structure["outer"]}"
   local string=""
   local has_colors=""
+  yb_is_colored=false
+  yb_value=""
 
   # if a line-number query
   if [[ "${yb_line_number_query}" == true ]]; then
@@ -622,17 +642,27 @@ _print(){
   else
     # if '-R' is false, use colors
     if [[ "${yb_is_raw}" == false ]] && [[ "${yb_format}" == false ]]; then
+      
+
+      # echo ${type}
       if [[ "${type}" == "comment" ]]; then
-          value=$(_to_color "${value}" "${yb_grey}")
+        value=$(_to_color "${value}" "${yb_grey}")
       elif [[ "${line_structure["type"]}" == *"key"* ]]; then
-          key=$(_to_color "${key}" "${yb_blue}")
-          prefix=$(_to_color "${prefix}" "${yb_blue}")
+        key=$(_to_color "${key}" "${yb_blue}")
+        prefix=$(_to_color "${prefix}" "${yb_blue}")
+      fi
+      if [[ "${line_structure["type"]}" == *"value"* ]]; then
+        # echo "VALUE"
+        _value_type "${value}"
+        if [[ -n "${yb_value}" ]]; then
+          value="${yb_value}"
+        fi
       fi
     fi
 
     if [[ "${yb_is_sequence}" == true && "${yb_one_line}" == true ]]; then
       if [[ "${type}" == *"key:value" ]]; then
-        string=$(echo -e "${value}${outer}")
+        string=$(echo "${value}${outer}")
         yb_one_line=false
         yb_is_print=false
         echo "${spacer}"${string}
@@ -642,7 +672,11 @@ _print(){
         string=$(echo -e "${prefix}${value}${outer}")
         echo "${spacer}"${string}
       else
-        string=$(echo -e "${prefix}${key}${suffix}" && echo "${value}${outer}")
+        if [[ ${yb_is_colored} == true ]]; then
+         string=$(echo -e "${prefix}${key}${suffix}${value}${outer}")
+        else
+         string=$(echo -e "${prefix}${key}${suffix}" && echo "${value}${outer}")
+        fi
         echo "${spacer}"${string}
       fi
     fi

@@ -29,11 +29,10 @@ tests(){
 	parse=$(./yb -Rf tests/yb.yaml -k "yb.yaml.bash")
 	check_test "- IFS
 - BASED
-- PARSER
-- IFS: BASED PARSER" "${parse}"
+- PARSER" "${parse}"
 
 	echo -e "\U1F4AC Test 1.5: parse file with a number output"
-	parse=$(./yb -Rf tests/yb.yaml -k "yaml.bash.IFS.BASED.number")
+	parse=$(./yb -Rf tests/yb.yaml -k "yaml.yaml.yaml.bash.IFS.BASED.number")
 	check_test "101" "${parse}"
 
 	echo -e "\U1F4AC Test 1.6: parse file with a boolean output"
@@ -44,49 +43,45 @@ tests(){
 	parse=$(./yb -Rdf tests/yb.yaml -k "yb.yaml.bash")
 	check_test "      - IFS
       - BASED
-      - PARSER
-      - IFS: BASED PARSER" "${parse}"
+      - PARSER" "${parse}"
 
 	echo -e "\U1F4AC Test 1.8: parse file with key chain and formatting"
 	parse=$(./yb -Ff tests/yb.yaml -k "yb.yaml.bash")
 	check_test ".bash_- IFS
 .bash_- BASED
-.bash_- PARSER
-.bash_- IFS: BASED PARSER" "${parse}"
+.bash_- PARSER" "${parse}"
 
   echo -e "\U1F4AC Test 1.9: parse file with formatting and depth"
   parse=$(./yb -Fdf tests/yb.yaml -k "yb.yaml.bash")
   check_test "....bash_- IFS
 ....bash_- BASED
-....bash_- PARSER
-....bash_- IFS: BASED PARSER" "${parse}"
+....bash_- PARSER" "${parse}"
 
   echo -e "\U1F4AC Test 1.10: parse file with key chain and array option"
   parse=$(./yb -Af tests/yb.yaml -k "yb.yaml.bash")
-  check_test "IFS BASED PARSER IFS_ BASED PARSER" "${parse}"
+  check_test "IFS BASED PARSER" "${parse}"
 
   echo -e "\U1F4AC Test 1.11: parse file with key chain and array option"
 	parse=$(./yb -FAf tests/yb.yaml -k "yb.yaml.bash")
-	check_test ".bash_IFS .bash_BASED .bash_PARSER .bash_IFS_ BASED PARSER" "${parse}"
+	check_test ".bash_IFS .bash_BASED .bash_PARSER" "${parse}"
 
   echo -e "\U1F4AC Test 1.12: parse file with formatting, array and depth"
   parse=$(./yb -FAdf tests/yb.yaml -k "yb.yaml.bash")
-  check_test "....bash_IFS ....bash_BASED ....bash_PARSER ....bash_IFS_ BASED PARSER" "${parse}"
+  check_test "....bash_IFS ....bash_BASED ....bash_PARSER" "${parse}"
 
 	echo -e "\U1F4AC Test 1.13: parse file with all -lLn outer options"
 	parse=$(./yb -RlLnf tests/yb.yaml -k "yb.yaml.bash")
 	check_test "- IFS{{line}}{{4}}{{6}}
 - BASED{{line}}{{4}}{{7}}
-- PARSER{{line}}{{4}}{{8}}
-- IFS: BASED PARSER{{line}}{{4}}{{21}}" "${parse}"
+- PARSER{{line}}{{4}}{{8}}" "${parse}"
 
   echo -e "\U1F4AC Test 1.14: parse file with all options but depth"
   parse=$(./yb -FARlLnf tests/yb.yaml -k "yb.yaml.bash")
-  check_test ".bash_IFS{{line}}{{4}}{{6}} .bash_BASED{{line}}{{4}}{{7}} .bash_PARSER{{line}}{{4}}{{8}} .bash_IFS_ BASED PARSER{{line}}{{4}}{{21}}" "${parse}"
+  check_test ".bash_IFS{{line}}{{4}}{{6}} .bash_BASED{{line}}{{4}}{{7}} .bash_PARSER{{line}}{{4}}{{8}}" "${parse}"
         
   echo -e "\U1F4AC Test 1.15: parse file with all compatible options"
   parse=$(./yb -FARldLnf tests/yb.yaml -k "yb.yaml.bash")
-  check_test "....bash_IFS{{line}}{{4}}{{6}} ....bash_BASED{{line}}{{4}}{{7}} ....bash_PARSER{{line}}{{4}}{{8}} ....bash_IFS_ BASED PARSER{{line}}{{4}}{{21}}" "${parse}"
+  check_test "....bash_IFS{{line}}{{4}}{{6}} ....bash_BASED{{line}}{{4}}{{7}} ....bash_PARSER{{line}}{{4}}{{8}}" "${parse}"
 
   echo -e "\U1F4AC PART 2 - Querying "
 
@@ -114,9 +109,9 @@ tests(){
   check_test "true" "${parse}"
 
   # clean yaml file
-  sed -i '39,39d' tests/yb.yaml
+  sed -i '38,39d' tests/yb.yaml
   sed -i '42,43d' tests/yb.yaml
-  sed -i '45,46d' tests/yb.yaml
+  sed -i '47,48d' tests/yb.yaml
 
   # end message
   echo ""

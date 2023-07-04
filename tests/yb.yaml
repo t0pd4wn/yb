@@ -36,12 +36,18 @@ not:
 
 do:
   exist:
+    not:
+  exist:
     - true
 
 do:
+  exist:
+    not:
     - true
 
 do:
+  exist:
+    not:
   do:
     - true
 
@@ -63,4 +69,16 @@ complex:
     - \n
     - \"Complex\" \t\t\t\t tabs, newlines\n\n, and \$(special) $(very special) characters.
 
+keys:
+  are:
+  all:
+  are:
+  all:
+    all:
+    all:
+    the:
+    the:
+      - same
+
 - yb: yaml bash parser
+

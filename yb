@@ -208,13 +208,15 @@ _search(){
   local level="${2-}"
   local type="${3-}"
   local query_prefix="${4-}"
+  local new_level
 
-  # if sequence hasn't been found yet
+  new_level=$(( $yb_key_step + 1 ))
   if [[ "${yb_retrieve}" == false ]]; then
-    if [[ "${key}" == "${yb_key["${yb_key_step}"]}" ]]; then
-      # if sequence is found
-      ((yb_key_step += 1))
-      # if value is on a sub level, retrieve it
+    # the level condition ensures that the first key is at the root level (1)
+    if [[ "${key}" == "${yb_key["${yb_key_step}"]}" && "${level}" == "${new_level}" ]]; then
+
+        ((yb_key_step += 1))
+        # if enough arguments
       if [[ "${yb_key_step}" -eq "${yb_key_length}" ]]; then
         if [[ "${yb_boolean_query}" == true ]]; then
           # if looking for the key existence confirm and exit
@@ -225,10 +227,11 @@ _search(){
           yb_line_number_query_result+=("${query_prefix}")
         fi
 
-        yb_retrieve=true
-        yb_key_base_level="${level}"
-        # assume the key exist
-        yb_has_key=true
+          #statements
+          yb_retrieve=true
+          yb_key_base_level="${level}"
+          # assume the key exist
+          yb_has_key=true
 
         # if value is *key:value, retrieve only once
         if [[ "${type}" == "key:value" ]]; then
@@ -425,6 +428,7 @@ _manage_add_key(){
     key_line="${coordinate#*N}"
 
     # case were addition is made from root level
+    # this would be a full path addition
     if [[ "${key_index}" -eq "0" ]]; then
       anchors+=($(_check_child_keys true "${key_index}" "${key_level}" "${key_line}"))
     fi

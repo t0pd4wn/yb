@@ -36,18 +36,12 @@ not:
 
 do:
   exist:
-    not:
-  exist:
     - true
 
 do:
-  exist:
-    not:
     - true
 
 do:
-  exist:
-    not:
   do:
     - true
 

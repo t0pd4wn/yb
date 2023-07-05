@@ -46,6 +46,7 @@ _globals(){
   declare -g yb_key=""
   declare -g yb_YAML=""
   declare -ga yb_array
+  declare -gA yb_keys
 }
 
 ########################################
@@ -212,10 +213,10 @@ _search(){
 
   new_level=$(( $yb_key_step + 1 ))
   if [[ "${yb_retrieve}" == false ]]; then
-    # the level condition ensures that the first key is at the root level (1)
-    if [[ "${key}" == "${yb_key["${yb_key_step}"]}" && "${level}" == "${new_level}" ]]; then
+    # the new level condition ensures that the first key is at the root level (1)
+    if [[ "${key}" == "${yb_keys["${yb_key_step}"]}" && "${level}" == "${new_level}" ]]; then
 
-        ((yb_key_step += 1))
+        yb_key_step=$(( $yb_key_step + 1))
         # if enough arguments
       if [[ "${yb_key_step}" -eq "${yb_key_length}" ]]; then
         if [[ "${yb_boolean_query}" == true ]]; then
@@ -275,11 +276,24 @@ _search(){
 # Transform original key option into an array
 # Globals:
 #   yb_key
+#   yb_keys
 #   yb_key_length
 ########################################
 _key_to_array(){
-  yb_key=($(echo "${yb_key}" | tr -s '.' ' '))
+  local local_index
+
+  yb_key=($(echo "${key}" | tr -s '.' ' '))
   yb_key_length="${#yb_key[@]}"
+
+  local_index=0
+  for key in "${yb_key[@]}"; do
+    if [[ "${key}" == *\\* ]]; then
+      # replace antislash with space
+      key="${key//\\/ }"
+    fi
+      yb_keys["${local_index}"]="${key}"
+      local_index=$(( $local_index + 1 ))
+  done
 }
 
 ########################################
@@ -737,12 +751,12 @@ _to_color(){
 # key_sequence ?
 _sequence(){
   local key=${1:-"${yb_key}"}
+  
   # set flags
   yb_is_sequence=true
   yb_retrieve=false
-  # get selector key details
-  yb_key=($(echo "${key}" | tr -s '.' ' '))
-  yb_key_length="${#yb_key[@]}"
+
+  _key_to_array
 }
 
 ########################################

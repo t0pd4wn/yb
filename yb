@@ -234,7 +234,7 @@ _search(){
           yb_has_key=true
 
         # if value is *key:value, retrieve only once
-        if [[ "${type}" == "key:value" ]]; then
+        if [[ "${type}" == *"key:value" ]]; then
             # search result is only one line
             yb_one_line=true
             # sequence is over, reset flags

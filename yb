@@ -272,6 +272,11 @@ _search(){
   fi
 }
 
+########################################
+# Print a debug message
+# Attributes:
+#   $@ # some message
+########################################
 _debug(){
   local message="${@}"
   echo "${BASH_LINENO} : ${message}"
@@ -604,6 +609,8 @@ _outer(){
   local outer=""
   local line_spacer="{{line}}"
   local line_level_spacer="{{${1-}}}"
+  local line_level_spacer=$(( $1 - 1 ))
+  local line_level_spacer="{{${line_level_spacer}}}"
   local line_number_spacer="{{${2-}}}"
 
   # add an outer {{line}} for each line

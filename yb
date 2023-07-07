@@ -45,6 +45,10 @@ _globals(){
   declare -g yb_value=""
   declare -g yb_key=""
   declare -g yb_YAML=""
+  declare -g yb_spacer=""
+  declare -g yb_spacer=""
+  declare -g yb_anchor=""
+  declare -g yb_color_string=""
   declare -ga yb_array
   declare -gA yb_keys
 }
@@ -146,7 +150,7 @@ _parse_yaml() {
       value="${line}"
     fi
 
-    # populate the associative array
+    # populate the array
     line_structure=(
       [type]="${type}"
       [level]="${level}"
@@ -178,13 +182,25 @@ _parse_yaml() {
 #   ${line_structure[@]}
 ########################################
 _manage(){
-  local query_prefix="L${line_structure["level"]}_N${line_structure["line_number"]}"
+  local level="${line_structure["level"]}"
+  local line_number="${line_structure["line_number"]}"
+  local type="${line_structure["type"]}"
+  local parent="${line_structure["parent"]}"
+  local key="${line_structure["key"]}"
+
+  local query_prefix="L${level}_N${line_number}"
+
   # build $spacer and $outer
-  line_structure["spacer"]=$(_spacer "${line_structure["level"]}" "${line_structure["type"]}" "${line_structure["parent"]}")
-  line_structure["outer"]=$(_outer "${line_structure["level"]}" "${line_structure["line_number"]}")
+  _build_spacer "${level}" "${type}" "${parent}"
+  _build_outer "${level}" "${line_number}"
+
+  # assign the structure variables with the global ones
+  line_structure["spacer"]="${yb_spacer}"
+  line_structure["outer"]="${yb_outer}"
+
   # if a sequence, search if the path is correct
   if [[ "${yb_is_sequence}" == true ]]; then
-     _search "${line_structure["key"]}" "${line_structure["level"]}" "${line_structure["type"]}" "${query_prefix}"
+     _search "${key}" "${level}" "${type}" "${query_prefix}"
     # if correct path, print
     if [[ "${yb_is_print}" == true ]]; then
       _print
@@ -215,7 +231,6 @@ _search(){
   if [[ "${yb_retrieve}" == false ]]; then
     # the new level condition ensures that the first key is at the root level (1)
     if [[ "${key}" == "${yb_keys["${yb_key_step}"]}" && "${level}" == "${new_level}" ]]; then
-
         yb_key_step=$(( $yb_key_step + 1))
         # if enough arguments
       if [[ "${yb_key_step}" -eq "${yb_key_length}" ]]; then
@@ -284,6 +299,8 @@ _debug(){
 
 ########################################
 # Transform original key option into an array
+# Attributes:
+#   $1 # a yaml key
 # Globals:
 #   yb_key
 #   yb_keys
@@ -304,7 +321,7 @@ _key_to_array(){
   local_index=0
   for key in "${yb_key[@]}"; do
     if [[ "${key}" == *\\* ]]; then
-      # replace antislash with space
+      # replace anti-backslash with space
       key="${key//\\/ }"
     fi
       yb_keys["${local_index}"]="${key}"
@@ -317,19 +334,28 @@ _key_to_array(){
 # Attributes:
 #   $1 # mode (boolean verbose)
 #   $2 # a key
+# Globals:
+#   yb_boolean_query
+#   yb_line_number_query
+#   yb_file
+#   yb_is_empty
 ########################################
 _query(){
   local mode="${1-}"
   local key="${2-}"
   local result
 
+  # check the query mode
   if [[ "${mode}" == "boolean" ]]; then
     yb_boolean_query=true
   elif [[ "${mode}" == "line-number" ]]; then
     yb_line_number_query=true
   fi
 
-  _sequence "${key}"
+  # prepare the search sequence
+  _search_sequence "${key}"
+
+  # get the result
   result=$(_parse_yaml "${yb_file}")
 
   if [[ "${mode}" == "boolean" ]]; then
@@ -372,6 +398,8 @@ _build_key_coordinates(){
 
 ########################################
 # Check for existing child keys
+# Globals:
+#   $yb_anchor
 # Attributes:
 #   $1 # boolean
 #   $2 # key
@@ -384,24 +412,28 @@ _check_child_keys(){
   local parent_level="${3-}"
   local parent_line_number="${4-}"
 
-  if [[ "${check_child}" == true ]]; then
+  if [[ "${check_child}" == "true" ]]; then
+  # if looking for a child
     _is_child_key "${parent_index}" "${parent_level}" "${parent_line_number}"
   else
-    echo "I${parent_index}_L${parent_level}_N${parent_line_number}"
+  # if child is found, print parent coordinates
+    yb_anchor="I${parent_index}_L${parent_level}_N${parent_line_number}"
   fi
 }
 
 ########################################
 # Check if the current key as a child key
+# Inherits:
+#   $structure from _manage_add_key
 # Attributes:
 #   $1 # key
 #   $2 # level
 #   $3 # line number
 ########################################
 _is_child_key(){
-  local parent_index="${1}"
-  local parent_level="${2}"
-  local parent_line="${3}"
+  local parent_index="${1-}"
+  local parent_level="${2-}"
+  local parent_line="${3-}"
   local child_index
   local child_level
   local child_line
@@ -412,14 +444,14 @@ _is_child_key(){
   child_line=$(( $parent_line + 1 ))
 
   if [[ -v "${structure[${child_line}]+_}" ]]; then
-    child_structure=($( echo "${structure[${child_line}]}"))
+    child_structure="${structure[${child_line}]}"
     if [[ "${child_structure[1]}" -eq "${child_level}" ]]; then
       # child key exist
-      _check_child_keys true "${child_index}" "${child_level}" "${child_line}"
+      _check_child_keys "true" "${child_index}" "${child_level}" "${child_line}"
     fi
   else 
     # child key doesn't exist
-    _check_child_keys false "${parent_index}" "${parent_level}" "${parent_line}"
+    _check_child_keys "false" "${parent_index}" "${parent_level}" "${parent_line}"
   fi
 }
 
@@ -458,9 +490,11 @@ _manage_add_key(){
     key_line="${coordinate#*N}"
 
     # case were addition is made from root level
-    # this would be a full path addition
+    # this would be a root path addition
     if [[ "${key_index}" -eq "0" ]]; then
-      anchors+=($(_check_child_keys true "${key_index}" "${key_level}" "${key_line}"))
+      yb_anchor=""
+      _check_child_keys "true" "${key_index}" "${key_level}" "${key_line}"
+      anchors+=("${yb_anchor}")
     fi
   done
 
@@ -506,7 +540,9 @@ _add_in_file(){
       spacer+="${spacing}"
     done
     child_key="${spacer}${yb_key[${i}]}:"
+    # write in file
     sed -i "${parent_line_number} a ${child_key}" "${yb_file}"
+    # increment levels and line numbers for next iteration
     parent_level=$(( $parent_level + 1 ))
     parent_line_number=$(( $parent_line_number + 1 ))
   done
@@ -531,23 +567,26 @@ _add(){
 
 ########################################
 # Build the spacer that comes before a key or value
+# Globals:
+#   $yb_spacer
 # Attributes:
-#   $1 # current $level
+#   $2 # current $type
 #   $2 # current $type
 ########################################
-_spacer(){
+_build_spacer(){
   local level=${1-}
   local type=${2-}
   local parent=${3-}
   local style=""
   local separator=""
   local spacer=""
+  yb_spacer=""
 
   # set the correct starting level
   if [[ ${yb_is_sequence} == true ]]; then
     level=$(( $level - 1 ))
   else 
-    level=$(( $level ))
+    level="${level}"
   fi
 
   # switch the separator type
@@ -563,7 +602,7 @@ _spacer(){
     done
   fi
 
-  level=$(set_level "${level}")
+  level=$(_set_level "${level}")
 
   for (( i = 0; i < $level; i++ )); do
     spacer+="${separator}"
@@ -573,20 +612,26 @@ _spacer(){
       spacer+="${parent}_"
   fi
 
-  echo "${spacer}"
+  yb_spacer="${spacer}"
 }
 
 ########################################
 # Set the correct level depending on -options
+# Globals:
+#   yb_is_sequence
+#   yb_depth
+#   yb_is_array
+#   yb_format
+#   yb_key_base_level
 # Attributes:
 #   $1 # current $level
 ########################################
-set_level(){
+_set_level(){
   local level="${1-}"
 
   # set the correct level number
   if [[ ${yb_is_sequence} == false ]]; then
-    level=$(( $level -1 ))
+    level=$(( $level - 1 ))
   elif [[ ${yb_depth} == true ]]; then
     level="${level}"
   elif [[ "${yb_is_array}" == true && "${yb_format}" == false ]]; then
@@ -601,17 +646,19 @@ set_level(){
 
 ########################################
 # Build the outer that comes after a key or value
+# Globals:
+#   $yb_outer
 # Attributes:
 #   $1 # current $level
 #   $2 # current $type
 ########################################
-_outer(){
+_build_outer(){
   local outer=""
   local line_spacer="{{line}}"
-  local line_level_spacer="{{${1-}}}"
   local line_level_spacer=$(( $1 - 1 ))
   local line_level_spacer="{{${line_level_spacer}}}"
   local line_number_spacer="{{${2-}}}"
+  yb_outer=""
 
   # add an outer {{line}} for each line
   if [[ "${yb_show_line}" == true ]]; then
@@ -625,7 +672,7 @@ _outer(){
   if [[ "${yb_show_line_number}" == true ]]; then
     outer+="${line_number_spacer}"
   fi
-  echo "${outer}"
+  yb_outer="${outer}"
 }
 
 ########################################
@@ -636,10 +683,12 @@ _outer(){
 _value_type(){
   local value="${1-}"
   if [[ "${value}" == "true" || "${value}" == "false" ]]; then
-    yb_value=$(_to_color "${value}" "${yb_red}")
+    _to_color "${value}" "${yb_red}"
+    yb_value="${yb_color_string}"
     yb_is_colored=true
   elif [[ "${value}" =~ ^[0-9]+$ ]]; then
-    yb_value=$(_to_color "${value}" "${yb_orange}")
+    _to_color "${value}" "${yb_orange}"
+    yb_value="${yb_color_string}"
     yb_is_colored=true
   fi
 }
@@ -684,15 +733,15 @@ _print(){
   else
     # if '-R' is false, use colors
     if [[ "${yb_is_raw}" == false ]] && [[ "${yb_format}" == false ]]; then
-      # echo ${type}
       if [[ "${type}" == "comment" ]]; then
-        value=$(_to_color "${value}" "${yb_grey}")
+        _to_color "${value}" "${yb_grey}"
+        value="${yb_color_string}"
       elif [[ "${line_structure["type"]}" == *"key"* ]]; then
-        key=$(_to_color "${key}" "${yb_blue}")
-        prefix=$(_to_color "${prefix}" "${yb_blue}")
-      fi
-      if [[ "${line_structure["type"]}" == *"value"* ]]; then
-        # echo "VALUE"
+        _to_color "${key}" "${yb_blue}"
+        key="${yb_color_string}"
+        _to_color "${prefix}" "${yb_blue}"
+        prefix="${yb_color_string}"
+      elif [[ "${line_structure["type"]}" == *"value"* ]]; then
         _value_type "${value}"
         if [[ -n "${yb_value}" ]]; then
           value="${yb_value}"
@@ -758,7 +807,7 @@ _trim_hyphen(){
 _to_color(){
   local text="${1-}"
   local color="${2-}"
-  echo "${color}${text}\033[0m"
+  yb_color_string="${color}${text}\033[0m"
 }
 
 ########################################
@@ -767,7 +816,7 @@ _to_color(){
 #   $1 # a yaml key
 ########################################
 # key_sequence ?
-_sequence(){
+_search_sequence(){
   local key=${1:-"${yb_key}"}
   
   # set flags
@@ -795,7 +844,7 @@ _parse_options(){
     elif [[ "${yb_add}" == true ]]; then
       _add
     elif [[ -n "${key}" ]]; then
-      _sequence
+      _search_sequence
     fi
 
   else

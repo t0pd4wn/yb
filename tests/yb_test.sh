@@ -4,7 +4,6 @@
 #---------------------------------------
 
 tests(){
-  globals
 
 	echo -e "\U1F3B2 Welcome to YB tests: "
   echo -e "\U1F4AC PART 1 - Parsing "
@@ -122,10 +121,12 @@ tests(){
 
   check_test "true" "${parse}"
 
-  # clean yaml file
-  sed -i '38,39d' tests/yb.yaml
-  sed -i '42,43d' tests/yb.yaml
-  sed -i '45,46d' tests/yb.yaml
+  if [[ "${error_code}" -eq 0 ]]; then
+  	# clean yaml file
+	  sed -i '38,39d' tests/yb.yaml
+	  sed -i '42,43d' tests/yb.yaml
+	  sed -i '45,46d' tests/yb.yaml
+  fi
 
   # end message
   echo ""
@@ -135,13 +136,16 @@ tests(){
 }
 
 check_test(){
-	assertion="${1-}"
-	result="${2-}"
+	local assertion="${1-}"
+	local result="${2-}"
+
 	if [[ "${result}" == "${assertion}" ]]; then
 		echo -e "\033[1;36mPassed\033[0m"
 		((passed_num++))
+		error_code=0
 	else
 		echo -e "\033[1;33mFailed\033[0m"
+		error_code=1
 	fi
 	((total_num++))
 }
@@ -149,6 +153,12 @@ check_test(){
 globals(){
 	declare -g total_num=0
 	declare -g passed_num=0
+	declare -g error_code
 }
 
-time tests
+main(){
+	globals
+	time tests
+}
+
+main

@@ -272,6 +272,11 @@ _search(){
   fi
 }
 
+_debug(){
+  local message="${@}"
+  echo "${BASH_LINENO} : ${message}"
+}
+
 ########################################
 # Transform original key option into an array
 # Globals:
@@ -280,9 +285,15 @@ _search(){
 #   yb_key_length
 ########################################
 _key_to_array(){
+  local key="${1-}"
   local local_index
 
+  # replace space with anti-backslash
+  key="${key// /\\}"
+
+  # transform the string in an array on "." separator
   yb_key=($(echo "${key}" | tr -s '.' ' '))
+
   yb_key_length="${#yb_key[@]}"
 
   local_index=0
@@ -507,7 +518,7 @@ _add(){
   has_key=$(_query "boolean" "${yb_key}")
 
   if [[ "${has_key}" == false ]]; then
-    _key_to_array
+    _key_to_array "${yb_key}"
     coordinates=($(_build_key_coordinates))
     _manage_add_key "${coordinates[@]}"
   fi
@@ -756,7 +767,7 @@ _sequence(){
   yb_is_sequence=true
   yb_retrieve=false
 
-  _key_to_array
+  _key_to_array "${key}"
 }
 
 ########################################

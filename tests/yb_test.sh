@@ -36,7 +36,7 @@ tests(){
 	check_test "BASED PARSER" "${parse}"
 
 	echo -e "\U1F4AC Test 1.6: parse file with key chain, targetting a key with a space"
-	parse=$(./yb -f tests/yb.yaml -k "complex.strings.I\am")
+	parse=$(./yb -f tests/yb.yaml -k "complex.strings.I am")
 	check_test "a complex string" "${parse}"
 
 	echo -e "\U1F4AC Test 1.7: parse file with key chain and raw option"

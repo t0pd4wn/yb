@@ -683,11 +683,11 @@ _build_outer(){
 _value_type(){
   local value="${1-}"
   if [[ "${value}" == "true" || "${value}" == "false" ]]; then
-    _to_color "${value}" "${yb_red}"
+    _set_color "${value}" "${yb_red}"
     yb_value="${yb_color_string}"
     yb_is_colored=true
   elif [[ "${value}" =~ ^[0-9]+$ ]]; then
-    _to_color "${value}" "${yb_orange}"
+    _set_color "${value}" "${yb_orange}"
     yb_value="${yb_color_string}"
     yb_is_colored=true
   fi
@@ -734,14 +734,15 @@ _print(){
     # if '-R' is false, use colors
     if [[ "${yb_is_raw}" == false ]] && [[ "${yb_format}" == false ]]; then
       if [[ "${type}" == "comment" ]]; then
-        _to_color "${value}" "${yb_grey}"
+        _set_color "${value}" "${yb_grey}"
         value="${yb_color_string}"
       elif [[ "${line_structure["type"]}" == *"key"* ]]; then
-        _to_color "${key}" "${yb_blue}"
+        _set_color "${key}" "${yb_blue}"
         key="${yb_color_string}"
-        _to_color "${prefix}" "${yb_blue}"
+        _set_color "${prefix}" "${yb_blue}"
         prefix="${yb_color_string}"
-      elif [[ "${line_structure["type"]}" == *"value"* ]]; then
+      fi
+      if [[ "${line_structure["type"]}" == *"value"* ]]; then
         _value_type "${value}"
         if [[ -n "${yb_value}" ]]; then
           value="${yb_value}"
@@ -804,7 +805,7 @@ _trim_hyphen(){
 #   $1 # string
 #   $2 # an ANSI format color
 ########################################
-_to_color(){
+_set_color(){
   local text="${1-}"
   local color="${2-}"
   yb_color_string="${color}${text}\033[0m"

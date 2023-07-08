@@ -93,7 +93,9 @@ _parse_yaml() {
     # Count the leading spaces to determine the indentation level
     spaces="${line%%[^[:space:]]*}"
     level="${#spaces}"
-    level="$(( level / yb_spacing + 1 ))"
+    level="$(( level / yb_spacing ))"
+
+    # _debug "${level}"
 
     # Remove the leading and trailing spaces
     line=$(_trim_space "${line}")
@@ -227,9 +229,14 @@ _search(){
   local query_prefix="${4-}"
   local new_level
 
-  new_level=$(( $yb_key_step + 1 ))
+
+      # _debug "SEARCH"
+      # _debug "${level}"
+      # _debug "${yb_key_step}"
+
+  new_level=$(( $yb_key_step ))
   if [[ "${yb_retrieve}" == false ]]; then
-    # the new level condition ensures that the first key is at the root level (1)
+    # the new level condition ensures that the first key is at the root level (0)
     if [[ "${key}" == "${yb_keys["${yb_key_step}"]}" && "${level}" == "${new_level}" ]]; then
         yb_key_step=$(( $yb_key_step + 1))
         # if enough arguments
@@ -580,13 +587,12 @@ _build_spacer(){
   local style=""
   local separator=""
   local spacer=""
-  yb_spacer=""
 
   # set the correct starting level
   if [[ ${yb_is_sequence} == true ]]; then
     level=$(( $level - 1 ))
   else 
-    level="${level}"
+    level=$(( $level + 1 ))
   fi
 
   # switch the separator type
@@ -607,11 +613,10 @@ _build_spacer(){
   for (( i = 0; i < $level; i++ )); do
     spacer+="${separator}"
   done
-    
+  
   if [[ "${type}" == *"value"* && "${yb_format}" == true ]]; then
       spacer+="${parent}_"
   fi
-
   yb_spacer="${spacer}"
 }
 
@@ -633,7 +638,7 @@ _set_level(){
   if [[ ${yb_is_sequence} == false ]]; then
     level=$(( $level - 1 ))
   elif [[ ${yb_depth} == true ]]; then
-    level="${level}"
+    level=$(( $level + 1 ))
   elif [[ "${yb_is_array}" == true && "${yb_format}" == false ]]; then
     level=0
   elif [[ "${yb_is_sequence}" == true ]]; then
@@ -650,15 +655,15 @@ _set_level(){
 #   $yb_outer
 # Attributes:
 #   $1 # current $level
-#   $2 # current $type
+#   $2 # current $line_number
 ########################################
 _build_outer(){
   local outer=""
   local line_spacer="{{line}}"
-  local line_level_spacer=$(( $1 - 1 ))
+  local line_level_spacer="${1-}"
+  local line_number_spacer="${2-}"
   local line_level_spacer="{{${line_level_spacer}}}"
-  local line_number_spacer="{{${2-}}}"
-  yb_outer=""
+  local line_number_spacer="{{${line_number_spacer}}}"
 
   # add an outer {{line}} for each line
   if [[ "${yb_show_line}" == true ]]; then

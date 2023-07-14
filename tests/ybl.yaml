@@ -1,0 +1,19 @@
+do:
+  exist:
+    - true
+
+do:
+    - true
+
+do:
+  do:
+    - true
+  did:
+    - false
+
+do:
+  not:
+  exist:
+    - false
+
+exist:

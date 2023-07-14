@@ -5,7 +5,7 @@
 ## Usage:
 
 ```bash
-./yb -FRaAlLndq -f <yaml_file> -k <key> -s <spacer_value>
+./yb -FRAlLndq -f <yaml_file> -k <key> -s <spacer_value>
 ```
 
 Example:
@@ -34,7 +34,7 @@ To launch it, run the below command from the repository root level :
 - [x] `<key.childkey>` selection
 - [ ] `<key` perimeter operators options
 - [x] `-f` file option 
-- [ ] `-a` add option (currently being implemented)
+- [~] `-a` add option (currently being implemented, keys are ok)
 - [ ] `-r` remove option
 - [x] `-k` key selection
 - [x] `-R` raw option (no colors code in the output)

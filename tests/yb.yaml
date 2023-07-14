@@ -39,11 +39,17 @@ do:
     - true
 
 do:
+  not:
+  exist:
     - true
 
 do:
-  do:
     - true
+
+is:
+  a:
+    boolean:
+      - true
 
 as:
   deep:

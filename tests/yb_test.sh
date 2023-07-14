@@ -49,7 +49,7 @@ tests(){
 	check_test "101" "${parse}"
 
 	echo -e "\U1F4AC Test 1.9: parse file with a boolean output"
-	parse=$(./yb -Af tests/yb.yaml -k "do.exist")
+	parse=$(./yb -Af tests/yb.yaml -k "is.a.boolean")
 	check_test "true" "${parse}"
 
   echo -e "\U1F4AC Test 1.10: parse file with raw option and depth option"
@@ -108,7 +108,7 @@ tests(){
   parse=$(./yb -qf tests/yb.yaml -k "do.exist")
   check_test "true" "${parse}"
 
-  echo -e "\U1F4AC PART 3 - Addition "
+  # echo -e "\U1F4AC PART 3 - Addition "
 
   echo -e "\U1F4AC Test 3.1: add existing key"
   # should be improved to retrieve error code
@@ -121,11 +121,11 @@ tests(){
 
   check_test "true" "${parse}"
 
+
   if [[ "${error_code}" -eq 0 ]]; then
   	# clean yaml file
-	  sed -i '38,39d' tests/yb.yaml
-	  sed -i '42,43d' tests/yb.yaml
-	  sed -i '45,46d' tests/yb.yaml
+	  sed -i '39,39d' tests/yb.yaml
+	  sed -i '44,44d' tests/yb.yaml
   fi
 
   # end message

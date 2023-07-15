@@ -168,17 +168,10 @@ _parse_yaml() {
     # send the reference
     _manage line_structure
 
-
   done <<< "${yb_YAML}"
 
   # reset IFS to default value
   unset IFS
-
-  # if a line-number query
-  # if [[ "${yb_line_number_query}" == true ]]; then
-  #   echo "end parse"
-  #   echo "${yb_query_result[@]}"
-  # fi
 }
 
 ########################################
@@ -236,11 +229,14 @@ _search(){
   new_level=$(( $yb_key_step ))
 
   if [[ "${yb_retrieve}" == false ]]; then
+    # if the current level is lover than the expected one, reset
+    if [[ "${level}" -lt "${new_level}" ]]; then
+      yb_key_step=0
+    fi
+
     # the new level condition ensures that the first key is at the root level (0)
     if [[ "${key}" == "${yb_keys["${yb_key_step}"]}" && "${level}" -eq "${new_level}" ]]; then
-
-
-        yb_key_step=$(( $yb_key_step + 1))
+      yb_key_step=$(( $yb_key_step + 1))
       # if enough arguments
       if [[ "${yb_key_step}" -eq "${yb_key_length}" ]]; then
         if [[ "${yb_line_number_query}" == true ]]; then
@@ -432,132 +428,6 @@ _query_lines(){
 }
 
 ########################################
-# Check for existing child keys
-# Globals:
-#   $yb_anchor
-# Attributes:
-#   $1 # boolean
-#   $2 # key
-#   $3 # level
-#   $4 # line number
-########################################
-_check_child_keys(){
-  local check_child="${1-}"
-  local parent_index="${2-}"
-  local parent_level="${3-}"
-  local parent_line_number="${4-}"
-
-  if [[ "${check_child}" == "true" ]]; then
-    # if looking for a child
-    _is_child_key "${parent_index}" "${parent_level}" "${parent_line_number}"
-  else
-    # if child is found, print parent coordinates
-    yb_anchor="I${parent_index}_L${parent_level}_N${parent_line_number}"
-  fi
-}
-
-########################################
-# Check if the current key as a child key
-# Inherits:
-#   $structure from _manage_add_key
-# Attributes:
-#   $1 # key
-#   $2 # level
-#   $3 # line number
-########################################
-_is_child_key(){
-  local parent_index="${1-}"
-  local parent_level="${2-}"
-  local parent_line="${3-}"
-  local child_index
-  local child_level
-  local child_line
-  declare -a child_structure
-
-  child_index=$(( $parent_index + 1 ))
-  child_level=$(( $parent_level + 1 ))
-  child_line=$(( $parent_line + 1 ))
-
-  if [[ -v "${structure[${child_line}]+_}" ]]; then
-    child_structure="${structure[${child_line}]}"
-    if [[ "${child_structure[1]}" -eq "${child_level}" ]]; then
-      # child key exist
-      _check_child_keys "true" "${child_index}" "${child_level}" "${child_line}"
-    fi
-  else 
-    # child key doesn't exist
-    _check_child_keys "false" "${parent_index}" "${parent_level}" "${parent_line}"
-  fi
-}
-
-########################################
-# Manage keys addition
-# Attributes:
-#   $@ # an array pf key coordinates (index, level, line number)
-########################################
-# _manage_add_key(){
-#   declare -a coordinates
-#   coordinates=("${@-}")
-
-#   local key_index
-#   local key_line
-#   local key_level
-#   local local_index
-#   local addition_number
-#   declare -A structure
-#   declare -a anchors
-
-#   # build the dictionary
-#   for coordinate in "${coordinates[@]}"; do
-#     key_index="${coordinate%%_L*}"
-#     key_index="${key_index#*I}"
-#     key_level="${coordinate%%_N*}"
-#     key_level="${key_level#*L}"
-#     key_line="${coordinate#*N}"
-
-
-
-
-#     structure+=(["${key_line}"]="${key_index} ${key_level}")
-#   done
-
-#   for coordinate in "${coordinates[@]}"; do
-#     key_index="${coordinate%%_L*}"
-#     key_index="${key_index#*I}"
-#     key_level="${coordinate%%_N*}"
-#     key_level="${key_level#*L}"
-#     key_line="${coordinate#*N}"
-
-#     # case were addition is made from root level
-#     # this would be a root path addition
-
-#     if [[ "${key_index}" -eq 0 ]]; then
-#       yb_anchor=""
-#       _check_child_keys "true" "${key_index}" "${key_level}" "${key_line}"
-#       anchors+=("${yb_anchor}")
-#     fi
-#   done
-
-#   local_index=0
-#   for anchor in "${anchors[@]}"; do
-#     key_index="${anchor%%_L*}"
-#     key_index="${key_index#*I}"
-#     key_index=$(( $key_index + 1 ))
-#     key_level="${anchor%%_N*}"
-#     key_level="${key_level#*L}"
-#     key_line="${anchor#*N}"
-#     key_line=$(( $key_line + $local_index ))
-#     _add_in_file "${key_line}" "${key_level}" "${key_index}"
-#     addition_number=$(( $yb_key_length - $key_index ))
-#     # increment the local index to keep the new lines count
-#     local_index=$(( $local_index + $addition_number ))
-#   done
-
-#   # reset cached yaml
-#   _cache_yaml "${yb_file}"
-# }
-
-########################################
 # Add path child keys
 # Attributes:
 #   $@ # an array of key coordinates (level, line number)
@@ -568,14 +438,13 @@ _add_child_keys(){
     local parent_line
 
     for anchor in "${keys_anchors[@]}"; do
-    parent_level="${anchor%%_N*}"
-    parent_level="${parent_level#*L}"
-    parent_line="${anchor#*N}"
+      parent_level="${anchor%%_N*}"
+      parent_level="${parent_level#*L}"
+      parent_line="${anchor#*N}"
 
-    _add_keys_in_file "${parent_line}" "${parent_level}"
+      _add_keys_in_file "${parent_line}" "${parent_level}"
     done
 }
-
 
 ########################################
 # Add key(s) in a file
@@ -620,7 +489,36 @@ _add_keys_in_file(){
   yb_added_lines=$(( $yb_added_lines + $counter ))
 }
 
+########################################
+# Add new key(s) in a file
+# Globals:
+#   yb_key
+#   yb_key_length
+########################################
+_add_new_keys_in_file(){
+  local level=0
+  local spacing="  "
+  local spacer
+  # local target_line_number
+  local counter=0
 
+  # referesh keys referential
+  _key_to_array "${yb_key_option}"
+
+  for (( aif = 0 ; aif < $yb_key_length; aif++ )); do 
+    spacer=""
+    for (( sp = 0; sp < level; sp++ )); do
+      spacer+="${spacing}"
+    done
+
+    child_key="${spacer}${yb_keys[${aif}]}:"
+
+    # write in file
+    echo -e -n "\n${child_key}" >> "${yb_file}"
+    # increment levels and line numbers for next iteration
+    level=$(( $level + 1 ))
+  done
+}
 
 ########################################
 # Build the key coordinates
@@ -629,7 +527,7 @@ _add_keys_in_file(){
 #   yb_key_length
 #   yb_coordinates
 ########################################
-_build_key_coordinates(){
+_manage_keys_addition(){
   local has_key
   declare -a coordinates
   declare -a keys=("${yb_keys[@]}")
@@ -650,12 +548,14 @@ _build_key_coordinates(){
       search_key+=".${reverse_array[$rs]}"
     done  
 
-    # strip first character
+    # strip first character (a ".")
     search_key="${search_key:1}"
     _query_lines "${search_key}"
     # get result
     has_key=("${yb_query_result}")  
 
+    # this gives a behavior where only 
+    # the first level of parents are targeted
     if [[ -n "${has_key}" ]]; then
       break;
     fi
@@ -663,52 +563,11 @@ _build_key_coordinates(){
     counter=$(( $counter - 1 ))
   done
 
-  _add_child_keys "${has_key}"
-
-  # _debug $sequence_length 
-
-  #    _query_lines "do"
-  #    _query_lines "do.exist"
-  #     # _exit
-  #     # has_key=$(_query_lines "${keys[$i]}") 
-
-  #     has_key=("${yb_query_result}")  
-
-  #     # _debug "HAS_KEY!"
-  #     _debug "${has_key[@]}"  
-
-  # reversed_array=()
-  # for ((r=${#keys[@]}-1; r>=0; r--)); do
-  #     reversed_array+=("${keys[r]}")
-  # done  
-
-  #   for (( k = 0; k < $sequence_length ; k++ )); do
-  #     _debug "${k}"
-  #     _debug "${sequence_length}"
-  #     _debug "${reversed_array[$k]}"  
-
-  #     _query_lines "${reversed_array[$k]}"
-  #     # _exit
-  #     # has_key=$(_query_lines "${keys[$i]}") 
-  
-  
-
-  #     has_key=("${yb_query_result}")  
-
-  #     # _debug "HAS_KEY!"
-  #     _debug "${has_key[@]}"  
-
-  #     # continue  
-
-  #     # _exit
-  #     # _set_coordinates  
-
-  #     for key_line in "${has_key[@]}"; do
-  #       coordinates+=("I${i}_${key_line}")
-  #     done
-  #   done  
-
-  #   yb_coordinates=("${coordinates[@]}")
+  if [[ -z "${has_key}" ]]; then
+    _add_new_keys_in_file
+  else
+    _add_child_keys "${has_key}"
+  fi
 }
 
 ########################################
@@ -721,44 +580,9 @@ _add(){
   _query_search "${yb_key_option}"
 
   if [[ "${yb_query}" == false ]]; then
-    # _key_to_array "${yb_key_option}"
-    _build_key_coordinates "${yb_key_option}"
-    # _manage_add_key "${yb_coordinates[@]}"
+    _manage_keys_addition "${yb_key_option}"
   fi
 }
-
-
-########################################
-# Add key(s) in a file
-# Attributes:
-#   $1 # line number
-#   $2 # level
-#   $3 # index
-# Globals:
-#   yb_key
-#   yb_key_length
-########################################
-# _add_in_file(){
-#   local parent_line_number="${1-}"
-#   local parent_level="${2-}"
-#   local parent_index="${3-}"
-#   local spacing="\ \ "
-#   local spacer
-
-#   for (( i = $parent_index; i < $yb_key_length; i++ )); do 
-#     spacer=""
-#     for (( i = 0; i < $parent_level; i++ )); do
-#       spacer+="${spacing}"
-#     done
-#     child_key="${spacer}${yb_key[${i}]}:"
-#     # write in file
-#     sed -i "${parent_line_number} a ${child_key}" "${yb_file}"
-#     # increment levels and line numbers for next iteration
-#     parent_level=$(( $parent_level + 1 ))
-#     parent_line_number=$(( $parent_line_number + 1 ))
-#   done
-# }
-
 
 ########################################
 # Build the spacer that comes before a key or value

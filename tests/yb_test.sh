@@ -161,6 +161,21 @@ false true" "${parse}"
 - yes
 - true" "${parse}"
 
+	
+  echo -e "\U1F4AC PART 4 - Removal "
+
+  echo -e "\U1F4AC Test 4.1: remove non existing key"
+  parse=$(./yb -rf tests/yb.yaml -k "non.existing.key")
+  check_test "" "${parse}"
+
+  echo -e "\U1F4AC Test 4.2: remove existing keys"
+  ./yb -rf tests/yb.yaml -k "never"
+  ./yb -rf tests/yb.yaml -k "do.exist.not"
+  ./yb -rf tests/yb.yaml -k "did not"
+  ./yb -rf tests/yb.yaml -k "list"
+  # parse=$(./yb -rf tests/yb.yaml -k "do.exist.not")
+  check_test "" "${parse}"
+
   # if [[ "${error_code}" -eq 0 ]]; then
   # 	# clean yaml file
 	#   sed -i '84,86d' tests/yb.yaml
@@ -206,7 +221,7 @@ globals(){
 main(){
 	globals
 	time tests
-	clean
+	# clean
 }
 
 main

@@ -5,7 +5,7 @@
 ## Usage:
 
 ```bash
-./yb -FRAlLndq -f "<yaml_file>" -k "<key>" -v "<value>"
+./yb -aAdFlLnqRr -f "<yaml_file>" -k "<key>" -v "<value>"
 ```
 
 ### Examples:
@@ -24,14 +24,19 @@ Create keys:
 ./yb -af ./tests/user.yaml -k "new.key"
 ```
 
-Add inline values:
+Add inline-values:
 ```bash
 ./yb -af ./tests/user.yaml -k "new.key" -v "one"
 ```
 
-Or list values:
+Or list-values:
 ```bash
 ./yb -af ./tests/user.yaml -k "new.list" -v "- one"
+```
+
+And remove everything:
+```bash
+./yb -rf ./tests/user.yaml -k "new"
 ```
 
 ## Tests:
@@ -51,7 +56,7 @@ To launch it, run the below command from the repository root level :
 - [ ] `-k <key` perimeter operators
 - [x] `-v` value option (supported for add)
 - [x] `-a` add option
-- [ ] `-r` remove option
+- [x] `-r` remove option
 - [x] `-k` key selection
 - [x] `-R` raw option (no color codes in the output)
 - [x] `-d` depth option (keeps original depth)

@@ -82,5 +82,3 @@ keys:
   - child-key: true
 
 - yb: yaml bash parser
-        - yes
-        - true

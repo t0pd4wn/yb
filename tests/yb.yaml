@@ -36,15 +36,13 @@ not:
 
 do:
   exist:
-    - true
 
 do:
   not:
   exist:
-    - true
 
 do:
-    - true
+  - true
 
 is:
   a:
@@ -62,7 +60,7 @@ is:
 
 complex:
   strings:
-    - trick:
+    - trick::
     - \033[0;30m
     - I am: a complex string
     - key: or string
@@ -80,4 +78,9 @@ keys:
     the:
       - same
 
+- root-key:
+  - child-key: true
+
 - yb: yaml bash parser
+        - yes
+        - true

@@ -31,7 +31,7 @@ tests(){
 - PARSER" "${parse}"
 
 	echo -e "\U1F4AC Test 1.5: parse file with key chain, targetting an inline key"
-	parse=$(./yb -f tests/yb.yaml -k "yb.yaml.bash.IFS")
+	parse=$(./yb -f tests/yb.yaml -k "yaml.yaml.bash.IFS")
 	check_test "BASED PARSER" "${parse}"
 
 	echo -e "\U1F4AC Test 1.6: parse file with key chain, targetting a key with a space"
@@ -108,7 +108,7 @@ tests(){
   parse=$(./yb -qf tests/yb.yaml -k "do.exist")
   check_test "true" "${parse}"
 
-  # echo -e "\U1F4AC PART 3 - Addition "
+  echo -e "\U1F4AC PART 3 - Addition "
 
   echo -e "\U1F4AC Test 3.1: add existing key"
   # should be improved to retrieve error code
@@ -116,17 +116,55 @@ tests(){
   check_test "" "${parse}"
 
   echo -e "\U1F4AC Test 3.2: add non-existing key"
+  ./yb -af tests/yb.yaml -k "never.existed.before"
+  parse=$(./yb -qf tests/yb.yaml -k "never.existed.before")
+
+  check_test "true" "${parse}"
+
+  echo -e "\U1F4AC Test 3.3: add partially-existing key"
   ./yb -af tests/yb.yaml -k "do.exist.not"
   parse=$(./yb -qf tests/yb.yaml -k "do.exist.not")
 
   check_test "true" "${parse}"
 
+  echo -e "\U1F4AC Test 3.4: add inline value to an empty existing key"
+  ./yb -af tests/yb.yaml -k "do.exist.not" -v "false"
+  parse=$(./yb -Rf tests/yb.yaml -k "do.exist.not")
 
-  if [[ "${error_code}" -eq 0 ]]; then
-  	# clean yaml file
-	  sed -i '39,39d' tests/yb.yaml
-	  sed -i '44,44d' tests/yb.yaml
-  fi
+  check_test "false
+false" "${parse}"
+
+  echo -e "\U1F4AC Test 3.5: add inline value to a non-empty existing key"
+  ./yb -af tests/yb.yaml -k "do.exist.not" -v "true"
+  parse=$(./yb -Rf tests/yb.yaml -k "do.exist.not")
+
+  check_test "false true
+false true" "${parse}"
+
+  echo -e "\U1F4AC Test 3.6: add inline value to a non-existing key with a space"
+  ./yb -af tests/yb.yaml -k "did not.exist.before" -v "true"
+  parse=$(./yb -Rf tests/yb.yaml -k "did not.exist.before")
+
+  check_test "true" "${parse}"
+
+  echo -e "\U1F4AC Test 3.7: add list value to a non-existing key"
+  ./yb -af tests/yb.yaml -k "list.which.do.exist" -v "- true"
+  parse=$(./yb -Rf tests/yb.yaml -k "list.which.do.exist")
+
+  check_test "- true" "${parse}"
+
+  echo -e "\U1F4AC Test 3.8: add multiple list values to an existing key"
+  ./yb -af tests/yb.yaml -k "list.which.do.exist" -v "- yes - right"
+  parse=$(./yb -Rf tests/yb.yaml -k "list.which.do.exist")
+
+  check_test "- right
+- yes
+- true" "${parse}"
+
+  # if [[ "${error_code}" -eq 0 ]]; then
+  # 	# clean yaml file
+	#   sed -i '84,86d' tests/yb.yaml
+  # fi
 
   # end message
   echo ""
@@ -150,6 +188,15 @@ check_test(){
 	((total_num++))
 }
 
+clean(){
+	if [[ "${error_code}" -eq 0 ]]; then
+  	# clean yaml file
+	  sed -i '39,39d' tests/yb.yaml
+	  sed -i '43,43d' tests/yb.yaml
+	  sed -i '85,98d' tests/yb.yaml
+  fi
+}
+
 globals(){
 	declare -g total_num=0
 	declare -g passed_num=0
@@ -159,6 +206,7 @@ globals(){
 main(){
 	globals
 	time tests
+	clean
 }
 
 main

@@ -43,6 +43,7 @@ _globals(){
   declare -g yb_previous_parent=""
   declare -g yb_value=""
   declare -g yb_key_option=""
+  declare -g yb_value_option=""
   declare -g yb_YAML=""
   declare -g yb_spacer=""
   declare -g yb_anchor=""
@@ -253,38 +254,38 @@ _search(){
           fi
         fi
 
-          #statements
-          yb_retrieve=true
-          yb_key_base_level="${level}"
-          # assume the key exist
-          yb_has_key=true
+        #statements
+        yb_retrieve=true
+        yb_key_base_level="${level}"
+        # assume the key exist
+        yb_has_key=true
 
         # if searched value is *key:value, retrieve only once
         if [[ "${type}" == *"key:value" ]]; then
-            # search result is only one line
-            yb_one_line=true
-            # sequence is over, reset flags
-            yb_key_step=0
-            yb_retrieve=false
-            # send a true signal to print the current line
-            yb_is_print=true
-            # add one to the number of retrieved sequences
-            yb_sequence_retrieved=$(( yb_sequence_retrieved + 1 ))
-            # assume the value was filled once
-            yb_is_empty=false
-            return 0
+          # search result is only one line
+          yb_one_line=true
+          # sequence is over, reset flags
+          yb_key_step=0
+          yb_retrieve=false
+          # send a true signal to print the current line
+          yb_is_print=true
+          # add one to the number of retrieved sequences
+          yb_sequence_retrieved=$(( yb_sequence_retrieved + 1 ))
+          # assume the value was filled once
+          yb_is_empty=false
+          return 0
         fi
       fi
     fi
   elif [[ "${yb_retrieve}" == true && "${level}" -gt "${yb_key_base_level}" ]]; then
-  # if search parameters match with current line
+    # if search parameters match with current line
     # send a true signal to print the current line
     yb_one_line=false
     yb_is_print=true
     # assume the value was filled once
     yb_is_empty=false
   else
-  # if not
+    # if not
     yb_one_line=false
     yb_is_print=false
     # if the level is lower or equal the key level
@@ -427,11 +428,11 @@ _query_lines(){
   yb_line_number_query=true
 }
 
-########################################
-# Add path child keys
-# Attributes:
-#   $@ # an array of key coordinates (level, line number)
-########################################
+# ########################################
+# # Add path child keys
+# # Attributes:
+# #   $@ # an array of key coordinates (level, line number)
+# ########################################
 _add_child_keys(){
     declare -a keys_anchors=($(echo "${@}"))
     local parent_level
@@ -571,6 +572,108 @@ _manage_keys_addition(){
 }
 
 ########################################
+# Add key(s) in a file
+# Attributes:
+#   $1 # line number
+#   $2 # level
+#   $3 # index
+# Globals:
+#   yb_key
+#   yb_key_length
+########################################
+_add_value_in_file(){
+  declare -a parents=(${1-})
+  local spacing="\ \ "
+  local spacer
+  local target_line_number
+  local counter=0
+  local existing_line
+  local value_type
+  local key_line
+  local key_level
+  local parent_key_value
+  local inline_value
+  declare -a value_array
+  declare -a clean_value_array
+
+  # set mode
+  if [[ "${yb_value_option}" == "- "* ]]; then
+    value_type="list"
+  else 
+    value_type="inline"
+  fi
+
+  if [[ "${value_type}" == "inline" ]]; then
+    # iterate over parent keys
+    for key in "${parents[@]}"; do
+      key_line="${key##*_N}"
+      # get the existing content from the line
+      parent_key_value=$(sed -n "${key_line}p" "$yb_file")
+      # prepare line value
+      inline_value=$(echo "${parent_key_value} ${yb_value_option}")
+      # write key:value on the same line
+      sed -i "${key_line}c\\$inline_value" "$yb_file"
+    done
+
+  elif [[ "${value_type}" == "list" ]]; then
+    # set hyphen+space as field separator
+    IFS="- "
+    # create an array from the string value
+    read -ra value_array <<< "${yb_value_option}"
+    # iterate over values to clean them
+    for raw_value in "${value_array[@]}"; do
+      if [[ -n "${raw_value}" ]]; then
+        raw_value=$(_trim_space ${raw_value})
+        clean_value_array+=("${raw_value}")
+      fi
+    done
+
+    # iterate over parent keys
+    for key in "${parents[@]}"; do
+      key_line="${key##*_N}"
+      key_level="${key%%_N*}"
+      key_level="${key_level##L}"
+
+      # build spacer
+      spacer=""
+      for (( sp = 0; sp < $key_level + 1; sp++ )); do
+        spacer+="${spacing}"
+      done  
+
+      # iterate over values to append them to the key
+      for clean_value in "${clean_value_array[@]}"; do  
+        clean_value="${spacer}- ${clean_value}"
+        sed -i "${key_line} a ${clean_value}" "${yb_file}"
+      done
+    done
+  fi
+}
+
+########################################
+# Manage value addition
+# Globals:
+#   yb_key
+#   yb_key_length
+#   yb_coordinates
+########################################
+_manage_value_addition(){
+  local has_key
+  declare -a keys=("${yb_keys[@]}")
+  local sequence_length="${yb_key_length}"
+  local search_key=""
+
+  local counter=$sequence_length  
+
+  # query for lines coordinates
+  _query_lines "${search_key}"
+  # get result
+  has_key=("${yb_query_result}")  
+
+    _add_value_in_file "${has_key}"
+
+}
+
+########################################
 # Add key(s) and/or value(s)
 # Globals:
 #   yb_key
@@ -581,6 +684,11 @@ _add(){
 
   if [[ "${yb_query}" == false ]]; then
     _manage_keys_addition "${yb_key_option}"
+    _cache_yaml
+  fi
+
+  if [[ -n "${yb_value_option-}" ]]; then
+    _manage_value_addition "${yb_value_option}"
   fi
 }
 
@@ -878,7 +986,7 @@ _parse_options(){
 #   $1 # a yaml file path
 ########################################
 _cache_yaml(){
-  local file="${1-}"
+  local file="${1:-${yb_file}}"
   yb_YAML=$(<"${file}")
 }
 
@@ -948,7 +1056,7 @@ _cli(){
         yb_is_raw=true
         ;;
       v)
-        yb_value="${OPTARG}"
+        yb_value_option="${OPTARG}"
         ;;
       s)
         yb_spacing="${OPTARG}"

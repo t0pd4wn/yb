@@ -301,6 +301,97 @@ _search(){
 }
 
 ########################################
+# Print to terminal
+# Inherit:
+#   ${line_structure[@]}
+########################################
+_print(){
+  local level=${line_structure["level"]}
+  local type="${line_structure["type"]}"
+  local key="${line_structure["key"]}"
+  local value="${line_structure["value"]}"
+  local prefix="${line_structure["prefix"]}"
+  local suffix="${line_structure["suffix"]}"
+  local line_number="${line_structure["line_number"]}"
+  local spacer="${line_structure["spacer"]}"
+  local outer="${line_structure["outer"]}"
+  local string=""
+  local has_colors=""
+  yb_is_colored=false
+  yb_value=""
+
+  # if a line-number query
+  if [[ "${yb_line_number_query}" == true || "${yb_boolean_query}" == true ]]; then
+    return 0
+  fi
+
+  if [[ "${yb_is_array}" == true ]]; then
+    if [[ "${type}" != "comment" && "${type}" != "empty" ]]; then
+      if [[ "${type}" == *"key"* ]]; then
+        if [[ "${type}" == "list-key:value" ]]; then
+          if [[ "${yb_one_line}" == false ]]; then
+            yb_array+=("${spacer}${key}_ ${value}${outer}")
+          else
+            yb_array+=("${spacer}${value}${outer}")
+          fi
+        else
+          if [[ "${yb_one_line}" == false ]]; then
+            yb_array+=("${spacer}${key}_${value}${outer}")
+          else
+            yb_array+=("${spacer}${value}${outer}")
+          fi
+        fi
+      else
+        yb_array+=("${spacer}${value}${outer}")
+      fi
+    fi
+  else
+    # if '-R' is false, use colors
+    if [[ "${yb_is_raw}" == false ]] && [[ "${yb_format}" == false ]]; then
+      if [[ "${type}" == "comment" ]]; then
+        _set_color "${value}" "${yb_grey}"
+        value="${yb_color_string}"
+      elif [[ "${line_structure["type"]}" == *"key"* ]]; then
+        _set_color "${key}" "${yb_blue}"
+        key="${yb_color_string}"
+        _set_color "${prefix}" "${yb_blue}"
+        prefix="${yb_color_string}"
+      fi
+      if [[ "${line_structure["type"]}" == *"value"* ]]; then
+        _value_type "${value}"
+        if [[ -n "${yb_value}" ]]; then
+          value="${yb_value}"
+        fi
+      fi
+    fi
+
+    if [[ "${yb_is_sequence}" == true && "${yb_one_line}" == true ]]; then
+      if [[ "${type}" == *"key:value" ]]; then
+        if [[ "${yb_is_colored}" == true ]]; then
+          echo -e "${value}${outer}"
+        else
+          echo "${value}${outer}"
+        fi
+        yb_one_line=false
+        yb_is_print=false
+      fi
+    else
+      if [[ "${type}" == "comment" ]]; then
+        string=$(echo -e "${prefix}${value}${outer}")
+        echo "${spacer}"${string}
+      else
+        if [[ ${yb_is_colored} == true ]]; then
+         string=$(echo -e "${prefix}${key}${suffix}${value}${outer}")
+        else
+         string=$(echo -e "${prefix}${key}${suffix}" && echo "${value}${outer}")
+        fi
+        echo "${spacer}"${string}
+      fi
+    fi
+  fi
+}
+
+########################################
 # Print a debug message
 # Attributes:
 #   $@ # some message
@@ -816,89 +907,6 @@ _value_type(){
     _set_color "${value}" "${yb_orange}"
     yb_value="${yb_color_string}"
     yb_is_colored=true
-  fi
-}
-
-########################################
-# Print to terminal
-# Inherit:
-#   ${line_structure[@]}
-########################################
-_print(){
-  local level=${line_structure["level"]}
-  local type="${line_structure["type"]}"
-  local key="${line_structure["key"]}"
-  local value="${line_structure["value"]}"
-  local prefix="${line_structure["prefix"]}"
-  local suffix="${line_structure["suffix"]}"
-  local line_number="${line_structure["line_number"]}"
-  local spacer="${line_structure["spacer"]}"
-  local outer="${line_structure["outer"]}"
-  local string=""
-  local has_colors=""
-  yb_is_colored=false
-  yb_value=""
-
-  # if a line-number query
-  if [[ "${yb_line_number_query}" == true || "${yb_boolean_query}" == true ]]; then
-    return 0
-  fi
-
-  if [[ "${yb_is_array}" == true ]]; then
-    if [[ "${type}" != "comment" && "${type}" != "empty" ]]; then
-      if [[ "${type}" == *"key"* ]]; then
-        if [[ "${type}" == "list-key:value" ]]; then
-          yb_array+=("${spacer}${key}_ ${value}${outer}")
-        else
-          yb_array+=("${spacer}${key}_${value}${outer}")
-        fi
-      else
-        yb_array+=("${spacer}${value}${outer}")
-      fi
-    fi
-  else
-    # if '-R' is false, use colors
-    if [[ "${yb_is_raw}" == false ]] && [[ "${yb_format}" == false ]]; then
-      if [[ "${type}" == "comment" ]]; then
-        _set_color "${value}" "${yb_grey}"
-        value="${yb_color_string}"
-      elif [[ "${line_structure["type"]}" == *"key"* ]]; then
-        _set_color "${key}" "${yb_blue}"
-        key="${yb_color_string}"
-        _set_color "${prefix}" "${yb_blue}"
-        prefix="${yb_color_string}"
-      fi
-      if [[ "${line_structure["type"]}" == *"value"* ]]; then
-        _value_type "${value}"
-        if [[ -n "${yb_value}" ]]; then
-          value="${yb_value}"
-        fi
-      fi
-    fi
-
-    if [[ "${yb_is_sequence}" == true && "${yb_one_line}" == true ]]; then
-      if [[ "${type}" == *"key:value" ]]; then
-        if [[ "${yb_is_colored}" == true ]]; then
-          echo -e "${value}${outer}"
-        else
-          echo "${value}${outer}"
-        fi
-        yb_one_line=false
-        yb_is_print=false
-      fi
-    else
-      if [[ "${type}" == "comment" ]]; then
-        string=$(echo -e "${prefix}${value}${outer}")
-        echo "${spacer}"${string}
-      else
-        if [[ ${yb_is_colored} == true ]]; then
-         string=$(echo -e "${prefix}${key}${suffix}${value}${outer}")
-        else
-         string=$(echo -e "${prefix}${key}${suffix}" && echo "${value}${outer}")
-        fi
-        echo "${spacer}"${string}
-      fi
-    fi
   fi
 }
 

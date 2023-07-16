@@ -226,16 +226,18 @@ _search(){
   local type="${3-}"
   local query_prefix="${4-}"
   local new_level
+  yb_is_print=false
 
-  new_level=$(( $yb_key_step ))
+  new_level="${yb_key_step}"
 
   if [[ "${yb_retrieve}" == false ]]; then
     # if the current level is lover than the expected one, reset
     if [[ "${level}" -lt "${new_level}" ]]; then
       yb_key_step=0
+      new_level="${yb_key_step}"
     fi
 
-    # the new level condition ensures that the first key is at the root level (0)
+    # the key and the level are the expected ones, first key is at the root level (0)
     if [[ "${key}" == "${yb_keys["${yb_key_step}"]}" && "${level}" -eq "${new_level}" ]]; then
       yb_key_step=$(( $yb_key_step + 1))
       # if enough arguments
@@ -333,14 +335,13 @@ _key_to_array(){
 
   yb_key_length="${#keys[@]}"
 
-  for (( i = 0; i < $yb_key_length; i++ )); do
-    key="${keys[$i]}"
+  for (( yk = 0; yk < $yb_key_length; yk++ )); do
+    key="${keys[$yk]}"
       if [[ "${key}" == *\\* ]]; then
         # replace anti-backslash with space
         key="${key//\\/ }"
       fi
-      local_array+=("${key}")
-      yb_keys[$i]="${key}"
+      yb_keys[$yk]="${key}"
   done
 }
 

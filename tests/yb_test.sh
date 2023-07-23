@@ -160,7 +160,6 @@ false true" "${parse}"
   check_test "- right
 - yes
 - true" "${parse}"
-
 	
   echo -e "\U1F4AC PART 4 - Removal "
 

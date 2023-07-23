@@ -232,7 +232,6 @@ _search(){
 
   new_level="${yb_key_step}"
 
-
   # if the current level is lower than the expected one, reset
   if [[ "${level}" -lt "${new_level}" ]]; then
     yb_key_step=0
@@ -500,7 +499,7 @@ _query_search(){
 #   yb_query
 #   yb_query_result
 ########################################
-_query_lines(){
+_query_keys_lines(){
   # local mode="${1-}"
   declare -a key=("${1-}")
   local result
@@ -525,10 +524,9 @@ _query_lines(){
 }
 
 ########################################
-# Query file for an existing key
+# Query file for values coordinates
 # Attributes:
-#   $1 # mode (boolean verbose)
-#   $2 # a key
+#   $1 # a key
 # Globals:
 #   yb_boolean_query
 #   yb_line_number_query
@@ -537,7 +535,8 @@ _query_lines(){
 #   yb_query
 #   yb_query_result
 ########################################
-_query_search_values(){
+# _query_values_lines(){
+_query_values_lines(){
   # local mode="${1-}"
   declare -a key=("${1-}")
   local result
@@ -686,7 +685,7 @@ _manage_keys_addition(){
 
     # strip first character (a ".")
     search_key="${search_key:1}"
-    _query_lines "${search_key}"
+    _query_keys_lines "${search_key}"
     # get result
     has_key=("${yb_query_result}")  
 
@@ -800,12 +799,10 @@ _manage_value_addition(){
   local counter=$sequence_length  
 
   # query for lines coordinates
-  _query_lines "${search_key}"
+  _query_keys_lines "${search_key}"
   # get result
   has_key=("${yb_query_result}")  
-
-    _add_value_in_file "${has_key}"
-
+  _add_value_in_file "${has_key}"
 }
 
 ########################################
@@ -844,9 +841,9 @@ _remove(){
   local line_counter=0
 
   # get lines for parents and children
-  _query_lines "${yb_key_option}"
+  _query_keys_lines "${yb_key_option}"
   parent_lines=(${yb_query_result})
-  _query_search_values "${yb_key_option}"
+  _query_values_lines "${yb_key_option}"
   child_lines=(${yb_query_result})
 
   if [[ -z "${parent_lines[@]}" && -z "${child_lines[@]}" ]]; then

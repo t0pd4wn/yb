@@ -57,7 +57,7 @@ To launch it, run the below command from the repository root level :
 - [x] `-v` value option (supported for add)
 - [x] `-a` add option
 - [x] `-r` remove option
-- [x] `-k` key selection
+- [ ] `-c` change option
 - [x] `-R` raw option (no color codes in the output)
 - [x] `-d` depth option (keeps original depth)
 - [x] `-F` format option
@@ -67,6 +67,7 @@ To launch it, run the below command from the repository root level :
 - [x] `-n` line number spacer option
 - [x] `-q` query option (check for keys path)
 - [x] `-s` spaces indentation option (to be deprecated)
+- [ ] `-T` typing support
 - [ ] `-t` color themes option
 - [ ] `---` group selection support
 - [ ] complex sets and mappings

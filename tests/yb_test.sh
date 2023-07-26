@@ -106,6 +106,22 @@ tests(){
   echo -e "\U1F4AC Test 2.2: query for an existing key"
   
   parse=$(./yb -qf tests/yb.yaml -k "do.exist")
+  check_test "true
+true" "${parse}"
+
+  echo -e "\U1F4AC Test 2.3: query for a non-existing value"
+  
+  parse=$(./yb -qf tests/yb.yaml -k "do.exist" -v "Does exist")
+  check_test "false" "${parse}"
+
+  echo -e "\U1F4AC Test 2.4: query for single existing value"
+  
+  parse=$(./yb -qf tests/yb.yaml -k "not.to.be.found" -v "true")
+  check_test "true" "${parse}"
+
+  echo -e "\U1F4AC Test 2.5: query for multiple existing values"
+  
+  parse=$(./yb -qf tests/yb.yaml -k "do.exist" -v "true")
   check_test "true" "${parse}"
 
   echo -e "\U1F4AC PART 3 - Addition "
@@ -125,7 +141,8 @@ tests(){
   ./yb -af tests/yb.yaml -k "do.exist.not"
   parse=$(./yb -qf tests/yb.yaml -k "do.exist.not")
 
-  check_test "true" "${parse}"
+  check_test "true
+true" "${parse}"
 
   echo -e "\U1F4AC Test 3.4: add inline value to an empty existing key"
   ./yb -af tests/yb.yaml -k "do.exist.not" -v "false"

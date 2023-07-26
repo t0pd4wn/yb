@@ -21,6 +21,7 @@ _globals(){
   declare -g yb_remove=false
   declare -g yb_query=false
   declare -g yb_boolean_query=false
+  declare -g yb_value_query=false
   declare -g yb_line_number_query=false
   declare -g yb_depth=false
   declare -g yb_format=false
@@ -30,17 +31,18 @@ _globals(){
   declare -g yb_show_line=false
   declare -g yb_show_line_number=false
   declare -g yb_is_sequence=false
-  declare -g yb_sequence_retrieved=0
   declare -g yb_is_empty=true
-  declare -g yb_has_key=false
-  declare -g yb_key_length=0
-  declare -g yb_key_step=0
-  declare -g yb_key_base_level=0
   declare -g yb_retrieve=false
   declare -g yb_is_retrieved=false
   declare -g yb_is_print=false
   declare -g yb_one_line=false
   declare -g yb_is_colored=false
+  declare -g yb_has_key=false
+  declare -g yb_sequence_retrieved=0
+  declare -g yb_key_length=0
+  declare -g yb_key_step=0
+  declare -g yb_key_base_level=0
+  declare -g yb_added_lines=0
   declare -g yb_previous_parent=""
   declare -g yb_value=""
   declare -g yb_key_option=""
@@ -52,7 +54,6 @@ _globals(){
   declare -g yb_query_search_result=""
   declare -g yb_query_lines_result=""
   declare -g yb_query_search_values_result=""
-  declare -g yb_added_lines=0
   declare -ga yb_coordinates
   declare -ga yb_query_result
   declare -ga yb_array
@@ -201,7 +202,6 @@ _manage(){
 
   # if a sequence, search if the path is correct
   if [[ "${yb_is_sequence}" == true ]]; then
-    # _debug "${key} ${level} ${type} ${query_prefix}"
      _search "${key}" "${level}" "${type}" "${query_prefix}"
     # if correct path, print
     if [[ "${yb_is_print}" == true ]]; then
@@ -253,9 +253,9 @@ _search(){
           # if looking for the key existence confirm and exit
           yb_query_result=true
           if [[ "${yb_add}" == false ]]; then
-            # if not in an dition scenario exit
+            # if not in an addition scenario exit
             echo ${yb_query_result}
-            exit 0
+            # exit 0
           fi
         fi
 
@@ -325,6 +325,17 @@ _print(){
 
   # if a line-number query
   if [[ "${yb_line_number_query}" == true || "${yb_boolean_query}" == true ]]; then
+    return 0
+  fi
+
+  # if a value query
+  if [[ "${yb_value_query}" == true ]]; then
+
+    # _debug "${yb_value_option} && ${value}"
+    if [[ "${yb_value_option}" == "${value}" ]]; then
+      yb_query_result=true
+      echo ${yb_query_result}
+    fi
     return 0
   fi
 
@@ -453,6 +464,7 @@ _key_to_array(){
 #   yb_query_result
 ########################################
 _query_search(){
+  
   declare -a key=("${1-}")
   local result
   yb_key_step=0
@@ -466,6 +478,12 @@ _query_search(){
   _search_sequence "${key[@]}"
   _parse_yaml "${yb_file}"
 
+  # if result contains true and not an addition scenario
+  if [[  "${yb_query_result}" == *"true"* && "${yb_add}" == "false" ]]; then
+    # output has been returned, exit
+    exit 0
+  fi
+
   # get the result
   result="${yb_query_search_result}"
 
@@ -474,7 +492,11 @@ _query_search(){
     yb_query_result=true
   elif [[ "${yb_is_empty}" == false ]]; then
     # has result but empty one
-    yb_query_result=true
+    if [[ -n "${yb_value_option}" ]]; then
+      yb_query_result=false
+    else
+      yb_query_result=true
+    fi
   elif [[ "${result}" == "" ]]; then
     yb_query_result=false
   else
@@ -484,6 +506,40 @@ _query_search(){
 
   # reset flag
   yb_boolean_query=false
+}
+
+########################################
+# Query file for an existing value
+# Attributes:
+#   $1 # a key
+# Globals:
+#   yb_key_step
+#   yb_query_search_result
+#   yb_query_result
+#   yb_value_query
+#   yb_file
+########################################
+_query_search_values(){
+  
+  declare -a key=("${1-}")
+  local result
+  yb_key_step=0
+  yb_query_result=""
+
+  # set the query mode
+  yb_value_query=true
+
+  # prepare the search sequence and parse file
+  _search_sequence "${key[@]}"
+  _parse_yaml "${yb_file}"
+
+  # if no results are found
+  if [[ -z "${yb_query_result}" ]]; then
+    yb_query_result=false
+  fi
+
+  # reset the query mode
+  yb_value_query=false
 }
 
 ########################################
@@ -535,7 +591,6 @@ _query_keys_lines(){
 #   yb_query
 #   yb_query_result
 ########################################
-# _query_values_lines(){
 _query_values_lines(){
   # local mode="${1-}"
   declare -a key=("${1-}")
@@ -1080,9 +1135,15 @@ _parse_options(){
     _cache_yaml "${yb_file}"
 
     if [[ "${yb_query}" == true ]]; then
-      _query_search "${key}"
-      echo "${yb_query_result}"
-      exit 0
+      if [[ -n "${yb_value_option}" ]]; then
+        _query_search_values "${key}"
+        if [[ "${yb_query_result}" == false ]]; then
+          echo "${yb_query_result}"
+        fi
+      else
+        _query_search "${key}"
+        echo "${yb_query_result}"
+      fi
     elif [[ "${yb_add}" == true ]]; then
       _add
     elif [[ "${yb_remove}" == true ]]; then

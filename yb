@@ -23,6 +23,7 @@ _globals(){
   declare -g yb_boolean_query=false
   declare -g yb_value_query=false
   declare -g yb_line_number_query=false
+  declare -g yb_silent_query=false
   declare -g yb_depth=false
   declare -g yb_format=false
   declare -g yb_is_array=false
@@ -48,6 +49,7 @@ _globals(){
   declare -g yb_key_option=""
   declare -g yb_value_option=""
   declare -g yb_YAML=""
+  declare -g yb_trimmed=""
   declare -g yb_spacer=""
   declare -g yb_anchor=""
   declare -g yb_color_string=""
@@ -96,6 +98,7 @@ _parse_yaml() {
     value=""
     suffix=""
     prefix=""
+    yb_trimmed=""
 
     # Count the leading spaces to determine the indentation level
     spaces="${line%%[^[:space:]]*}"
@@ -103,7 +106,9 @@ _parse_yaml() {
     level="$(( level / yb_spacing ))"
 
     # Remove the leading and trailing spaces
-    line=$(_trim_space "${line}")
+    # line=$(_trim_space "${line}")
+    _trim_space "${line}"
+    line="${yb_trimmed}"
 
     # Check the line type
     if [[ -z "${line}" ]]; then 
@@ -121,17 +126,23 @@ _parse_yaml() {
       type="key:value"
       key="${line%%:*}"
       value="${line#*:}"
-      key=$(_trim_space "${key}")
-      value=$(_trim_space "${value}")
+      # key=$(_trim_space "${key}")
+      _trim_space "${key}"
+      key="${yb_trimmed}"
+      _trim_space "${value}"
+      value="${yb_trimmed}"
       parent="${key}"
       suffix=": "
     elif [[ "${line}" == "- "*": "* ]]; then
       type="list-key:value"
-      key=$(_trim_space "${line}")
-      key=$(_trim_hyphen "${key}")
+      # key=$(_trim_space "${line}")
+      _trim_space "${line}"
+      _trim_hyphen "${yb_trimmed}"
+      key="${yb_trimmed}"
       key="${key%%:*}"
       value="${line#*:}"
-      value=$(_trim_space "${value}")
+      _trim_space "${value}"
+      value="${yb_trimmed}"
       prefix="- "
       suffix=": "
       # in this case, the parent is on the previous line
@@ -140,8 +151,9 @@ _parse_yaml() {
       # if [[ ${level} -eq 0 ]]; then
         type="list-key"
         # Trim leading space and list hyphen
-        key=$(_trim_space "${line}")
-        key=$(_trim_hyphen "${line}")
+        _trim_space "${line}"
+        _trim_hyphen "${yb_trimmed}"
+        key="${yb_trimmed}"
         key="${key%%:*}"
         prefix="- "
         parent="${key}"
@@ -149,8 +161,9 @@ _parse_yaml() {
       elif [[ "${line}" == "-"* ]]; then
         type="list-value"
         # Trim leading space and list hyphen
-        value=$(_trim_space "${line}")
-        value=$(_trim_hyphen "${line}")
+        _trim_space "${line}"
+        _trim_hyphen "${yb_trimmed}"
+        value="${yb_trimmed}"
         prefix="- "
     else
       type="other"
@@ -255,9 +268,8 @@ _search(){
           # if looking for the key existence confirm and exit
           yb_query_result=true
           if [[ "${yb_add}" == false ]]; then
-            # if not in an addition scenario exit
+            # if not in an addition scenario
             echo ${yb_query_result}
-            # exit 0
           fi
         fi
 
@@ -332,13 +344,16 @@ _print(){
 
   # if a value query
   if [[ "${yb_value_query}" == true ]]; then
-    if [[ "${yb_value_option}" == "${value}" ]]; then
+    # if value is the same as the searched option
+    if [[ "${yb_value_option}" == "${value}" || "${yb_value_option}" == "- ${value}" ]]; then
       if [[ "${yb_show_line}" == true ]]; then
         yb_query_result="true{{T_${type}}}{{N_${line_number}}}"
       else
         yb_query_result=true
       fi
-      echo ${yb_query_result}
+      if [[ "${yb_silent_query}" == false ]]; then
+        echo ${yb_query_result}
+      fi
     fi
     return 0
   fi
@@ -524,8 +539,7 @@ _query_search(){
 #   yb_file
 ########################################
 _query_search_values(){
-  
-  declare -a key=("${1-}")
+  declare -a key=(${@-})
   local result
   yb_key_step=0
   yb_query_result=""
@@ -803,6 +817,7 @@ _add_value_in_file(){
       # get the existing content from the line
       parent_key_value=$(sed -n "${key_line}p" "$yb_file")
       # prepare line value
+      # todo : explore use of echo here
       inline_value=$(echo "${parent_key_value} ${yb_value_option}")
       # write key:value on the same line
       sed -i "${key_line}c\\$inline_value" "$yb_file"
@@ -816,7 +831,8 @@ _add_value_in_file(){
     # iterate over values to clean them
     for raw_value in "${value_array[@]}"; do
       if [[ -n "${raw_value}" ]]; then
-        raw_value=$(_trim_space ${raw_value})
+        _trim_space ${raw_value}
+        raw_value="${yb_trimmed}"
         clean_value_array+=("${raw_value}")
       fi
     done
@@ -860,7 +876,8 @@ _manage_value_addition(){
   # query for lines coordinates
   _query_keys_lines "${search_key}"
   # get result
-  has_key=("${yb_query_result}")  
+  has_key=("${yb_query_result}")
+
   _add_value_in_file "${has_key}"
 }
 
@@ -976,19 +993,13 @@ _remove_value(){
   local last_key_index
   local last_key
 
-  # _debug "${last_key}"
-
   yb_show_line=true
+  yb_silent_query=true
 
-#   # _query_search_values "${yb_key_option}"
+  _query_search_values "${yb_key_option}"
+  result=("${yb_query_result}")
 
-  _key_to_array "${yb_key_option}"
-
-
-  result=($(_query_search_values "${yb_key_option}"))
-
-  if [[ -z "${result[@]}" ]]; then
-    # nothing to remove
+  if [[ "${result}" == false ]]; then
     return 0
   fi
 
@@ -1011,11 +1022,10 @@ _remove_value(){
       # find key
       last_key_index=$(( $yb_key_length - 1 ))
       last_key="${yb_keys[$last_key_index]}"
-
       if [[ "${line_type}" == "key:value" ]]; then
         last_key="${spacer}${last_key}:"
       elif [[  "${line_type}" == "list-key:value" ]]; then
-        last_key="${spacer}- ${last_key}:"
+        last_key="${spacer}${last_key}:"
       fi
       # re-add the key
       sed -i "${line_number} a ${last_key}" "${yb_file}"
@@ -1028,6 +1038,7 @@ _remove_value(){
 
   # reset flag
   yb_show_line=false
+  yb_silent_query=false
 }
 
 ########################################
@@ -1167,7 +1178,7 @@ _trim_space(){
   string="${string#"${string%%[![:space:]]*}"}"
   string="${string%"${string##*[![:space:]]}"}"
 
-  echo "${string}"
+  yb_trimmed="${string}"
 }
 
 ########################################
@@ -1177,8 +1188,10 @@ _trim_space(){
 ########################################
 _trim_hyphen(){
   local string="${@-}"
+
   string="${string##*- }"
-  echo "${string}"
+
+  yb_trimmed="${string}"
 }
 
 ########################################
@@ -1199,7 +1212,7 @@ _set_color(){
 #   $1 # a yaml key
 ########################################
 _search_sequence(){
-  local key=${1:-"${yb_key_option}"}
+  local key=${@:-"${yb_key_option}"}
 
   # set flags
   yb_is_sequence=true

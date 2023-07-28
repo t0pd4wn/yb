@@ -122,7 +122,8 @@ true" "${parse}"
   echo -e "\U1F4AC Test 2.5: query for multiple existing values"
   
   parse=$(./yb -qf tests/yb.yaml -k "do.exist" -v "true")
-  check_test "true" "${parse}"
+  check_test "true
+true" "${parse}"
 
   echo -e "\U1F4AC PART 3 - Addition "
 
@@ -209,7 +210,8 @@ false true" "${parse}"
   echo -e "\U1F4AC Test 4.3: remove non-existing value"
   ./yb -rf tests/yb.yaml -k "do.exist" -v "false"
   parse=$(./yb -Rf tests/yb.yaml -k "do.exist")
-  check_test "- true" "${parse}"
+  check_test "true
+true" "${parse}"
 
   echo -e "\U1F4AC Test 4.4: remove existing inline-value"
   ./yb -af tests/yb.yaml -k "is.- empty" -v "false"

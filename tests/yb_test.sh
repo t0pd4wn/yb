@@ -31,11 +31,11 @@ tests(){
 - PARSER" "${parse}"
 
 	echo -e "\U1F4AC Test 1.5: parse file with key chain, targetting an inline key"
-	parse=$(./yb -f tests/yb.yaml -k "yaml.yaml.bash.IFS")
+	parse=$(./yb -f tests/yb.yaml -k "yaml.yaml.bash.- IFS")
 	check_test "BASED PARSER" "${parse}"
 
-	echo -e "\U1F4AC Test 1.6: parse file with key chain, targetting a key with a space"
-	parse=$(./yb -f tests/yb.yaml -k "complex.strings.I am")
+	echo -e "\U1F4AC Test 1.6: parse file with key chain, targetting an inline-key containing a space"
+	parse=$(./yb -f tests/yb.yaml -k "complex.strings.- I am")
 	check_test "a complex string" "${parse}"
 
 	echo -e "\U1F4AC Test 1.7: parse file with key chain and raw option"
@@ -45,7 +45,7 @@ tests(){
 - PARSER" "${parse}"
 
 	echo -e "\U1F4AC Test 1.8: parse file with a number output"
-	parse=$(./yb -Rf tests/yb.yaml -k "yaml.yaml.yaml.bash.IFS.BASED.number")
+	parse=$(./yb -Rf tests/yb.yaml -k "yaml.yaml.yaml.bash.- IFS.- BASED.number")
 	check_test "101" "${parse}"
 
 	echo -e "\U1F4AC Test 1.9: parse file with a boolean output"
@@ -116,7 +116,7 @@ true" "${parse}"
 
   echo -e "\U1F4AC Test 2.4: query for single existing value"
   
-  parse=$(./yb -qf tests/yb.yaml -k "not.to.be.found" -v "true")
+  parse=$(./yb -qf tests/yb.yaml -k "not.to.be.- found" -v "true")
   check_test "true" "${parse}"
 
   echo -e "\U1F4AC Test 2.5: query for multiple existing values"
@@ -144,33 +144,45 @@ true" "${parse}"
   check_test "true
 true" "${parse}"
 
-  echo -e "\U1F4AC Test 3.4: add inline value to an empty existing key"
+  echo -e "\U1F4AC Test 3.4: add non existing list-key"
+  ./yb -af tests/yb.yaml -k "- new"
+  parse=$(./yb -qf tests/yb.yaml -k "- new")
+
+  check_test "true" "${parse}"
+
+  echo -e "\U1F4AC Test 3.5: add partially-existing list-key"
+  ./yb -af tests/yb.yaml -k "- new.- child"
+  parse=$(./yb -qf tests/yb.yaml -k "- new.- child")
+
+  check_test "true" "${parse}"
+
+  echo -e "\U1F4AC Test 3.6: add inline value to an empty existing key"
   ./yb -af tests/yb.yaml -k "do.exist.not" -v "false"
   parse=$(./yb -Rf tests/yb.yaml -k "do.exist.not")
 
   check_test "false
 false" "${parse}"
 
-  echo -e "\U1F4AC Test 3.5: add inline value to a non-empty existing key"
+  echo -e "\U1F4AC Test 3.7: add inline value to a non-empty existing key"
   ./yb -af tests/yb.yaml -k "do.exist.not" -v "true"
   parse=$(./yb -Rf tests/yb.yaml -k "do.exist.not")
 
   check_test "false true
 false true" "${parse}"
 
-  echo -e "\U1F4AC Test 3.6: add inline value to a non-existing key with a space"
+  echo -e "\U1F4AC Test 3.8: add inline value to a non-existing key with a space"
   ./yb -af tests/yb.yaml -k "did not.exist.before" -v "true"
   parse=$(./yb -Rf tests/yb.yaml -k "did not.exist.before")
 
   check_test "true" "${parse}"
 
-  echo -e "\U1F4AC Test 3.7: add list value to a non-existing key"
+  echo -e "\U1F4AC Test 3.9: add list value to a non-existing key"
   ./yb -af tests/yb.yaml -k "list.which.do.exist" -v "- true"
   parse=$(./yb -Rf tests/yb.yaml -k "list.which.do.exist")
 
   check_test "- true" "${parse}"
 
-  echo -e "\U1F4AC Test 3.8: add multiple list values to an existing key"
+  echo -e "\U1F4AC Test 3.10: add multiple list values to an existing key"
   ./yb -af tests/yb.yaml -k "list.which.do.exist" -v "- yes - right"
   parse=$(./yb -Rf tests/yb.yaml -k "list.which.do.exist")
 
@@ -189,13 +201,27 @@ false true" "${parse}"
   ./yb -rf tests/yb.yaml -k "do.exist.not"
   ./yb -rf tests/yb.yaml -k "did not"
   ./yb -rf tests/yb.yaml -k "list"
+  ./yb -rf tests/yb.yaml -k "- new.- child"
+  ./yb -rf tests/yb.yaml -k "- new"
   # parse=$(./yb -rf tests/yb.yaml -k "do.exist.not")
   check_test "" "${parse}"
 
-  # if [[ "${error_code}" -eq 0 ]]; then
-  # 	# clean yaml file
-	#   sed -i '84,86d' tests/yb.yaml
-  # fi
+  echo -e "\U1F4AC Test 4.3: remove non-existing value"
+  ./yb -rf tests/yb.yaml -k "do.exist" -v "false"
+  parse=$(./yb -Rf tests/yb.yaml -k "do.exist")
+  check_test "- true" "${parse}"
+
+  echo -e "\U1F4AC Test 4.4: remove existing inline-value"
+  ./yb -af tests/yb.yaml -k "is.- empty" -v "false"
+  ./yb -rf tests/yb.yaml -k "is.- empty" -v "false"
+  parse=$(./yb -Rf tests/yb.yaml -k "is.empty")
+  check_test "" "${parse}"
+
+  echo -e "\U1F4AC Test 4.5: remove existing list-value"
+  ./yb -af tests/yb.yaml -k "is.- empty" -v "- false"
+  ./yb -rf tests/yb.yaml -k "is.- empty" -v "- false"
+  parse=$(./yb -Rf tests/yb.yaml -k "is.empty")
+  check_test "" "${parse}"
 
   # end message
   echo ""

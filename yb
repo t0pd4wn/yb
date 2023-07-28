@@ -189,6 +189,7 @@ _manage(){
   local type="${line_structure["type"]}"
   local parent="${line_structure["parent"]}"
   local key="${line_structure["key"]}"
+  local prefix="${line_structure["prefix"]}"
 
   local query_prefix="L${level}_N${line_number}"
 
@@ -202,7 +203,7 @@ _manage(){
 
   # if a sequence, search if the path is correct
   if [[ "${yb_is_sequence}" == true ]]; then
-     _search "${key}" "${level}" "${type}" "${query_prefix}"
+     _search "${key}" "${level}" "${type}" "${prefix}" "${query_prefix}"
     # if correct path, print
     if [[ "${yb_is_print}" == true ]]; then
       _print
@@ -226,7 +227,8 @@ _search(){
   local key="${1-}"
   local level="${2-}"
   local type="${3-}"
-  local query_prefix="${4-}"
+  local prefix="${4-}"
+  local query_prefix="${5-}"
   local new_level
   yb_is_print=false
 
@@ -241,7 +243,7 @@ _search(){
 
   if [[ "${yb_retrieve}" == false ]]; then
     # the key and the level are the expected ones, first key is at the root level (0)
-    if [[ "${key}" == "${yb_keys["${yb_key_step}"]}" && "${level}" -eq "${new_level}" ]]; then
+    if [[ "${prefix}${key}" == "${yb_keys["${yb_key_step}"]}" && "${level}" -eq "${new_level}" ]]; then
       yb_key_step=$(( $yb_key_step + 1))
       # if enough arguments
       if [[ "${yb_key_step}" -eq "${yb_key_length}" ]]; then
@@ -438,7 +440,7 @@ _key_to_array(){
   # replace points with spaces
   keys="${keys//./ }"
   # transform the string in an array
-  keys=($(echo "${keys}"))
+  keys=(${keys})
 
   yb_key_length="${#keys[@]}"
 
@@ -625,7 +627,7 @@ _query_values_lines(){
 # #   $@ # an array of key coordinates (level, line number)
 # ########################################
 _add_child_keys(){
-    declare -a keys_anchors=($(echo "${@}"))
+    declare -a keys_anchors=(${@})
     local parent_level
     local parent_line
 
@@ -889,8 +891,10 @@ _add(){
 #   yb_file
 ########################################
 _remove(){
-  declare -a parent_lines
-  declare -a child_lines
+  declare -a parent_lines=()
+  declare -a child_lines=()
+
+  yb_query_result=()
   declare -a child_array
   declare -a remove_lines
   local next_line
@@ -902,6 +906,10 @@ _remove(){
   parent_lines=(${yb_query_result})
   _query_values_lines "${yb_key_option}"
   child_lines=(${yb_query_result})
+
+# _debug "${parent_lines}"
+# _debug "${child_lines}"
+
 
   if [[ -z "${parent_lines[@]}" && -z "${child_lines[@]}" ]]; then
     # nothing to remove
@@ -1155,8 +1163,10 @@ _value_type(){
 ########################################
 _trim_space(){
   local string="${@-}"
-  string=$(echo "$string" | sed -E 's/^ +//')
-  string=$(echo "$string" | sed -E 's/ +$//')
+
+  string="${string#"${string%%[![:space:]]*}"}"
+  string="${string%"${string##*[![:space:]]}"}"
+
   echo "${string}"
 }
 

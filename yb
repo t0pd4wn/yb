@@ -330,10 +330,12 @@ _print(){
 
   # if a value query
   if [[ "${yb_value_query}" == true ]]; then
-
-    # _debug "${yb_value_option} && ${value}"
     if [[ "${yb_value_option}" == "${value}" ]]; then
-      yb_query_result=true
+      if [[ "${yb_show_line}" == true ]]; then
+        yb_query_result="true{{T_${type}}}{{N_${line_number}}}"
+      else
+        yb_query_result=true
+      fi
       echo ${yb_query_result}
     fi
     return 0
@@ -943,6 +945,82 @@ _remove(){
   done
 }
 
+########################################
+# Remove a value
+# Globals:
+#   yb_key_option
+#   yb_query_result
+#   yb_file
+########################################
+_remove_value(){
+  declare -a parent_lines
+  declare -a child_lines
+  declare -a child_array
+  declare -a remove_lines
+  local next_line
+  local remove_line
+  local line_counter=0
+  local line_number
+  local line_type
+  local result
+  local spacing="\ \ "
+  local spacer=""
+  local last_key_index
+  local last_key
+
+  # _debug "${last_key}"
+
+  yb_show_line=true
+
+#   # _query_search_values "${yb_key_option}"
+
+  _key_to_array "${yb_key_option}"
+
+
+  result=($(_query_search_values "${yb_key_option}"))
+
+  if [[ -z "${result[@]}" ]]; then
+    # nothing to remove
+    return 0
+  fi
+
+  for (( rs = 0; rs < "${#result[@]}" ; rs++ )); do
+    line_type="${result[$rs]##*'{{T_'}"
+    line_type="${line_type%%'}}{{N_'*}"
+    line_number="${result[$rs]##*'{{N_'}"
+    line_number="${line_number%%'}}'}"
+    line_number=$(( $line_number - $line_counter ))
+
+    if [[ "${line_type}" == *"key:value" ]]; then
+      sed -i "${line_number}d" "${yb_file}"
+      line_number=$(( $line_number - 1 ))
+
+      # create spacer
+      for (( sp = 0; sp < $yb_key_length - 1; sp++ )); do
+        spacer+="${spacing}"
+      done
+
+      # find key
+      last_key_index=$(( $yb_key_length - 1 ))
+      last_key="${yb_keys[$last_key_index]}"
+
+      if [[ "${line_type}" == "key:value" ]]; then
+        last_key="${spacer}${last_key}:"
+      elif [[  "${line_type}" == "list-key:value" ]]; then
+        last_key="${spacer}- ${last_key}:"
+      fi
+      # re-add the key
+      sed -i "${line_number} a ${last_key}" "${yb_file}"
+    else
+      sed -i "${line_number}d" "${yb_file}"
+      # increment line count
+      line_counter=$(( $line_counter + 1 ))
+    fi
+  done
+
+  # reset flag
+  yb_show_line=false
+}
 
 ########################################
 # Build the spacer that comes before a key or value
@@ -1130,6 +1208,10 @@ _search_sequence(){
 _parse_options(){
   local file="${yb_file-}"
   local key="${yb_key_option-}"
+
+
+
+
   if [[ -f ${file} ]]; then
 
     _cache_yaml "${yb_file}"
@@ -1147,7 +1229,11 @@ _parse_options(){
     elif [[ "${yb_add}" == true ]]; then
       _add
     elif [[ "${yb_remove}" == true ]]; then
-      _remove
+      if [[ -n "${yb_value_option}" ]]; then
+        _remove_value
+      else
+        _remove
+      fi
     elif [[ -n "${key}" ]]; then
       _search_sequence
     fi

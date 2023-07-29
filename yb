@@ -721,8 +721,8 @@ _add_new_keys_in_file(){
 
     child_key="${spacer}${yb_keys[${aif}]}:"
 
-    # write in file
-    echo -e -n "\n${child_key}" >> "${yb_file}"
+    # write in file on the last line
+    sed -i "\$s/\$/ \n$child_key/" "${yb_file}"
     # increment levels and line numbers for next iteration
     level=$(( $level + 1 ))
   done
@@ -773,6 +773,8 @@ _manage_keys_addition(){
 
   if [[ -z "${has_key}" ]]; then
     _add_new_keys_in_file
+
+
   else
     _add_child_keys "${has_key}"
   fi
@@ -898,6 +900,9 @@ _add(){
   if [[ -n "${yb_value_option-}" ]]; then
     _manage_value_addition "${yb_value_option}"
   fi
+
+sed -i '$ { /^$/! N; s/\n$//; }' "${yb_file}"
+
 }
 
 ########################################

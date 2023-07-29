@@ -849,11 +849,12 @@ _add_value_in_file(){
       spacer=""
       for (( sp = 0; sp < $key_level + 1; sp++ )); do
         spacer+="${spacing}"
-      done  
+      done
 
-      # iterate over values to append them to the key
-      for clean_value in "${clean_value_array[@]}"; do  
-        clean_value="${spacer}- ${clean_value}"
+      local clean_array_length=${#clean_value_array[@]}
+
+      for (( cv = clean_array_length - 1; cv >= 0 ; cv-- )); do
+        clean_value="${spacer}- ${clean_value_array[$cv]}"
         sed -i "${key_line} a ${clean_value}" "${yb_file}"
       done
     done
@@ -900,9 +901,6 @@ _add(){
   if [[ -n "${yb_value_option-}" ]]; then
     _manage_value_addition "${yb_value_option}"
   fi
-
-sed -i '$ { /^$/! N; s/\n$//; }' "${yb_file}"
-
 }
 
 ########################################
@@ -928,10 +926,6 @@ _remove(){
   parent_lines=(${yb_query_result})
   _query_values_lines "${yb_key_option}"
   child_lines=(${yb_query_result})
-
-# _debug "${parent_lines}"
-# _debug "${child_lines}"
-
 
   if [[ -z "${parent_lines[@]}" && -z "${child_lines[@]}" ]]; then
     # nothing to remove

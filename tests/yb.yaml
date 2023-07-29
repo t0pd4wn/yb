@@ -41,15 +41,6 @@ do:
   - true
 is:
   - empty:
-    - false
-    - false
-    - false
-    - false
-  - empty:
-  - empty:
-  - empty:
-  - empty:
-  - empty:
   a:
     boolean:
       - true
@@ -60,18 +51,6 @@ as:
         ocean:
           - true
 is:
-    - false
-    - false
-    - false
-    - false
-  - empty:
-  - empty:
-  - empty:
-  - empty:
-  - empty:
-  - empty:
-  - empty:
-    - false
 complex:
   strings:
     - trick::
@@ -93,5 +72,10 @@ keys:
       - same
 - root-key:
   - child-key: true
-
 - yb: yaml bash parser
+- ascii: |
+  ___  _ ____
+  \  \///  __\
+   \  / | | //
+   / /  | |_\\
+  /_/   \____/

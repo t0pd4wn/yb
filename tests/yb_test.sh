@@ -125,6 +125,14 @@ true" "${parse}"
   check_test "true
 true" "${parse}"
 
+  echo -e "\U1F4AC Test 2.6: query for existing inline value"
+  parse=$(./yb -qf tests/yb.yaml -k "yaml.yaml.bash.- IFS" -v "BASED PARSER")
+  check_test "true" "${parse}"
+
+  echo -e "\U1F4AC Test 2.7: query for existing pipe values"
+  parse=$(./yb -qf tests/yb.yaml -k "- ascii|" -v "  ___  _ ____  \  \///  __\   \  / | | //   / /  | |_\\\  /_/   \____/")
+  check_test "true" "${parse}"
+
   echo -e "\U1F4AC PART 3 - Addition "
 
   echo -e "\U1F4AC Test 3.1: add existing key"
@@ -196,6 +204,12 @@ false true" "${parse}"
   parse=$(./yb -qf tests/yb.yaml -k "list.which.do.exist.- key" -v "\"Complex string\" \\t\\t\\t\\t tabs, newlines\\n\\n, and \${special} \${very special} character.")
 
   check_test "true" "${parse}"
+
+  echo -e "\U1F4AC Test 3.12: add pipe type values to a non existing pipe key"
+  ./yb -af tests/yb.yaml -k "- ascii-test|" -v "|> ___  _ ____ |> \  \///  __\ |>  \  / | | // |>  / /  | |_\\\ |> /_/   \____/"
+  parse=$(./yb -qf tests/yb.yaml -k "- ascii-test|" -v "  ___  _ ____  \  \///  __\   \  / | | //   / /  | |_\\\  /_/   \____/")
+
+  check_test "true" "${parse}"
 	
   echo -e "\U1F4AC PART 4 - Removal "
 
@@ -210,6 +224,7 @@ false true" "${parse}"
   ./yb -rf tests/yb.yaml -k "list"
   ./yb -rf tests/yb.yaml -k "- new.- child"
   ./yb -rf tests/yb.yaml -k "- new"
+  ./yb -rf tests/yb.yaml -k "- ascii-test"
   # parse=$(./yb -rf tests/yb.yaml -k "do.exist.not")
   check_test "" "${parse}"
 
@@ -236,6 +251,9 @@ true" "${parse}"
   echo "End of yb tests:"
   echo "Tests passed: ${passed_num}"
   echo "Total tests: ${total_num}"
+
+  # yb Ascii
+  ./yb -f tests/yb.yaml -k "- ascii|"
 }
 
 check_test(){
@@ -274,4 +292,4 @@ main(){
 	# clean
 }
 
-main
+main "${@}"

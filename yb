@@ -13,6 +13,7 @@ set -eu
 ########################################
 _globals(){
   declare -g yb_spacing=2
+  declare -g yb_pipe_delimeter="|>"
   declare -g yb_grey="\033[0;30m"
   declare -g yb_blue="\033[1;36m"
   declare -g yb_orange="\033[1;33m"
@@ -40,11 +41,13 @@ _globals(){
   declare -g yb_is_colored=false
   declare -g yb_has_key=false
   declare -g yb_sequence_retrieved=0
+  declare -g yb_original_key_length=""
   declare -g yb_key_length=0
   declare -g yb_key_step=0
   declare -g yb_key_base_level=0
   declare -g yb_added_lines=0
   declare -g yb_previous_parent=""
+  declare -g yb_parent_type=""
   declare -g yb_value=""
   declare -g yb_key_option=""
   declare -g yb_value_option=""
@@ -56,6 +59,7 @@ _globals(){
   declare -g yb_query_search_result=""
   declare -g yb_query_lines_result=""
   declare -g yb_query_search_values_result=""
+  declare -g yb_query_pipe_result=""
   declare -ga yb_coordinates
   declare -ga yb_query_result
   declare -ga yb_array
@@ -71,6 +75,7 @@ _parse_yaml() {
   local comment
   local yaml
   local separator
+  local raw_line
   local line
   local spaces
   local level
@@ -89,7 +94,7 @@ _parse_yaml() {
   IFS=$' \t\n'
 
   # Loop through each line of the YAML file
-  while IFS= read -r line; do
+  while IFS= read -r raw_line; do
     # keep track of current line number
     ((line_number += 1))
 
@@ -100,13 +105,16 @@ _parse_yaml() {
     prefix=""
     yb_trimmed=""
 
+    # copy the raw line to line
+    # used to retrieve original spacing for pipe selection
+    line="${raw_line}"
+
     # Count the leading spaces to determine the indentation level
     spaces="${line%%[^[:space:]]*}"
     level="${#spaces}"
     level="$(( level / yb_spacing ))"
 
     # Remove the leading and trailing spaces
-    # line=$(_trim_space "${line}")
     _trim_space "${line}"
     line="${yb_trimmed}"
 
@@ -118,12 +126,14 @@ _parse_yaml() {
       value="${line}"
     elif [[ "${line}" == *":" && "${line}" != "-"*":"* ]]; then
       type="key"
+      yb_parent_type="key"
       key="${line%%:*}"
       parent="${key}"
       yb_previous_parent="${key}"
       suffix=": "
     elif [[ "${line}" == *": "* && ${line} != "- "* ]]; then
       type="key:value"
+      yb_parent_type="key:value"
       key="${line%%:*}"
       value="${line#*:}"
       # key=$(_trim_space "${key}")
@@ -133,8 +143,13 @@ _parse_yaml() {
       value="${yb_trimmed}"
       parent="${key}"
       suffix=": "
+      if [[ "${value}" == "|" ]]; then
+        type="key:pipe"
+        yb_parent_type="key:pipe"
+      fi
     elif [[ "${line}" == "- "*": "* && "${line}" != *"::"* ]]; then
       type="list-key:value"
+      yb_parent_type="list-key:value"
       # key=$(_trim_space "${line}")
       _trim_space "${line}"
       _trim_hyphen "${yb_trimmed}"
@@ -145,11 +160,16 @@ _parse_yaml() {
       value="${yb_trimmed}"
       prefix="- "
       suffix=": "
+      if [[ "${value}" == "|" ]]; then
+        type="list-key:pipe"
+        yb_parent_type="list-key:pipe"
+      fi
       # in this case, the parent is on the previous line
       parent="${yb_previous_parent}"
     elif [[ "${line}" == "-"*":"  && "${line}" != *"::"* ]]; then
       # if [[ ${level} -eq 0 ]]; then
         type="list-key"
+        yb_parent_type="list-key"
         # Trim leading space and list hyphen
         _trim_space "${line}"
         _trim_hyphen "${yb_trimmed}"
@@ -165,10 +185,18 @@ _parse_yaml() {
         _trim_hyphen "${yb_trimmed}"
         value="${yb_trimmed}"
         prefix="- "
+    # elif [[ condition ]]; then
+    #   #statements
     else
+      # _debug "others ?"
       type="other"
       value="${line}"
+      if [[ "${yb_parent_type}" == *"key:pipe" ]]; then
+        type="pipe-value"
+        value="${raw_line}"
+      fi
     fi
+
 
     # populate the array
     line_structure=(
@@ -243,6 +271,7 @@ _search(){
   local prefix="${4-}"
   local query_prefix="${5-}"
   local new_level
+  local step_length
   yb_is_print=false
 
   new_level="${yb_key_step}"
@@ -254,11 +283,20 @@ _search(){
     new_level="${yb_key_step}"
   fi
 
+  if [[ "${type}" == *"key:pipe" && ${yb_keys[${yb_key_step}]} == *"|" ]]; then
+    key="${key}|"
+  fi
+
   if [[ "${yb_retrieve}" == false ]]; then
     # the key and the level are the expected ones, first key is at the root level (0)
     if [[ "${prefix}${key}" == "${yb_keys[${yb_key_step}]}" && "${level}" -eq "${new_level}" ]]; then
+      step_length=$(( $yb_key_step + 1 ))
+      if [[ "${type}" == *"key:pipe" && ${step_length} -lt ${yb_original_key_length} ]]; then
+        echo "yb: Can not nest a pipe type key in another pipe type key."
+        exit 1
+      fi
       # set new index
-      yb_key_step=$(( $yb_key_step + 1))
+      yb_key_step=$(( $yb_key_step + 1 ))
       # if enough arguments
       if [[ "${yb_key_step}" -eq "${yb_key_length}" ]]; then
         if [[ "${yb_line_number_query}" == true ]]; then
@@ -344,7 +382,18 @@ _print(){
 
   # if a value query
   if [[ "${yb_value_query}" == true ]]; then
-    # if value is the same as the searched option
+    # if value is a pipe value block
+    if [[  "${yb_parent_type}" == *"key:pipe" ]]; then
+      yb_query_pipe_result+="${value}"
+      if [[ "${yb_query_pipe_result}" == "${yb_value_option}" ]]; then
+        yb_query_result=true
+        if [[ "${yb_silent_query}" == false ]]; then
+          echo ${yb_query_result}
+        fi
+      fi
+    fi
+
+    # if value is the same as the searched option (inline or list)
     if [[ "${yb_value_option}" == "${value}" || "${yb_value_option}" == "- ${value}" ]]; then
       if [[ "${yb_show_line}" == true ]]; then
         yb_query_result="true{{T_${type}}}{{N_${line_number}}}"
@@ -358,6 +407,7 @@ _print(){
     return 0
   fi
 
+  # if an array
   if [[ "${yb_is_array}" == true ]]; then
     if [[ "${type}" != "comment" && "${type}" != "empty" ]]; then
       if [[ "${type}" == *"key"* ]]; then
@@ -398,6 +448,7 @@ _print(){
       fi
     fi
 
+    # if a *key:value sequence
     if [[ "${yb_is_sequence}" == true && "${yb_one_line}" == true ]]; then
       if [[ "${type}" == *"key:value" ]]; then
         if [[ "${yb_is_colored}" == true ]]; then
@@ -418,55 +469,20 @@ _print(){
         else
          string=$(echo -e "${prefix}${key}${suffix}" && echo "${value}${outer}")
         fi
-        echo "${spacer}"${string}
+
+      if [[ "${type}" == *"key:pipe" ]]; then
+         echo "${spacer}"${string}
+        # if a pipe value no color support
+       elif [[ "${yb_parent_type}" == *"key:pipe" ]]; then
+          string="${prefix}${key}${suffix}${value}${outer}"
+          echo "${spacer}""${string}"
+        else
+          echo "${spacer}"${string}
+        fi
+
       fi
     fi
   fi
-}
-
-########################################
-# Print a debug message
-# Attributes:
-#   $@ # some message
-########################################
-_debug(){
-  local message="${@}"
-  echo "${BASH_LINENO} : ${message}"
-}
-
-########################################
-# Transform original key option into an array
-# Attributes:
-#   $1 # a yaml key
-# Globals:
-#   yb_key_option
-#   yb_key_length
-# Output:
-#   yb_keys[@]
-########################################
-_key_to_array(){
-  local keys="${1:-"${yb_key_option}"}"
-  local local_index
-  declare -a local_array
-  yb_keys=()
-
-  # replace space with anti-backslash
-  keys="${keys// /\\}"
-  # replace points with spaces
-  keys="${keys//./ }"
-  # transform the string in an array
-  keys=(${keys})
-
-  yb_key_length="${#keys[@]}"
-
-  for (( yk = 0; yk < $yb_key_length; yk++ )); do
-    key="${keys[$yk]}"
-      if [[ "${key}" == *\\* ]]; then
-        # replace anti-backslash with space
-        key="${key//\\/ }"
-      fi
-      yb_keys[$yk]="${key}"
-  done
 }
 
 ########################################
@@ -543,6 +559,7 @@ _query_search_values(){
   local result
   yb_key_step=0
   yb_query_result=""
+  yb_query_pipe_result=""
 
   # set the query mode
   yb_value_query=true
@@ -550,6 +567,13 @@ _query_search_values(){
   # prepare the search sequence and parse file
   _search_sequence "${key[@]}"
   _parse_yaml "${yb_file}"
+
+  # if a pipe result is retrieved
+  if [[ -z "${yb_query_pipe_result}" ]]; then
+    if [[ "${yb_query_pipe_result}" == "${yb_value_option}" ]]; then
+      yb_query_result=true
+    fi
+  fi
 
   # if no results are found
   if [[ -z "${yb_query_result}" ]]; then
@@ -587,6 +611,7 @@ _query_keys_lines(){
 
   # prepare the search sequence
   _search_sequence "${key[@]}"
+
   _parse_yaml "${yb_file}"
 
   # get the result
@@ -684,7 +709,15 @@ _add_keys_in_file(){
       spacer+="${spacing}"
     done
 
-    child_key="${spacer}${yb_keys[${aif}]}:"
+    # if a pipe key
+    if [[ "${yb_keys[${aif}]}" == *"|" ]]; then
+      child_key="${spacer}${yb_keys[${aif}]%?}:"
+      if [[ "${aif}" -eq $(( $yb_key_length - 1 )) ]]; then
+       child_key="${spacer}${yb_keys[${aif}]%?}: |"
+      fi
+    else 
+      child_key="${spacer}${yb_keys[${aif}]}:"
+    fi
 
     # write in file
     sed -i "${target_line_number} a ${child_key}" "${yb_file}"
@@ -719,7 +752,15 @@ _add_new_keys_in_file(){
       spacer+="${spacing}"
     done
 
-    child_key="${spacer}${yb_keys[${aif}]}:"
+    # if a pipe key
+    if [[ "${yb_keys[${aif}]}" == *"|" ]]; then
+      child_key="${spacer}${yb_keys[${aif}]%?}:"
+      if [[ "${aif}" -eq $(( $yb_key_length - 1 )) ]]; then
+       child_key="${spacer}${yb_keys[${aif}]%?}: |"
+      fi
+    else 
+      child_key="${spacer}${yb_keys[${aif}]}:"
+    fi
 
     # write in file on the last line
     sed -i "\$s/\$/ \n$child_key/" "${yb_file}"
@@ -758,9 +799,10 @@ _manage_keys_addition(){
 
     # strip first character (a ".")
     search_key="${search_key:1}"
+
     _query_keys_lines "${search_key}"
     # get result
-    has_key=("${yb_query_result}")  
+    has_key=("${yb_query_result}")
 
     # this gives a behavior where only 
     # the first level of parents are targeted
@@ -808,6 +850,8 @@ _add_value_in_file(){
   # set mode
   if [[ "${yb_value_option}" == "- "* ]]; then
     value_type="list"
+  elif [[ "${yb_value_option}" == "|"* ]]; then
+    value_type="pipe"
   else 
     value_type="inline"
   fi
@@ -866,6 +910,50 @@ _add_value_in_file(){
 
       for (( cv = clean_array_length - 1; cv >= 0 ; cv-- )); do
         clean_value="${spacer}- ${clean_value_array[$cv]}"
+        sed -i "${key_line} a ${clean_value}" "${yb_file}"
+      done
+    done
+
+  elif [[ "${value_type}" == "pipe" ]]; then
+    # add a space before the string to cope with delimeter
+    yb_value_option=" ${yb_value_option}"
+
+    # declare parsing values
+    string="${yb_value_option}"
+    delimiter=" ${yb_pipe_delimeter} "
+    condition=$string$delimiter
+
+    # check for delimeter in string
+    while [[ $condition ]]; do
+        value_array+=( "${condition%%"$delimiter"*}" );
+        condition=${condition#*"$delimiter"};
+    done;
+
+    # iterate over values to clean them
+    for raw_value in "${value_array[@]}"; do
+      if [[ -n "${raw_value}" ]]; then
+        # _trim_space ${raw_value}
+        raw_value="${raw_value//\\/\\\\}"
+        clean_value_array+=("${raw_value}")
+      fi
+    done
+
+    # iterate over parent keys
+    for key in "${parents[@]}"; do
+      key_line="${key##*_N}"
+      key_level="${key%%_N*}"
+      key_level="${key_level##L}"
+
+      # build spacer
+      spacer=""
+      for (( sp = 0; sp < $key_level + 1; sp++ )); do
+        spacer+="${spacing}"
+      done
+
+      local clean_array_length=${#clean_value_array[@]}
+
+      for (( cv = clean_array_length - 1; cv >= 0 ; cv-- )); do
+        clean_value="${spacer}${clean_value_array[$cv]}"
         sed -i "${key_line} a ${clean_value}" "${yb_file}"
       done
     done
@@ -1220,6 +1308,56 @@ _set_color(){
   yb_color_string="${color}${text}\033[0m"
 }
 
+
+########################################
+# Print a debug message
+# Attributes:
+#   $@ # some message
+########################################
+_debug(){
+  local message="${@}"
+  echo "${BASH_LINENO} : ${message}"
+}
+
+########################################
+# Transform original key option into an array
+# Attributes:
+#   $1 # a yaml key
+# Globals:
+#   yb_key_option
+#   yb_key_length
+# Output:
+#   yb_keys[@]
+########################################
+_key_to_array(){
+  local keys="${1:-"${yb_key_option}"}"
+  local local_index
+  declare -a local_array
+  yb_keys=()
+
+  # replace space with anti-backslash
+  keys="${keys// /\\}"
+  # replace points with spaces
+  keys="${keys//./ }"
+  # transform the string in an array
+  keys=(${keys})
+
+  yb_key_length="${#keys[@]}"
+
+  for (( yk = 0; yk < $yb_key_length; yk++ )); do
+    key="${keys[$yk]}"
+      if [[ "${key}" == *\\* ]]; then
+        # replace anti-backslash with space
+        key="${key//\\/ }"
+      fi
+      yb_keys[$yk]="${key}"
+  done
+
+  if [[ -z "${yb_original_key_length}" ]]; then
+    yb_original_key_length="${yb_key_length}"
+  fi
+}
+
 ########################################
 # Prepare globals for sequence search
 # Attributes:
@@ -1246,14 +1384,12 @@ _parse_options(){
   local file="${yb_file-}"
   local key="${yb_key_option-}"
 
-
-
-
   if [[ -f ${file} ]]; then
 
     _cache_yaml "${yb_file}"
 
     if [[ "${yb_query}" == true ]]; then
+      # if looking for a value
       if [[ -n "${yb_value_option}" ]]; then
         _query_search_values "${key}"
         if [[ "${yb_query_result}" == false ]]; then

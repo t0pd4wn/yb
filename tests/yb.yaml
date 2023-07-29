@@ -28,27 +28,31 @@ yaml:
             - 0
             - 1
             number: 101
-
 not:
   to:
     be:
       - found: true
-
 do:
   exist: true
-
 do:
   not:
   exist: true
-
 do:
   - true
-
 is:
+  - empty:
+    - false
+    - false
+    - false
+    - false
+  - empty:
+  - empty:
+  - empty:
+  - empty:
+  - empty:
   a:
     boolean:
       - true
-
 as:
   deep:
     as:
@@ -56,9 +60,18 @@ as:
         ocean:
           - true
 is:
+    - false
+    - false
+    - false
+    - false
+  - empty:
+  - empty:
+  - empty:
+  - empty:
+  - empty:
+  - empty:
   - empty:
     - false
-
 complex:
   strings:
     - trick::
@@ -66,8 +79,8 @@ complex:
     - I am: a complex string
     - key: or string
     - \n
-    - \"Complex\" \t\t\t\t tabs, newlines\n\n, and \$(special) $(very special) characters.
-
+    - \"Complex string\" \t\t\t\t tabs, newlines\n\n, and \${special} \${very special} characters.
+    - Complex-string- and::very special::characters.
 keys:
   are:
   all:
@@ -78,7 +91,6 @@ keys:
     the:
     the:
       - same
-
 - root-key:
   - child-key: true
 

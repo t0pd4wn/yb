@@ -133,7 +133,7 @@ _parse_yaml() {
       value="${yb_trimmed}"
       parent="${key}"
       suffix=": "
-    elif [[ "${line}" == "- "*": "* ]]; then
+    elif [[ "${line}" == "- "*": "* && "${line}" != *"::"* ]]; then
       type="list-key:value"
       # key=$(_trim_space "${line}")
       _trim_space "${line}"
@@ -147,7 +147,7 @@ _parse_yaml() {
       suffix=": "
       # in this case, the parent is on the previous line
       parent="${yb_previous_parent}"
-    elif [[ "${line}" == "-"*":" ]]; then
+    elif [[ "${line}" == "-"*":"  && "${line}" != *"::"* ]]; then
       # if [[ ${level} -eq 0 ]]; then
         type="list-key"
         # Trim leading space and list hyphen
@@ -256,7 +256,8 @@ _search(){
 
   if [[ "${yb_retrieve}" == false ]]; then
     # the key and the level are the expected ones, first key is at the root level (0)
-    if [[ "${prefix}${key}" == "${yb_keys["${yb_key_step}"]}" && "${level}" -eq "${new_level}" ]]; then
+    if [[ "${prefix}${key}" == "${yb_keys[${yb_key_step}]}" && "${level}" -eq "${new_level}" ]]; then
+      # set new index
       yb_key_step=$(( $yb_key_step + 1))
       # if enough arguments
       if [[ "${yb_key_step}" -eq "${yb_key_length}" ]]; then
@@ -273,7 +274,6 @@ _search(){
           fi
         fi
 
-        #statements
         yb_retrieve=true
         yb_key_base_level="${level}"
         # assume the key exist
@@ -826,15 +826,26 @@ _add_value_in_file(){
     done
 
   elif [[ "${value_type}" == "list" ]]; then
-    # set hyphen+space as field separator
-    IFS="- "
-    # create an array from the string value
-    read -ra value_array <<< "${yb_value_option}"
+
+    # add a space before the string to cope with delimeter
+    yb_value_option=" ${yb_value_option}"
+
+    # declare parsing values
+    string="${yb_value_option}"
+    delimiter=' - '
+    condition=$string$delimiter
+
+    # check for delimeter in string
+    while [[ $condition ]]; do
+        value_array+=( "${condition%%"$delimiter"*}" );
+        condition=${condition#*"$delimiter"};
+    done;
+
     # iterate over values to clean them
     for raw_value in "${value_array[@]}"; do
       if [[ -n "${raw_value}" ]]; then
         _trim_space ${raw_value}
-        raw_value="${yb_trimmed}"
+        raw_value="${yb_trimmed//\\/\\\\}"
         clean_value_array+=("${raw_value}")
       fi
     done
@@ -901,6 +912,9 @@ _add(){
   if [[ -n "${yb_value_option-}" ]]; then
     _manage_value_addition "${yb_value_option}"
   fi
+
+  # as sed tends to add trailing whitespaces remove them
+  sed -i 's/[[:space:]]*$//'  "${yb_file}"
 }
 
 ########################################
@@ -1188,7 +1202,8 @@ _trim_space(){
 _trim_hyphen(){
   local string="${@-}"
 
-  string="${string##*- }"
+  # string="${string##*- }"
+  string="${string#- }"
 
   yb_trimmed="${string}"
 }

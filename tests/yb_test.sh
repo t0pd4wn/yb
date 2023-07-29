@@ -187,9 +187,15 @@ false true" "${parse}"
   ./yb -af tests/yb.yaml -k "list.which.do.exist" -v "- yes - right"
   parse=$(./yb -Rf tests/yb.yaml -k "list.which.do.exist")
 
-  check_test "- right
-- yes
+  check_test "- yes
+- right
 - true" "${parse}"
+
+  echo -e "\U1F4AC Test 3.11: add complex inline value to a non existing key"
+  ./yb -af tests/yb.yaml -k "list.which.do.exist.- key" -v '\"Complex string\" \\t\\t\\t\\t tabs, newlines\\n\\n, and \${special} \${very special} character.'
+  parse=$(./yb -qf tests/yb.yaml -k "list.which.do.exist.- key" -v "\"Complex string\" \\t\\t\\t\\t tabs, newlines\\n\\n, and \${special} \${very special} character.")
+
+  check_test "true" "${parse}"
 	
   echo -e "\U1F4AC PART 4 - Removal "
 

@@ -18,9 +18,11 @@ _globals(){
   declare -g yb_blue="\033[1;36m"
   declare -g yb_orange="\033[1;33m"
   declare -g yb_red="\033[31m"
+  declare -g yb_italic="\033[3m"
   declare -g yb_add=false
   declare -g yb_remove=false
   declare -g yb_query=false
+  declare -g yb_type=false
   declare -g yb_boolean_query=false
   declare -g yb_value_query=false
   declare -g yb_line_number_query=false
@@ -49,6 +51,7 @@ _globals(){
   declare -g yb_previous_parent=""
   declare -g yb_parent_type=""
   declare -g yb_value=""
+  declare -g yb_value_type=""
   declare -g yb_key_option=""
   declare -g yb_value_option=""
   declare -g yb_YAML=""
@@ -60,6 +63,7 @@ _globals(){
   declare -g yb_query_lines_result=""
   declare -g yb_query_search_values_result=""
   declare -g yb_query_pipe_result=""
+  declare -g yb_query_pipe_first_line=""
   declare -ga yb_coordinates
   declare -ga yb_query_result
   declare -ga yb_array
@@ -71,7 +75,7 @@ _globals(){
 # Globals:
 #   yb_YAML
 ########################################
-_parse_yaml() {
+parse::yaml() {
   local comment
   local yaml
   local separator
@@ -211,7 +215,7 @@ _parse_yaml() {
     )
 
     # send the reference
-    _manage line_structure
+    parse::manage_line line_structure
 
   done <<< "${yb_YAML}"
 
@@ -224,7 +228,7 @@ _parse_yaml() {
 # Inherit:
 #   ${line_structure[@]}
 ########################################
-_manage(){
+parse::manage_line(){
   local level="${line_structure["level"]}"
   local line_number="${line_structure["line_number"]}"
   local type="${line_structure["type"]}"
@@ -235,8 +239,8 @@ _manage(){
   local query_prefix="L${level}_N${line_number}"
 
   # build $spacer and $outer
-  _build_spacer "${level}" "${type}" "${parent}"
-  _build_outer "${level}" "${line_number}"
+  string::build_spacer "${level}" "${type}" "${parent}"
+  string::build_outer "${level}" "${line_number}"
 
   # assign the structure variables with the global ones
   line_structure["spacer"]="${yb_spacer}"
@@ -244,15 +248,15 @@ _manage(){
 
   # if a sequence, search if the path is correct
   if [[ "${yb_is_sequence}" == true ]]; then
-     _search "${key}" "${level}" "${type}" "${prefix}" "${query_prefix}"
+     parse::search "${key}" "${level}" "${type}" "${prefix}" "${query_prefix}"
     # if correct path, print
     if [[ "${yb_is_print}" == true ]]; then
-      _print
+      parse::print
     fi
   fi
   # if regular print, print
   if [[ "${yb_is_sequence}" == false ]]; then
-    _print
+    parse::print
   fi
 }
 
@@ -264,7 +268,7 @@ _manage(){
 #   $3 # current $type
 #   $4 # prefix for -q option
 ########################################
-_search(){
+parse::search(){
   local key="${1-}"
   local level="${2-}"
   local type="${3-}"
@@ -360,7 +364,7 @@ _search(){
 # Inherit:
 #   ${line_structure[@]}
 ########################################
-_print(){
+parse::print(){
   local level=${line_structure["level"]}
   local type="${line_structure["type"]}"
   local key="${line_structure["key"]}"
@@ -374,26 +378,44 @@ _print(){
   local has_colors=""
   yb_is_colored=false
   yb_value=""
+  yb_value_type=""
 
   # if a line-number query
   if [[ "${yb_line_number_query}" == true || "${yb_boolean_query}" == true ]]; then
     return 0
   fi
 
+  # if type option is set to true
+  if [[ "${yb_type}" == true ]]; then
+    if [[ "${line_structure["type"]}" == *"value"* ]]; then
+        string::value_type "${value}" "${type}"
+    fi
+  fi
+
   # if a value query
   if [[ "${yb_value_query}" == true ]]; then
+
     # if value is a pipe value block
     if [[  "${yb_parent_type}" == *"key:pipe" ]]; then
+      # capture first line number of the pipe block
+      if [[ -z "${yb_query_pipe_first_line}" ]]; then
+        yb_query_pipe_first_line=${line_number}
+      fi
+
       yb_query_pipe_result+="${value}"
       if [[ "${yb_query_pipe_result}" == "${yb_value_option}" ]]; then
-        yb_query_result=true
+        if [[ "${yb_show_line}" == true ]]; then
+          yb_query_result="true{{T_${type}}}{{N_${yb_query_pipe_first_line}_${line_number}}}"
+        else
+          yb_query_result=true
+        fi
         if [[ "${yb_silent_query}" == false ]]; then
           echo ${yb_query_result}
         fi
       fi
     fi
 
-    # if value is the same as the searched option (inline or list)
+    # if value is the same as the searched option (inline or list values)
     if [[ "${yb_value_option}" == "${value}" || "${yb_value_option}" == "- ${value}" ]]; then
       if [[ "${yb_show_line}" == true ]]; then
         yb_query_result="true{{T_${type}}}{{N_${line_number}}}"
@@ -413,19 +435,19 @@ _print(){
       if [[ "${type}" == *"key"* ]]; then
         if [[ "${type}" == "list-key:value" ]]; then
           if [[ "${yb_one_line}" == false ]]; then
-            yb_array+=("${spacer}${key}_ ${value}${outer}")
+            yb_array+=("${spacer}${key}_ ${yb_value_type}${value}${outer}")
           else
-            yb_array+=("${spacer}${value}${outer}")
+            yb_array+=("${spacer}${yb_value_type}${value}${outer}")
           fi
         else
           if [[ "${yb_one_line}" == false ]]; then
-            yb_array+=("${spacer}${key}_${value}${outer}")
+            yb_array+=("${spacer}${key}_${yb_value_type}${value}${outer}")
           else
-            yb_array+=("${spacer}${value}${outer}")
+            yb_array+=("${spacer}${yb_value_type}${value}${outer}")
           fi
         fi
       else
-        yb_array+=("${spacer}${value}${outer}")
+        yb_array+=("${spacer}${yb_value_type}${value}${outer}")
       fi
     fi
   else
@@ -441,7 +463,7 @@ _print(){
         prefix="${yb_color_string}"
       fi
       if [[ "${line_structure["type"]}" == *"value"* ]]; then
-        _value_type "${value}"
+        string::color_type "${value}"
         if [[ -n "${yb_value}" ]]; then
           value="${yb_value}"
         fi
@@ -461,20 +483,20 @@ _print(){
       fi
     else
       if [[ "${type}" == "comment" ]]; then
-        string=$(echo -e "${prefix}${value}${outer}")
+        string=$(echo -e "${prefix}${yb_value_type}${value}${outer}")
         echo "${spacer}"${string}
       else
         if [[ ${yb_is_colored} == true ]]; then
-         string=$(echo -e "${prefix}${key}${suffix}${value}${outer}")
+         string=$(echo -e "${prefix}${key}${suffix}${yb_value_type}${value}${outer}")
         else
-         string=$(echo -e "${prefix}${key}${suffix}" && echo "${value}${outer}")
+         string=$(echo -e "${prefix}${key}${suffix}" && echo "${yb_value_type}${value}${outer}")
         fi
 
       if [[ "${type}" == *"key:pipe" ]]; then
          echo "${spacer}"${string}
         # if a pipe value no color support
        elif [[ "${yb_parent_type}" == *"key:pipe" ]]; then
-          string="${prefix}${key}${suffix}${value}${outer}"
+          string="${prefix}${key}${suffix}${yb_value_type}${value}${outer}"
           echo "${spacer}""${string}"
         else
           echo "${spacer}"${string}
@@ -511,7 +533,7 @@ _query_search(){
 
   # prepare the search sequence and parse file
   _search_sequence "${key[@]}"
-  _parse_yaml "${yb_file}"
+  parse::yaml "${yb_file}"
 
   # if result contains true and not an addition scenario
   if [[  "${yb_query_result}" == *"true"* && "${yb_add}" == "false" ]]; then
@@ -566,7 +588,7 @@ _query_search_values(){
 
   # prepare the search sequence and parse file
   _search_sequence "${key[@]}"
-  _parse_yaml "${yb_file}"
+  parse::yaml "${yb_file}"
 
   # if a pipe result is retrieved
   if [[ -z "${yb_query_pipe_result}" ]]; then
@@ -612,7 +634,7 @@ _query_keys_lines(){
   # prepare the search sequence
   _search_sequence "${key[@]}"
 
-  _parse_yaml "${yb_file}"
+  parse::yaml "${yb_file}"
 
   # get the result
   result="${yb_query_lines_result[@]}"
@@ -650,7 +672,7 @@ _query_values_lines(){
 
   # prepare the search sequence
   _search_sequence "${key[@]}"
-  _parse_yaml "${yb_file}"
+  parse::yaml "${yb_file}"
 
   # get the result
   result="${yb_array[@]}"
@@ -1086,7 +1108,9 @@ _remove_value(){
   local next_line
   local remove_line
   local line_counter=0
+  local first_line_number
   local line_number
+  local lines_to_delete
   local line_type
   local result
   local spacing="\ \ "
@@ -1096,6 +1120,12 @@ _remove_value(){
 
   yb_show_line=true
   yb_silent_query=true
+  local pipe_query
+
+  # check if a pipe value
+  if [[ "${yb_key_option: -1}" == "|" ]]; then
+    pipe_query=true
+  fi
 
   _query_search_values "${yb_key_option}"
   result=("${yb_query_result}")
@@ -1105,13 +1135,40 @@ _remove_value(){
   fi
 
   for (( rs = 0; rs < "${#result[@]}" ; rs++ )); do
-    line_type="${result[$rs]##*'{{T_'}"
-    line_type="${line_type%%'}}{{N_'*}"
-    line_number="${result[$rs]##*'{{N_'}"
-    line_number="${line_number%%'}}'}"
-    line_number=$(( $line_number - $line_counter ))
+    if [[ "${pipe_query}" == true ]]; then
 
-    if [[ "${line_type}" == *"key:value" ]]; then
+      line_type="${result[$rs]##*'{{T_'}"
+      line_type="${line_type%%'}}{{N_'*}"
+      line_number="${result[$rs]##*'{{N_'}"
+      line_number="${line_number%%'}}'}"
+      first_line_number="${line_number%%'_'*}"
+      line_number="${line_number##*'_'}"
+
+      # adjust the line numbers in regards to previous modifications
+      first_line_number=$(( $first_line_number - $line_counter ))
+      line_number=$(( $line_number - $line_counter ))
+
+    else
+
+      line_type="${result[$rs]##*'{{T_'}"
+      line_type="${line_type%%'}}{{N_'*}"
+      line_number="${result[$rs]##*'{{N_'}"
+      line_number="${line_number%%'}}'}"
+      line_number=$(( $line_number - $line_counter ))
+
+      # adjust the line number in regards to previous modifications
+      line_number=$(( $line_number - $line_counter ))
+    fi
+
+    if [[  "${pipe_query}" == true ]]; then
+      lines_to_delete="${line_number}"
+      for (( ld = $first_line_number; ld <= $lines_to_delete; ld++ )); do
+        sed -i "${line_number}d" "${yb_file}"
+        line_number=$(( $line_number - 1 ))
+        line_counter=$(( $line_counter + 1 ))
+      done
+
+    elif [[ "${line_type}" == *"key:value" ]]; then
       sed -i "${line_number}d" "${yb_file}"
       line_number=$(( $line_number - 1 ))
 
@@ -1150,7 +1207,7 @@ _remove_value(){
 #   $2 # current $type
 #   $2 # current $type
 ########################################
-_build_spacer(){
+string::build_spacer(){
   local level=${1-}
   local type=${2-}
   local parent=${3-}
@@ -1226,8 +1283,14 @@ _set_level(){
 # Attributes:
 #   $1 # current $level
 #   $2 # current $line_number
+# Globals:
+#   $yb_color_string
+#   $yb_is_colored
+#   $yb_orange
+#   $yb_red
+#   $yb_value
 ########################################
-_build_outer(){
+string::build_outer(){
   local outer=""
   local line_spacer="{{line}}"
   local line_level_spacer="${1-}"
@@ -1254,15 +1317,54 @@ _build_outer(){
 # Check for a value type
 # Attributes:
 #   $1 # a value
+#   $2 # a value type
+# Globals:
+#   $yb_value_type
 ########################################
-_value_type(){
+string::value_type(){
   local value="${1-}"
-  if [[ "${value}" == "true" || "${value}" == "false" ]]; then
+  local type="${1-}"
+  local boolean_regex='^(?i)true$'
+  local float_regex='^[0-9.]+$'
+  yb_value_type=""
+
+  # see https://yaml.org/spec/1.2.2/#1011-tags
+  # partial support, missing keys types
+  if [[ "${type}" == "comment" ]]; then
+    continue
+  elif [[ "${value}" =~ ^(true|TRUE|false|FALSE)$ ]]; then
+    yb_value_type="!! bool "
+  elif [[ "${value}" =~ ^[0-9]+$ ]]; then
+    yb_value_type="!! int "
+  elif [[ "${value}" =~ ^(null|NULL)$ ]]; then
+    yb_value_type="!! null "
+  # regex variable need to be unquoted
+  elif [[ "${value}" =~ ${float_regex} ]]; then
+    yb_value_type="!! float "
+  elif [[ -n "${value}" ]]; then
+    yb_value_type="!! str "
+  fi
+}
+
+########################################
+# Check for a value type
+# Attributes:
+#   $1 # a value
+########################################
+string::color_type(){
+  local value="${1-}"
+
+  if [[ "${yb_value_type}" == "!! bool " ]]; then
     _set_color "${value}" "${yb_red}"
     yb_value="${yb_color_string}"
     yb_is_colored=true
-  elif [[ "${value}" =~ ^[0-9]+$ ]]; then
+  elif [[ "${yb_value_type}" == "!! int " || "${yb_value_type}" == "!! float " ]]; then
     _set_color "${value}" "${yb_orange}"
+    yb_value="${yb_color_string}"
+    yb_is_colored=true
+
+  elif [[ "${yb_value_type}" == "!! null " ]]; then
+    _set_color "${value}" "${yb_italic}"
     yb_value="${yb_color_string}"
     yb_is_colored=true
   fi
@@ -1456,7 +1558,7 @@ _error() {
 #   $@ # script user options
 ########################################
 _cli(){
-  while getopts "aAdf:Fk:lLnqrRs:v:" arg; do
+  while getopts "aAdf:Fk:lLnqrRTv:" arg; do
     case $arg in
       a)
         yb_add=true
@@ -1494,11 +1596,11 @@ _cli(){
       R)
         yb_is_raw=true
         ;;
+      T)
+        yb_type=true
+        ;;
       v)
         yb_value_option="${OPTARG}"
-        ;;
-      s)
-        yb_spacing="${OPTARG}"
         ;;
     esac
   done
@@ -1527,7 +1629,7 @@ main(){
   _parse_options "${@}"
 
   if [[ "${yb_add}" == false && "${yb_remove}" == false && "${yb_query}" == false ]]; then
-    _parse_yaml "${yb_file}"
+    parse::yaml "${yb_file}"
   fi
 
   if [[ "${yb_is_array}" == true ]]; then

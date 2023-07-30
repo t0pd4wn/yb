@@ -28,19 +28,22 @@ yaml:
             - 0
             - 1
             number: 101
+            float-number: 101.01
 not:
   to:
     be:
-      - found: true
+      - found: TRUE
 do:
   exist: true
 do:
   not:
-  exist: true
+  exist: FALSE
 do:
   - true
 is:
-  - empty:
+  - empty: null false false
+    - false
+    - false
   a:
     boolean:
       - true
@@ -49,7 +52,7 @@ as:
     as:
       the:
         ocean:
-          - true
+          - false
 is:
 complex:
   strings:
@@ -71,7 +74,7 @@ keys:
     the:
       - same
 - root-key:
-  - child-key: true
+  - child-key: true false
 - yb: yaml bash parser
 - ascii: |
   ___  _ ____

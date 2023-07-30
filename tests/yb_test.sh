@@ -93,8 +93,14 @@ tests(){
   check_test ".bash_IFS{{line}}{{3}}{{6}} .bash_BASED{{line}}{{3}}{{7}} .bash_PARSER{{line}}{{3}}{{8}}" "${parse}"
         
   echo -e "\U1F4AC Test 1.18: parse file with all compatible options"
-  parse=$(./yb -FARldLnf tests/yb.yaml -k "yb.yaml.bash")
-  check_test "....bash_IFS{{line}}{{3}}{{6}} ....bash_BASED{{line}}{{3}}{{7}} ....bash_PARSER{{line}}{{3}}{{8}}" "${parse}"
+  parse=$(./yb -Tf tests/yb.yaml -k "yb.yaml.bash")
+  check_test "- !! str IFS
+- !! str BASED
+- !! str PARSER" "${parse}"
+  
+  echo -e "\U1F4AC Test 1.19: parse file with all compatible options"
+  parse=$(./yb -FARTldLnf tests/yb.yaml -k "yb.yaml.bash")
+  check_test "....bash_!! str IFS{{line}}{{3}}{{6}} ....bash_!! str BASED{{line}}{{3}}{{7}} ....bash_!! str PARSER{{line}}{{3}}{{8}}" "${parse}"
 
   echo -e "\U1F4AC PART 2 - Querying "
 
@@ -116,12 +122,12 @@ true" "${parse}"
 
   echo -e "\U1F4AC Test 2.4: query for single existing value"
   
-  parse=$(./yb -qf tests/yb.yaml -k "not.to.be.- found" -v "true")
+  parse=$(./yb -qf tests/yb.yaml -k "not.to.be.- found" -v "TRUE")
   check_test "true" "${parse}"
 
   echo -e "\U1F4AC Test 2.5: query for multiple existing values"
   
-  parse=$(./yb -qf tests/yb.yaml -k "do.exist" -v "true")
+  parse=$(./yb -qf tests/yb.yaml -k "do" -v "true")
   check_test "true
 true" "${parse}"
 
@@ -224,7 +230,6 @@ false true" "${parse}"
   ./yb -rf tests/yb.yaml -k "list"
   ./yb -rf tests/yb.yaml -k "- new.- child"
   ./yb -rf tests/yb.yaml -k "- new"
-  ./yb -rf tests/yb.yaml -k "- ascii-test"
   # parse=$(./yb -rf tests/yb.yaml -k "do.exist.not")
   check_test "" "${parse}"
 
@@ -232,9 +237,9 @@ false true" "${parse}"
   ./yb -rf tests/yb.yaml -k "do.exist" -v "false"
   parse=$(./yb -Rf tests/yb.yaml -k "do.exist")
   check_test "true
-true" "${parse}"
+FALSE" "${parse}"
 
-  echo -e "\U1F4AC Test 4.4: remove existing inline-value"
+  echo -e "\U1F4AC Test 4.4: remove existing inline value"
   ./yb -af tests/yb.yaml -k "is.- empty" -v "false"
   ./yb -rf tests/yb.yaml -k "is.- empty" -v "false"
   parse=$(./yb -Rf tests/yb.yaml -k "is.empty")
@@ -245,6 +250,12 @@ true" "${parse}"
   ./yb -rf tests/yb.yaml -k "is.- empty" -v "- false"
   parse=$(./yb -Rf tests/yb.yaml -k "is.empty")
   check_test "" "${parse}"
+
+   echo -e "\U1F4AC Test 4.5: remove existing pipe value"
+  ./yb -rf tests/yb.yaml -k "- ascii-test|" -v "  ___  _ ____  \  \///  __\   \  / | | //   / /  | |_\\\  /_/   \____/"
+  parse=$(./yb -f tests/yb.yaml -k "- ascii-test|")
+  check_test "" "${parse}"
+  ./yb -rf tests/yb.yaml -k "- ascii-test|"
 
   # end message
   echo ""
@@ -269,15 +280,6 @@ check_test(){
 		error_code=1
 	fi
 	((total_num++))
-}
-
-clean(){
-	if [[ "${error_code}" -eq 0 ]]; then
-  	# clean yaml file
-	  sed -i '39,39d' tests/yb.yaml
-	  sed -i '43,43d' tests/yb.yaml
-	  sed -i '85,98d' tests/yb.yaml
-  fi
 }
 
 globals(){

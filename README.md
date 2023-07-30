@@ -5,7 +5,7 @@
 ## Usage:
 
 ```bash
-./yb -aAdFlLnqRr -f "<yaml_file>" -k "<key>" -v "<value>"
+./yb -aAdFlLnqRrT -f "<yaml_file>" -k "<key>" -v "<value>"
 ```
 
 ### Examples:
@@ -53,7 +53,6 @@ To launch it, run the below command from the repository root level :
 - [x] `-f` file option 
 - [x] `-k <key>` selection
 - [x] `-k <key.childkey>` selection
-- [ ] `-k <key` perimeter operators
 - [x] `-v` value option (supported for add)
 - [x] `-a` add option
 - [x] `-r` remove option
@@ -67,11 +66,11 @@ To launch it, run the below command from the repository root level :
 - [x] `-n` line number spacer option
 - [x] `-q` query option (check for keys path)
 - [x] `-s` spaces indentation option (to be deprecated)
-- [ ] `-T` typing support
+- [x] `-T` typing support (partial)
 - [ ] `-t` color themes option
 - [ ] `---` group selection support
+- [ ] better escaping management
 - [ ] complex sets and mappings
-- [ ] inline nested keys
 - [ ] error code propagation
 
 ## License

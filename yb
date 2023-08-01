@@ -50,6 +50,7 @@ _globals(){
   declare -g yb_added_lines=0
   declare -g yb_previous_parent=""
   declare -g yb_parent_type=""
+  declare -g yb_parent_level=""
   declare -g yb_value=""
   declare -g yb_value_type=""
   declare -g yb_key_option=""
@@ -167,6 +168,7 @@ parse::yaml() {
       if [[ "${value}" == "|" ]]; then
         type="list-key:pipe"
         yb_parent_type="list-key:pipe"
+        yb_parent_level="${level}"
       fi
       # in this case, the parent is on the previous line
       parent="${yb_previous_parent}"
@@ -198,6 +200,7 @@ parse::yaml() {
       if [[ "${yb_parent_type}" == *"key:pipe" ]]; then
         type="pipe-value"
         value="${raw_line}"
+        level=$(( $yb_parent_level + 1 ))
       fi
     fi
 
@@ -394,25 +397,32 @@ parse::print(){
 
   # if a value query
   if [[ "${yb_value_query}" == true ]]; then
-
     # if value is a pipe value block
     if [[  "${yb_parent_type}" == *"key:pipe" ]]; then
-      # capture first line number of the pipe block
-      if [[ -z "${yb_query_pipe_first_line}" ]]; then
-        yb_query_pipe_first_line=${line_number}
+      yb_query_pipe_result+="${value}"
+      # if current value is exactly the beginning of search value
+      if [[ "${yb_value_option}" =~ "${yb_query_pipe_result}"* ]]; then
+        # capture first line number of the pipe block
+        if [[ -z "${yb_query_pipe_first_line}" ]]; then
+          yb_query_pipe_first_line=${line_number}
+        fi
+        # when value is found completely
+        if [[ "${yb_query_pipe_result}" == "${yb_value_option}" ]]; then
+          if [[ "${yb_show_line}" == true ]]; then
+            yb_query_result+="true{{T_${type}}}{{N_${yb_query_pipe_first_line}_${line_number}}}"
+          else
+            yb_query_result=true
+          fi
+          if [[ "${yb_silent_query}" == false ]]; then
+            echo ${yb_query_result}
+          fi
+        fi
+      else
+        # reset temp values
+        yb_query_pipe_result=""
+        yb_query_pipe_first_line=""
       fi
 
-      yb_query_pipe_result+="${value}"
-      if [[ "${yb_query_pipe_result}" == "${yb_value_option}" ]]; then
-        if [[ "${yb_show_line}" == true ]]; then
-          yb_query_result="true{{T_${type}}}{{N_${yb_query_pipe_first_line}_${line_number}}}"
-        else
-          yb_query_result=true
-        fi
-        if [[ "${yb_silent_query}" == false ]]; then
-          echo ${yb_query_result}
-        fi
-      fi
     fi
 
     # if value is the same as the searched option (inline or list values)
@@ -1120,7 +1130,7 @@ _remove_value(){
 
   yb_show_line=true
   yb_silent_query=true
-  local pipe_query
+  local pipe_query=""
 
   # check if a pipe value
   if [[ "${yb_key_option: -1}" == "|" ]]; then

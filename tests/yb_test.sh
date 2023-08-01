@@ -194,13 +194,11 @@ false true" "${parse}"
   echo -e "\U1F4AC Test 3.9: add list value to a non-existing key"
   ./yb -af tests/yb.yaml -k "list.which.do.exist" -v "- true"
   parse=$(./yb -Rf tests/yb.yaml -k "list.which.do.exist")
-
   check_test "- true" "${parse}"
 
   echo -e "\U1F4AC Test 3.10: add multiple list values to an existing key"
   ./yb -af tests/yb.yaml -k "list.which.do.exist" -v "- yes - right"
   parse=$(./yb -Rf tests/yb.yaml -k "list.which.do.exist")
-
   check_test "- yes
 - right
 - true" "${parse}"
@@ -208,13 +206,16 @@ false true" "${parse}"
   echo -e "\U1F4AC Test 3.11: add complex inline value to a non existing key"
   ./yb -af tests/yb.yaml -k "list.which.do.exist.- key" -v '\"Complex string\" \\t\\t\\t\\t tabs, newlines\\n\\n, and \${special} \${very special} character.'
   parse=$(./yb -qf tests/yb.yaml -k "list.which.do.exist.- key" -v "\"Complex string\" \\t\\t\\t\\t tabs, newlines\\n\\n, and \${special} \${very special} character.")
-
   check_test "true" "${parse}"
 
   echo -e "\U1F4AC Test 3.12: add pipe type values to a non existing pipe key"
   ./yb -af tests/yb.yaml -k "- ascii-test|" -v "|> ___  _ ____ |> \  \///  __\ |>  \  / | | // |>  / /  | |_\\\ |> /_/   \____/"
   parse=$(./yb -qf tests/yb.yaml -k "- ascii-test|" -v "  ___  _ ____  \  \///  __\   \  / | | //   / /  | |_\\\  /_/   \____/")
+  check_test "true" "${parse}"
 
+  echo -e "\U1F4AC Test 3.13: add pipe type values to an existing pipe key"
+  ./yb -af tests/yb.yaml -k "- ascii|" -v "|>  ___  _ |>  \  \// |>   \  / |>   / / |>  /_/"
+  parse=$(./yb -qf tests/yb.yaml -k "- ascii|" -v "   ___  _   \  \//    \  /    / /   /_/")
   check_test "true" "${parse}"
 	
   echo -e "\U1F4AC PART 4 - Removal "
@@ -230,7 +231,6 @@ false true" "${parse}"
   ./yb -rf tests/yb.yaml -k "list"
   ./yb -rf tests/yb.yaml -k "- new.- child"
   ./yb -rf tests/yb.yaml -k "- new"
-  # parse=$(./yb -rf tests/yb.yaml -k "do.exist.not")
   check_test "" "${parse}"
 
   echo -e "\U1F4AC Test 4.3: remove non-existing value"
@@ -251,7 +251,12 @@ FALSE" "${parse}"
   parse=$(./yb -Rf tests/yb.yaml -k "is.empty")
   check_test "" "${parse}"
 
-   echo -e "\U1F4AC Test 4.5: remove existing pipe value"
+  echo -e "\U1F4AC Test 4.5: remove nested pipe value"
+  ./yb -rf tests/yb.yaml -k "- ascii|" -v "   ___  _   \  \//    \  /    / /   /_/"
+  parse=$(./yb -qf tests/yb.yaml -k "- ascii-test|" -v "  ___  _ ____  \  \///  __\   \  / | | //   / /  | |_\\\  /_/   \____/")
+  check_test "true" "${parse}"
+
+  echo -e "\U1F4AC Test 4.6: remove existing pipe value"
   ./yb -rf tests/yb.yaml -k "- ascii-test|" -v "  ___  _ ____  \  \///  __\   \  / | | //   / /  | |_\\\  /_/   \____/"
   parse=$(./yb -f tests/yb.yaml -k "- ascii-test|")
   check_test "" "${parse}"

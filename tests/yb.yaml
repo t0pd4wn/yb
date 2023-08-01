@@ -41,9 +41,7 @@ do:
 do:
   - true
 is:
-  - empty: null false false
-    - false
-    - false
+  - empty:
   a:
     boolean:
       - true
@@ -53,6 +51,7 @@ as:
       the:
         ocean:
           - false
+null_value: null
 is:
 complex:
   strings:

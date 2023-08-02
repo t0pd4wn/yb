@@ -218,7 +218,7 @@ parse::yaml() {
     )
 
     # send the reference
-    parse::manage_line line_structure
+    yb::filter line_structure
 
   done <<< "${yb_YAML}"
 
@@ -231,7 +231,7 @@ parse::yaml() {
 # Inherit:
 #   ${line_structure[@]}
 ########################################
-parse::manage_line(){
+yb::filter(){
   local level="${line_structure["level"]}"
   local line_number="${line_structure["line_number"]}"
   local type="${line_structure["type"]}"
@@ -299,8 +299,8 @@ parse::search(){
     if [[ "${prefix}${key}" == "${yb_keys[${yb_key_step}]}" && "${level}" -eq "${new_level}" ]]; then
       step_length=$(( $yb_key_step + 1 ))
       if [[ "${type}" == *"key:pipe" && ${step_length} -lt ${yb_original_key_length} ]]; then
-        echo "yb: Can not nest a pipe type key in another pipe type key."
-        exit 1
+        echo "yb: pipe type key can not be nested in another pipe type key."
+        exit 0
       fi
       # set new index
       yb_key_step=$(( $yb_key_step + 1 ))
@@ -548,6 +548,8 @@ _query_search(){
   # if result contains true and not an addition scenario
   if [[  "${yb_query_result}" == *"true"* && "${yb_add}" == "false" ]]; then
     # output has been returned, exit
+    # unlock YAML file
+    file::unlock "${yb_file}"
     exit 0
   fi
 
@@ -1486,45 +1488,89 @@ _search_sequence(){
 }
 
 ########################################
+# Lock YAML file
+# Attributes:
+#   $1 # a yaml file
+########################################
+file::lock(){
+  local file="${1}"
+  local path="${file%/*}"
+  local filename="${file##*/}"
+
+  if [[ "${file}" == */* ]]; then
+    path="${path}/.${filename}.yb.lock"
+  else
+    path=".${file}.yb.lock"
+  fi
+
+  if [[ -f "${path}" ]]; then
+    echo "File is currently being processed with yb."
+    exit 1
+  else
+    touch "${path}"
+  fi
+}
+
+########################################
+# Unlock YAML file
+# Attributes:
+#   $1 # a yaml file
+########################################
+file::unlock(){
+  local file="${1}"
+  local path="${file%/*}"
+  local filename="${file##*/}"
+
+  if [[ "${file}" == */* ]]; then
+    path="${path}/.${filename}.yb.lock"
+  else
+    path=".${file}.yb.lock"
+  fi
+
+  rm "${path}"
+}
+
+########################################
 # Parse script options
 # Attributes:
 #   $@ # getopts options
 # Globals:
 #   yb_line_number_query
 ########################################
-_parse_options(){
+yb::options(){
   local file="${yb_file-}"
   local key="${yb_key_option-}"
 
-  if [[ -f ${file} ]]; then
+  _cache_yaml "${file}"
 
-    _cache_yaml "${yb_file}"
-
-    if [[ "${yb_query}" == true ]]; then
-      # if looking for a value
-      if [[ -n "${yb_value_option}" ]]; then
-        _query_search_values "${key}"
-        if [[ "${yb_query_result}" == false ]]; then
-          echo "${yb_query_result}"
-        fi
-      else
-        _query_search "${key}"
+  if [[ "${yb_query}" == true ]]; then
+    # if looking for a value
+    if [[ -n "${yb_value_option}" ]]; then
+      _query_search_values "${key}"
+      if [[ "${yb_query_result}" == false ]]; then
         echo "${yb_query_result}"
       fi
-    elif [[ "${yb_add}" == true ]]; then
-      _add
-    elif [[ "${yb_remove}" == true ]]; then
-      if [[ -n "${yb_value_option}" ]]; then
-        _remove_value
-      else
-        _remove
-      fi
-    elif [[ -n "${key}" ]]; then
-      _search_sequence
+    else
+      _query_search "${key}"
+      echo "${yb_query_result}"
     fi
-  else
-    echo "YAML file needs to be provided through the '-f' option."
-    exit
+  elif [[ "${yb_add}" == true ]]; then
+    _add
+  elif [[ "${yb_remove}" == true ]]; then
+    if [[ -n "${yb_value_option}" ]]; then
+      _remove_value
+    else
+      _remove
+    fi
+  elif [[ -n "${key}" ]]; then
+    _search_sequence
+    parse::yaml "${yb_file}"
+  elif [[ -z "${key}" ]]; then
+    parse::yaml "${yb_file}"
+  fi
+
+  if [[ "${yb_is_array}" == true ]]; then
+    echo "${yb_array[@]}"
   fi
 }
 
@@ -1542,6 +1588,7 @@ _cache_yaml(){
 # Dump array, print an error and exit
 ########################################
 _exit_dump() {
+  echo "DUMP!"
   echo "${yb_array[@]}"
   _error "${@-}"
   exit 1
@@ -1567,7 +1614,7 @@ _error() {
 # Attributes:
 #   $@ # script user options
 ########################################
-_cli(){
+yb::cli(){
   while getopts "aAdf:Fk:lLnqrRTv:" arg; do
     case $arg in
       a)
@@ -1632,22 +1679,29 @@ _cli(){
 # Attributes:
 #   $@ # script user options
 ########################################
-main(){
-  trap _exit_dump SIGINT
+yb::main(){
   _globals
-  _cli "${@}"
-  _parse_options "${@}"
+  yb::cli "${@}"
 
-  if [[ "${yb_add}" == false && "${yb_remove}" == false && "${yb_query}" == false ]]; then
-    parse::yaml "${yb_file}"
+  # check for the existence of the parameter file
+  if ! [[ -f "${yb_file}" ]]; then
+    echo "A YAML file needs to be provided through the '-f' option."
+    exit
   fi
 
-  if [[ "${yb_is_array}" == true ]]; then
-    echo "${yb_array[@]}"
-  fi
+  # lock YAML file
+  file::lock "${yb_file}"
+
+  # trap the exit function
+  trap _exit_dump SIGINT
+
+  yb::options "${yb_file}"
+
+  # unlock YAML file
+  file::unlock "${yb_file}"
 }
 
 # Launch main function
-main "${@}"
+yb::main "${@}"
 # Unset the eu flag
 set +eu

@@ -14,7 +14,7 @@ tests(){
 
 	echo -e "\U1F4AC Test 1.1: parse without an existing file"
 	parse=$(./yb "not_a_file")
-	check_test "YAML file needs to be provided through the '-f' option." "${parse}"
+	check_test "A YAML file needs to be provided through the '-f' option." "${parse}"
 	
 	echo -e "\U1F4AC Test 1.2: parse file with key selection without options"
 	parse=$(./yb tests/yb.yaml "y")

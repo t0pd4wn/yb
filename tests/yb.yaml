@@ -41,7 +41,6 @@ do:
 do:
   - true
 is:
-  - empty:
   a:
     boolean:
       - true

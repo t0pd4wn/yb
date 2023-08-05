@@ -231,6 +231,7 @@ false true" "${parse}"
   ./yb -rf tests/yb.yaml -k "list"
   ./yb -rf tests/yb.yaml -k "- new.- child"
   ./yb -rf tests/yb.yaml -k "- new"
+  # ./yb -rf tests/yb.yaml -k ".is.- empty" -v "false"
   check_test "" "${parse}"
 
   echo -e "\U1F4AC Test 4.3: remove non-existing value"
@@ -239,24 +240,27 @@ false true" "${parse}"
   check_test "true
 FALSE" "${parse}"
 
-  echo -e "\U1F4AC Test 4.4: remove existing inline value"
+  # echo -e "\U1F4AC Test 4.4: remove existing inline value"
   ./yb -af tests/yb.yaml -k "is.- empty" -v "false"
   ./yb -rf tests/yb.yaml -k "is.- empty" -v "false"
-  parse=$(./yb -Rf tests/yb.yaml -k "is.empty")
+  parse=$(./yb -Rf tests/yb.yaml -k "is.- empty")
   check_test "" "${parse}"
 
   echo -e "\U1F4AC Test 4.5: remove existing list-value"
   ./yb -af tests/yb.yaml -k "is.- empty" -v "- false"
   ./yb -rf tests/yb.yaml -k "is.- empty" -v "- false"
-  parse=$(./yb -Rf tests/yb.yaml -k "is.empty")
+  parse=$(./yb -Rf tests/yb.yaml -k "is.- empty")
   check_test "" "${parse}"
 
-  echo -e "\U1F4AC Test 4.5: remove nested pipe value"
+  # clean key
+  ./yb -rf tests/yb.yaml -k "is.- empty"
+
+  echo -e "\U1F4AC Test 4.6: remove nested pipe value"
   ./yb -rf tests/yb.yaml -k "- ascii|" -v "   ___  _   \  \//    \  /    / /   /_/"
   parse=$(./yb -qf tests/yb.yaml -k "- ascii-test|" -v "  ___  _ ____  \  \///  __\   \  / | | //   / /  | |_\\\  /_/   \____/")
   check_test "true" "${parse}"
 
-  echo -e "\U1F4AC Test 4.6: remove existing pipe value"
+  echo -e "\U1F4AC Test 4.7: remove existing pipe value"
   ./yb -rf tests/yb.yaml -k "- ascii-test|" -v "  ___  _ ____  \  \///  __\   \  / | | //   / /  | |_\\\  /_/   \____/"
   parse=$(./yb -f tests/yb.yaml -k "- ascii-test|")
   check_test "" "${parse}"

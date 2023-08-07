@@ -120,7 +120,7 @@ yb::parse::yaml() {
     line_["level"]="$(( $level / $yb_spacing ))"
 
     # remove the leading and trailing spaces
-    _trim_space "${yb_line}"
+    yb::string::trim::space "${yb_line}"
     yb_line="${yb_trimmed}"
 
     # check the line type
@@ -189,9 +189,9 @@ yb::parse::yaml::key(){
 yb::parse::yaml::key_value(){
   line_["key"]="${yb_line%%:*}"
   line_["value"]="${yb_line#*:}"
-  _trim_space "${line_["key"]}"
+  yb::string::trim::space "${line_["key"]}"
   line_["key"]="${yb_trimmed}"
-  _trim_space "${line_["value"]}"
+  yb::string::trim::space "${line_["value"]}"
   line_["value"]="${yb_trimmed}"
   line_["parent"]="${line_["key"]}"
   line_["suffix"]=": "
@@ -218,12 +218,12 @@ yb::parse::yaml::list_key_value(){
   line_["type"]="list-key:value"
   yb_parent_type="list-key:value"
   # trim leading space and list hyphen
-  _trim_space "${yb_line}"
-  _trim_hyphen "${yb_trimmed}"
+  yb::string::trim::space "${yb_line}"
+  yb::string::trim::hyphen "${yb_trimmed}"
   line_["key"]="${yb_trimmed}"
   line_["key"]="${line_["key"]%%:*}"
   line_["value"]="${yb_line#*:}"
-  _trim_space "${line_["value"]}"
+  yb::string::trim::space "${line_["value"]}"
   line_["value"]="${yb_trimmed}"
   line_["prefix"]="- "
   line_["suffix"]=": "
@@ -248,8 +248,8 @@ yb::parse::yaml::list_key(){
   line_["type"]="list-key"
   yb_parent_type="list-key"
   # trim leading space and list hyphen
-  _trim_space "${yb_line}"
-  _trim_hyphen "${yb_trimmed}"
+  yb::string::trim::space "${yb_line}"
+  yb::string::trim::hyphen "${yb_trimmed}"
   line_["key"]="${yb_trimmed}"
   line_["key"]="${line_["key"]%%:*}"
   line_["prefix"]="- "
@@ -267,8 +267,8 @@ yb::parse::yaml::list_key(){
 yb::parse::yaml::list_value(){
   line_["type"]="list-value"
   # Trim leading space and list hyphen
-  _trim_space "${yb_line}"
-  _trim_hyphen "${yb_trimmed}"
+  yb::string::trim::space "${yb_line}"
+  yb::string::trim::hyphen "${yb_trimmed}"
   line_["value"]="${yb_trimmed}"
   line_["prefix"]="- "
 }
@@ -1172,7 +1172,7 @@ yb::add::values::to_file::list(){
   # iterate over values to clean them
   for raw_value in "${value_array[@]}"; do
     if [[ -n "${raw_value}" ]]; then
-      _trim_space ${raw_value}
+      yb::string::trim::space ${raw_value}
       raw_value="${yb_trimmed//\\/\\\\}"
       clean_value_array+=("${raw_value}")
     fi
@@ -1693,12 +1693,16 @@ yb::string::color_type(){
 # Attributes:
 #   $1 # string
 ########################################
-_trim_space(){
+yb::string::trim::space(){
   local string="${@-}"
 
+  # remove spaces before
   string="${string#"${string%%[![:space:]]*}"}"
+
+  # remove spaces after
   string="${string%"${string##*[![:space:]]}"}"
 
+  # assign to global
   yb_trimmed="${string}"
 }
 
@@ -1707,12 +1711,13 @@ _trim_space(){
 # Attributes:
 #   $1 # string
 ########################################
-_trim_hyphen(){
+yb::string::trim::hyphen(){
   local string="${@-}"
 
-  # string="${string##*- }"
+  # remove hyphen
   string="${string#- }"
 
+  # assign to global
   yb_trimmed="${string}"
 }
 
@@ -1725,6 +1730,8 @@ _trim_hyphen(){
 yb::string::set_color(){
   local text="${1-}"
   local color="${2-}"
+
+  # assign to global
   yb_color_string="${color}${text}\033[0m"
 }
 
@@ -1735,6 +1742,8 @@ yb::string::set_color(){
 ########################################
 _debug(){
   local message="${@}"
+
+  # print calling line number and message
   echo "${BASH_LINENO} : ${message}"
 }
 
@@ -1750,6 +1759,7 @@ yb::sequence(){
   yb_is_sequence=true
   yb_retrieve=false
 
+  # transform string into an array
   yb::sequence::key_to_array "${key}"
 }
 

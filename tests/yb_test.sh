@@ -205,7 +205,7 @@ false true" "${parse}"
 
   echo -e "\U1F4AC Test 3.11: add complex inline value to a non existing key"
   ./yb -af tests/yb.yaml -k "list.which.do.exist.- key" -v '\"Complex string\" \\t\\t\\t\\t tabs, newlines\\n\\n, and \${special} \${very special} character.'
-  parse=$(./yb -qf tests/yb.yaml -k "list.which.do.exist.- key" -v "\"Complex string\" \\t\\t\\t\\t tabs, newlines\\n\\n, and \${special} \${very special} character.")
+  parse=$(./yb -qf tests/yb.yaml -k "list.which.do.exist.- key" -v '\"Complex string\" \\t\\t\\t\\t tabs, newlines\\n\\n, and \${special} \${very special} character.')
   check_test "true" "${parse}"
 
   echo -e "\U1F4AC Test 3.12: add pipe type values to a non existing pipe key"
@@ -231,7 +231,6 @@ false true" "${parse}"
   ./yb -rf tests/yb.yaml -k "list"
   ./yb -rf tests/yb.yaml -k "- new.- child"
   ./yb -rf tests/yb.yaml -k "- new"
-  # ./yb -rf tests/yb.yaml -k ".is.- empty" -v "false"
   check_test "" "${parse}"
 
   echo -e "\U1F4AC Test 4.3: remove non-existing value"
@@ -240,7 +239,7 @@ false true" "${parse}"
   check_test "true
 FALSE" "${parse}"
 
-  # echo -e "\U1F4AC Test 4.4: remove existing inline value"
+  echo -e "\U1F4AC Test 4.4: remove existing inline value"
   ./yb -af tests/yb.yaml -k "is.- empty" -v "false"
   ./yb -rf tests/yb.yaml -k "is.- empty" -v "false"
   parse=$(./yb -Rf tests/yb.yaml -k "is.- empty")

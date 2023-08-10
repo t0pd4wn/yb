@@ -72,7 +72,7 @@ keys:
     the:
       - same
 - root-key:
-  - child-key: true false
+  - child-key: true
 - yb: yaml bash parser
 - ascii: |
   ___  _ ____

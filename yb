@@ -9,7 +9,6 @@ set -eu
 ########################################
 # Add key(s) and/or value(s)
 # Globals:
-#   $yb_file
 #   $yb_query
 #   $yb_key_option
 #   $yb_value_option
@@ -31,15 +30,14 @@ yb::add(){
 # Globals:
 #   $yb_keys
 #   $yb_key_length
-#   $yb_coordinates
 #   $yb_key_option
 #   $yb_query_result
 ########################################
 yb::add::manage::values(){
-  local has_key
   declare -a keys=("${yb_keys[@]}")
   local sequence_length="${yb_key_length}"
   local counter=$sequence_length
+  local has_key
 
   # query for lines coordinates
   yb::query::search::keys_lines "${yb_key_option}"
@@ -60,7 +58,7 @@ yb::add::manage::values(){
 #   $yb_value_option
 ########################################
 yb::add::values::to_file::inline(){  
-  declare -a parents=("${@}")
+  declare -a parents=("${@-}")
   local key_line
   local parent_key_value
   local inline_value
@@ -85,9 +83,7 @@ yb::add::values::to_file::inline(){
 # Attributes:
 #   $1 # parent keys
 # Globals:
-#   $yb_file
 #   $yb_value_option
-#   $yb_trimmed
 ########################################
 yb::add::values::to_file::list(){  
   declare -a parents=("${@}")
@@ -99,7 +95,7 @@ yb::add::values::to_file::list(){
   local clean_value
   local key_level
   local spacer
-  local clean_array_length
+  local array_length
   local spacing="  "
   declare -a value_array
   declare -a clean_value_array
@@ -115,12 +111,6 @@ yb::add::values::to_file::list(){
       condition=${condition#*"${delimiter}"};
   done;
 
-  # iterate over values to clean them
-  for raw_value in "${value_array[@]:1}"; do
-      yb::string::trim::space ${raw_value}
-      clean_value_array+=("${raw_value}")
-  done
-
   # iterate over parent keys
   counter=0
   for key in "${parents[@]}"; do
@@ -132,14 +122,12 @@ yb::add::values::to_file::list(){
     for (( sp = 0; sp < $key_level + 1; sp++ )); do
       spacer+="${spacing}"
     done
-    clean_array_length=${#clean_value_array[@]}
-
-    for (( cv = clean_array_length - 1; cv >= 0 ; cv-- )); do
+    array_length=${#value_array[@]}
+    for (( cv = array_length - 1; cv >= 1; cv-- )); do
       key_line=$(( $key_line + $counter ))
-      clean_value="${spacer}- ${clean_value_array[$cv]}"
+      clean_value="${spacer}- ${value_array[$cv]}"
       yb::yaml::append_line "${key_line}" "${clean_value}"
     done
-
     counter=$(( $counter + 1 ))
   done
 }
@@ -149,10 +137,8 @@ yb::add::values::to_file::list(){
 # Attributes:
 #   $1 # parent keys
 # Globals:
-#   $yb_file
 #   $yb_value_option
 #   $yb_pipe_delimeter
-#   $yb_trimmed
 ########################################
 yb::add::values::to_file::pipe(){  
   declare -a parents=("${@}")
@@ -206,8 +192,9 @@ yb::add::values::to_file::pipe(){
 #   $2 # level
 #   $3 # index
 # Globals:
-#   yb_key
-#   yb_key_length
+#   $yb_keys
+#   $yb_key_length
+#   $yb_added_lines
 ########################################
 yb::add::keys::to_file(){
   local parent_line_number="${1-}"
@@ -230,13 +217,11 @@ yb::add::keys::to_file(){
     done
 
     # if a pipe key
+    child_key="${spacer}${yb_keys[${aif}]}:"
     if [[ "${yb_keys[${aif}]}" == *"|" ]]; then
-      child_key="${spacer}${yb_keys[${aif}]%?}:"
       if [[ "${aif}" -eq $(( $yb_key_length - 1 )) ]]; then
-       child_key="${spacer}${yb_keys[${aif}]%?}: |"
+       child_key="${spacer}${yb_keys[${aif}]:0:-1}: |"
       fi
-    else 
-      child_key="${spacer}${yb_keys[${aif}]}:"
     fi
 
     # write in file
@@ -273,8 +258,8 @@ yb::add::child_keys::to_file(){
 ########################################
 # Add new key(s) in a file
 # Globals:
-#   yb_key
-#   yb_key_length
+#   $yb_keys
+#   $yb_key_length
 ########################################
 yb::add::new_keys::to_file(){
   local level=0
@@ -317,9 +302,8 @@ yb::add::new_keys::to_file(){
 ########################################
 # Build the key coordinates
 # Globals:
-#   yb_key
-#   yb_key_length
-#   yb_coordinates
+#   $yb_keys
+#   $yb_key_length
 ########################################
 yb::add::manage::keys(){
   local has_key
@@ -391,7 +375,6 @@ yb::add::values::to_file(){
     yb::add::values::to_file::pipe "${parents[@]}"
   fi
 }
-
 
 ########################################
 # Print a debug message
@@ -636,11 +619,11 @@ yb::main::cli(){
 yb::main::set_globals(){
   declare -g yb_spacing=2
   declare -g yb_pipe_delimeter="|>"
-  declare -g yb_grey="\033[0;30m"
-  declare -g yb_blue="\033[1;36m"
-  declare -g yb_orange="\033[1;33m"
-  declare -g yb_red="\033[31m"
-  declare -g yb_italic="\033[3m"
+  declare -g yb_grey="\e[3;30m"
+  declare -g yb_blue="\e[1;36m"
+  declare -g yb_orange="\e[1;33m"
+  declare -g yb_red="\e[31m"
+  declare -g yb_italic="\e[3m"
   declare -g yb_add=false
   declare -g yb_remove=false
   declare -g yb_query=false
@@ -1347,6 +1330,7 @@ yb::parse::print::prepare_colors(){
     line_["prefix"]="${yb_color_string}"
   fi
   if [[ "${line_["type"]}" == *"value"* ]]; then
+    yb::string::value_type "${line_["value"]}" "${line_["type"]}"
     yb::string::color_type "${line_["value"]}"
     if [[ -n "${yb_value}" ]]; then
       line_["value"]="${yb_value}"
@@ -1990,6 +1974,11 @@ yb::string::color_type(){
     yb::string::set_color "${value}" "${yb_italic}"
     yb_value="${yb_color_string}"
     yb_is_colored=true
+  fi
+
+  # empty the global variable if not expected
+  if [[ "${yb_type}" == false ]]; then
+    yb_value_type=""
   fi
 }
 

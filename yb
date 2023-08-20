@@ -529,7 +529,7 @@ yb::main(){
   yb::main::cli "${@}"
 
   # check for the existence of the parameter file
-  if ! [[ -f "${yb_file}" ]]; then
+  if ! [[ -f "${yb_file-}" ]]; then
     echo "A YAML file needs to be provided through the '-f' option."
     exit
   fi

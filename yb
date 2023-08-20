@@ -286,14 +286,17 @@ yb::add::new_keys::to_file(){
       fi
     fi
 
-    # write in cached file object on the last line
-    if [[ "${level}" -eq 0 ]]; then
-      yb_YAML+=$'\n'"${child_key}"$'\n'
-    elif [[ "${aif}" -eq $(( $yb_key_length - 1 ))  ]]; then
-      yb_YAML+="${child_key}"
-    else
-      yb_YAML+="${child_key}"$'\n'
-    fi
+    # # write in cached file object on the last line
+    # if [[ "${level}" -eq 0 ]]; then
+    #   yb_YAML+=$'\n'"${child_key}"$'\n'
+    # elif [[ "${aif}" -eq $(( $yb_key_length - 1 ))  ]]; then
+    #   yb_YAML+="${child_key}"
+    # else
+    #   yb_YAML+="${child_key}"$'\n'
+    # fi
+
+    yb::yaml::append_line "${yb_file_lines_number}" "${child_key}" 
+
     # increment levels and line numbers for next iteration
     level=$(( $level + 1 ))
   done
@@ -2034,8 +2037,8 @@ yb::string::set_color(){
 # Attributes:
 #   $1 # line to append
 # Globals:
-#   yb_file
-#   yb_YAML
+#   $yb_YAML
+#   $yb_file_lines_number
 ########################################
 yb::yaml::append_line(){
   local line_to_append="${1-}"
@@ -2050,18 +2053,34 @@ yb::yaml::append_line(){
   # loop through each line of the YAML object
   while IFS= read -r line; do
     line_count=$(( $line_count + 1 ))
-    if [[ $line_count -eq $line_to_append ]]; then
-      temp_yaml+="${line}"$'\n'
-      temp_yaml+="${content_to_copy}"$'\n'
+
+    if [[ $line_count -eq $yb_file_lines_number ]]; then
+      # reached last line
+      if [[ $line_count -eq $line_to_append ]]; then
+        temp_yaml+="${line}"$'\n'
+        temp_yaml+="${content_to_copy}"
+        yb_file_lines_number=$(( $yb_file_lines_number + 1 ))
+      else
+        temp_yaml+="${line}"
+      fi
+      break;
     else
+      # within the file lines
       temp_yaml+="${line}"$'\n'
+      if [[ $line_count -eq $line_to_append ]]; then
+        temp_yaml+="${content_to_copy}"$'\n'
+        yb_file_lines_number=$(( $yb_file_lines_number + 1 ))
+        line_count=$(( $line_count + 1 ))
+      fi
     fi
+
   done <<< "${yb_YAML}"
 
   # unset IFS
   yb::core::unset_IFS
 
   yb_YAML="${temp_yaml}"
+
 }
 
 ########################################

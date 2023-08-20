@@ -2054,9 +2054,9 @@ yb::yaml::append_line(){
   while IFS= read -r line; do
     line_count=$(( $line_count + 1 ))
 
-    if [[ $line_count -eq $yb_file_lines_number ]]; then
+    if [[ "${line_count}" -eq "${yb_file_lines_number}" ]]; then
       # reached last line
-      if [[ $line_count -eq $line_to_append ]]; then
+      if [[ "${line_count}" -eq "${line_to_append}" ]]; then
         temp_yaml+="${line}"$'\n'
         temp_yaml+="${content_to_copy}"
         yb_file_lines_number=$(( $yb_file_lines_number + 1 ))
@@ -2067,7 +2067,7 @@ yb::yaml::append_line(){
     else
       # within the file lines
       temp_yaml+="${line}"$'\n'
-      if [[ $line_count -eq $line_to_append ]]; then
+      if [[ "${line_count}" -eq "${line_to_append}" ]]; then
         temp_yaml+="${content_to_copy}"$'\n'
         yb_file_lines_number=$(( $yb_file_lines_number + 1 ))
         line_count=$(( $line_count + 1 ))
@@ -2133,6 +2133,7 @@ yb::yaml::copy_line(){
 yb::yaml::delete_line(){
   local line_to_delete="${1-}"
   local line_count=0
+  local next_line_count=1
   local temp_yaml=""
 
   # set IFS on newline
@@ -2142,10 +2143,41 @@ yb::yaml::delete_line(){
   while IFS= read -r line; do
 
     line_count=$(( $line_count + 1 ))
-    if [[ $line_count -eq $line_to_delete ]]; then
-      continue
+    next_line_count=$(( $next_line_count + 1 ))
+
+    # if deleted already
+    if [[ "${line_count}" -gt "${yb_file_lines_number}" ]]; then
+      temp_yaml+="${line}"
+      break;
+    fi
+
+    # if line count is the same as the yaml one
+    if [[ "${line_count}" -eq "${yb_file_lines_number}" ]]; then
+      # reached last line
+      if [[ "${line_count}" -eq "${line_to_delete}" ]]; then
+        yb_file_lines_number=$(( $yb_file_lines_number - 1 ))
+        break
+      else
+        temp_yaml+="${line}"$'\n'
+      fi
+    # else within the YAML body
     else
-      temp_yaml+="${line}"$'\n'
+      if [[ "${line_count}" -eq "${line_to_delete}" ]]; then     
+        yb_file_lines_number=$(( $yb_file_lines_number - 1 ))
+        continue
+      else
+        # if the previous line of deletion of the last line
+        if [[ "${next_line_count}" -eq "${yb_file_lines_number}" ]]; then
+          if [[ "${next_line_count}" -eq "${line_to_delete}" ]]; then
+            temp_yaml+="${line}"
+          else
+            temp_yaml+="${line}"$'\n'
+          fi
+        else
+          # if a regular line
+          temp_yaml+="${line}"$'\n'
+        fi
+      fi
     fi
 
   done <<< "${yb_YAML}"
@@ -2162,11 +2194,11 @@ yb::yaml::delete_line(){
 # Attributes:
 #   $1 # line to delete
 # Globals:
-#   yb_file
-#   yb_YAML
+#   $yb_YAML
+#   $yb_file_lines_number
 ########################################
 yb::yaml::replace_line(){
-  local line_to_copy="${1-}"
+  local line_to_replace="${1-}"
   local content_to_copy="${2-}"
   local line_count=0
   local line
@@ -2177,12 +2209,26 @@ yb::yaml::replace_line(){
 
   # loop through each line of the YAML object
   while IFS= read -r line; do
+
     line_count=$(( $line_count + 1 ))
-    if [[ $line_count -eq $line_to_copy ]]; then
-      temp_yaml+="${content_to_copy}"$'\n'
+
+    if [[ "${line_count}" -eq "${yb_file_lines_number}" ]]; then
+      # reached last line
+      if [[ "${line_count}" -eq "${line_to_replace}" ]]; then
+        temp_yaml+="${content_to_copy}"
+      else
+        temp_yaml+="${line}"
+      fi
+      break;
     else
-      temp_yaml+="${line}"$'\n'
+      # within the file lines
+      if [[ "${line_count}" -eq "${line_to_replace}" ]]; then
+        temp_yaml+="${content_to_copy}"$'\n'
+      else
+       temp_yaml+="${line}"$'\n'
+      fi
     fi
+
   done <<< "${yb_YAML}"
 
   # unset IFS

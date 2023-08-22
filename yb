@@ -830,44 +830,45 @@ yb::parse::print(){
 #   ${line_[@]}
 ########################################
 yb::parse::print::is_value_query(){
-    # if value is a pipe value block
-    if [[  "${yb_parent_type}" == *"key:pipe" ]]; then
-      yb_query_pipe_result+="${line_["value"]}"
-      # if current value is exactly the beginning of search value
-      if [[ "${yb_value_option}" =~ "${yb_query_pipe_result}"* ]]; then
-        # capture first line number of the pipe block
-        if [[ -z "${yb_query_pipe_first_line}" ]]; then
-          yb_query_pipe_first_line="${line_["line_number"]}"
+  local string=""
+  # if value is a pipe value block
+  if [[  "${yb_parent_type}" == *"key:pipe" ]]; then
+    yb_query_pipe_result+="${line_["value"]}"
+    # if current value is exactly the beginning of search value
+    if [[ "${yb_value_option}" =~ "${yb_query_pipe_result}"* ]]; then
+      # capture first line number of the pipe block
+      if [[ -z "${yb_query_pipe_first_line}" ]]; then
+        yb_query_pipe_first_line="${line_["line_number"]}"
+      fi
+      # when value is found completely
+      if [[ "${yb_query_pipe_result}" == "${yb_value_option}" ]]; then
+        if [[ "${yb_show_line}" == true ]]; then
+          yb_query_result+="true{{T_${line_["type"]}}}{{N_${yb_query_pipe_first_line}_${line_["line_number"]}}}"
+        else
+          yb_query_result=true
         fi
-        # when value is found completely
-        if [[ "${yb_query_pipe_result}" == "${yb_value_option}" ]]; then
-          if [[ "${yb_show_line}" == true ]]; then
-            yb_query_result+="true{{T_${line_["type"]}}}{{N_${yb_query_pipe_first_line}_${line_["line_number"]}}}"
-          else
-            yb_query_result=true
-          fi
-          if [[ "${yb_silent_query}" == false ]]; then
-            echo ${yb_query_result}
-          fi
+        if [[ "${yb_silent_query}" == false ]]; then
+          echo ${yb_query_result}
         fi
-      else
-        # reset temp values
-        yb_query_pipe_result=""
-        yb_query_pipe_first_line=""
       fi
+    else
+      # reset temp values
+      yb_query_pipe_result=""
+      yb_query_pipe_first_line=""
     fi
-
-    # if value is the same as the searched option (inline or list values)
-    if [[ "${yb_value_option}" == "${line_["value"]}" || "${yb_value_option}" == "- ${line_["value"]}" ]]; then
-      if [[ "${yb_show_line}" == true ]]; then
-        yb_query_result+="true{{T_${line_["type"]}}}{{N_${line_["line_number"]}}} "
-      else
-        yb_query_result=true
-      fi
-      if [[ "${yb_silent_query}" == false ]]; then
-        echo ${yb_query_result}
-      fi
+  fi
+  # if value is the same as the searched option (inline or list values)
+  if [[ "${yb_value_option}" == "${line_["value"]}" ]] ||\
+    [[ "${yb_value_option}" == "- ${line_["value"]}" ]]; then
+    if [[ "${yb_show_line}" == true ]]; then
+      yb_query_result+="true{{T_${line_["type"]}}}{{N_${line_["line_number"]}}} "
+    else
+      yb_query_result=true
     fi
+    if [[ "${yb_silent_query}" == false ]]; then
+      echo ${yb_query_result}
+    fi
+  fi
 }
 
 ########################################
@@ -880,23 +881,34 @@ yb::parse::print::is_value_query(){
 #   ${line_[@]}
 ########################################
 yb::parse:print::is_array(){
+  local string=""
   if [[ "${line_["type"]}" != "comment" && "${line_["type"]}" != "empty" ]]; then
     if [[ "${line_["type"]}" == *"key"* ]]; then
       if [[ "${line_["type"]}" == "list-key:value" ]]; then
         if [[ "${yb_one_line}" == false ]]; then
-          yb_array+=("${line_["spacer"]}${line_["key"]}_ ${yb_value_type}${line_["value"]}${line_["outer"]}")
+          string="${line_["spacer"]}${line_["key"]}_"
+          string+=" ${yb_value_type}${line_["value"]}${line_["outer"]}"
+          yb_array+=("${string}")
         else
-          yb_array+=("${line_["spacer"]}${yb_value_type}${line_["value"]}${line_["outer"]}")
+          string="${line_["spacer"]}${yb_value_type}"
+          string+="${line_["value"]}${line_["outer"]}"
+          yb_array+=("${string}")
         fi
       else
         if [[ "${yb_one_line}" == false ]]; then
-          yb_array+=("${line_["spacer"]}${line_["key"]}_${yb_value_type}${line_["value"]}${line_["outer"]}")
+          string="${line_["spacer"]}${line_["key"]}"
+          string+="_${yb_value_type}${line_["value"]}${line_["outer"]}"
+          yb_array+=("${string}")
         else
-          yb_array+=("${line_["spacer"]}${yb_value_type}${line_["value"]}${line_["outer"]}")
+          string="${line_["spacer"]}${yb_value_type}"
+          string+="${line_["value"]}${line_["outer"]}"
+          yb_array+=("${string}")
         fi
       fi
     else
-      yb_array+=("${line_["spacer"]}${yb_value_type}${line_["value"]}${line_["outer"]}")
+      string="${line_["spacer"]}${yb_value_type}"
+      string+="${line_["value"]}${line_["outer"]}"
+      yb_array+=("${string}")
     fi
   fi
 }
@@ -949,19 +961,26 @@ yb::parse::print::output(){
     fi
   else
     if [[ "${line_["type"]}" == "comment" ]]; then
-      string=$(echo -e "${line_["prefix"]}${yb_value_type}${line_["value"]}${line_["outer"]}")
+      string="${line_["prefix"]}${yb_value_type}"
+      string+="${line_["value"]}${line_["outer"]}"
+      string=$(echo -e "${string}")
       echo "${line_["spacer"]}"${string}
     else
       if [[ ${yb_is_colored} == true ]]; then
-       string=$(echo -e "${line_["prefix"]}${line_["key"]}${line_["suffix"]}${yb_value_type}${line_["value"]}${line_["outer"]}")
+        string="${line_["prefix"]}${line_["key"]}${line_["suffix"]}"
+        string+=" ${yb_value_type}${line_["value"]}${line_["outer"]}"
+        string=$(echo -e "${string}")
       else
-       string=$(echo -e "${line_["prefix"]}${line_["key"]}${line_["suffix"]}" && echo "${yb_value_type}${line_["value"]}${line_["outer"]}")
+        string="${line_["prefix"]}${line_["key"]}${line_["suffix"]}"
+        string=$(echo -e "${string}" &&\
+        echo "${yb_value_type}${line_["value"]}${line_["outer"]}")
       fi
     if [[ "${line_["type"]}" == *"key:pipe" ]]; then
        echo "${line_["spacer"]}"${string}
       # if a pipe value no color support
      elif [[ "${yb_parent_type}" == *"key:pipe" ]]; then
-        string="${line_["prefix"]}${line_["key"]}${line_["suffix"]}${yb_value_type}${line_["value"]}${line_["outer"]}"
+        string="${line_["prefix"]}${line_["key"]}${line_["suffix"]}"
+        string+="${yb_value_type}${line_["value"]}${line_["outer"]}"
         echo "${line_["spacer"]}""${string}"
       else
         echo "${line_["spacer"]}"${string}

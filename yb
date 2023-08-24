@@ -16,7 +16,7 @@ set -eu
 yb::add(){
   yb::query::search::keys "${yb_key_option}"
 
-  if [[ "${yb_query}" == false ]]; then
+  if [[ "${yb_query_result}" == false ]]; then
     yb::add::manage::keys "${yb_key_option}"
   fi
 
@@ -380,6 +380,34 @@ yb::add::values::to_file(){
 }
 
 ########################################
+# Add key(s) and/or value(s)
+# Globals:
+#   $yb_query_result
+#   $yb_key_option
+#   $yb_value_option
+########################################
+yb::change(){
+  # check for value option
+  if [[ -z "${yb_value_option-}" ]]; then
+    echo "Values are needed when using the -c option."
+  else
+    # check for existing keys
+    yb::query::search::keys "${yb_key_option}"
+    if [[ "${yb_query_result}" == false ]]; then
+      # add if non-existing
+      yb::add::manage::keys "${yb_key_option}"
+    else
+      # remove and readd if existing
+      yb::remove
+      yb::add::manage::keys "${yb_key_option}"
+    fi  
+
+    # add values to the keys
+    yb::add::manage::values "${yb_value_option}"
+  fi
+}
+
+########################################
 # Print a debug message
 # Attributes:
 #   $@ # some message
@@ -555,13 +583,16 @@ yb::main(){
 #   $@ # script user options
 ########################################
 yb::main::cli(){
-  while getopts "aAdf:Fk:lLnqrRTv:" arg; do
+  while getopts "aAcdf:Fk:lLnqrRTv:" arg; do
     case $arg in
       a)
         yb_add=true
         ;;
       A)
         yb_is_array=true
+        ;;
+      c)
+        yb_change=true
         ;;
       d)
         yb_depth=true
@@ -620,14 +651,18 @@ yb::main::cli(){
 #   $@ # script user options
 ########################################
 yb::main::set_globals(){
+  # script parameters
   declare -g yb_spacing=2
   declare -g yb_pipe_delimeter="|>"
+  # colors definition
   declare -g yb_grey="\e[3;30m"
   declare -g yb_blue="\e[1;36m"
   declare -g yb_orange="\e[1;33m"
   declare -g yb_red="\e[31m"
   declare -g yb_italic="\e[3m"
+  # cli options flags
   declare -g yb_add=false
+  declare -g yb_change=false
   declare -g yb_remove=false
   declare -g yb_query=false
   declare -g yb_type=false
@@ -651,6 +686,7 @@ yb::main::set_globals(){
   declare -g yb_one_line=false
   declare -g yb_is_colored=false
   declare -g yb_has_key=false
+  # other flags or temp variables
   declare -g yb_sequence_retrieved=0
   declare -g yb_original_key_length=""
   declare -g yb_key_length=0
@@ -693,7 +729,7 @@ yb::main::start(){
   # put the yaml file into a variable
   yb::yaml::cache_file "${yb_file}"
 
-  # if looking for a key or value
+  # if looking for a key or value "-q"
   if [[ "${yb_query}" == true ]]; then
     if [[ -n "${yb_value_option}" ]]; then
       yb::query::search::values "${yb_key_option}"
@@ -704,17 +740,21 @@ yb::main::start(){
       yb::query::search::keys "${yb_key_option}"
       echo "${yb_query_result}"
     fi
-  # if adding a key or value
+  # if adding a key or value "-a"
   elif [[ "${yb_add}" == true ]]; then
     yb::add
     yb::file::update_file
-  # if removing a key or value
+  # if removing a key or value "-r"
   elif [[ "${yb_remove}" == true ]]; then
     if [[ -n "${yb_value_option}" ]]; then
       yb::remove::values
     else
       yb::remove
     fi
+    yb::file::update_file
+  # if changing a value "-c"
+  elif [[ "${yb_change}" == true ]]; then
+    yb::change
     yb::file::update_file
   # if parsing a key
   elif [[ -n "${yb_key_option}" ]]; then
@@ -843,7 +883,8 @@ yb::parse::print::is_value_query(){
       # when value is found completely
       if [[ "${yb_query_pipe_result}" == "${yb_value_option}" ]]; then
         if [[ "${yb_show_line}" == true ]]; then
-          yb_query_result+="true{{T_${line_["type"]}}}{{N_${yb_query_pipe_first_line}_${line_["line_number"]}}}"
+          string="${yb_query_pipe_first_line}_${line_["line_number"]}}}"
+          yb_query_result+="true{{T_${line_["type"]}}}{{N_${string}"
         else
           yb_query_result=true
         fi
@@ -1115,7 +1156,7 @@ yb::parse::search::is_query(){
   elif [[ "${yb_boolean_query}" == true ]]; then
     # if looking for the key existence confirm and exit
     yb_query_result=true
-    if [[ "${yb_add}" == false ]]; then
+    if [[ "${yb_add}" == false && "${yb_change}" == false ]]; then
       # if not in an addition scenario
       # echo and reset search
       echo ${yb_query_result}
@@ -1421,7 +1462,6 @@ yb::parse::yaml::other(){
 yb::query::search::keys(){
   declare -a key=("${1-}")
   yb_key_step=0
-  yb_query_search_result=""
   yb_query_result=""
 
   # set the query mode
@@ -1432,12 +1472,14 @@ yb::query::search::keys(){
   yb::parse::yaml "${yb_file}"
 
   # if result contains true and not an addition scenario
-  if [[  "${yb_query_result}" == *"true"* && "${yb_add}" == "false" ]]; then
+  if [[  "${yb_query_result}" == *"true"* ]] &&\
+  [[ "${yb_add}" == false ]] &&\
+  [[ "${yb_change}" == false ]]; then
     # output has been returned, exit
     exit 0
   fi
 
-  if [[ -n "${yb_query_search_result}" ]]; then
+  if [[ -n "${yb_query_result}" ]]; then
     # has result
     yb_query_result=true
   elif [[ "${yb_is_empty}" == false ]]; then
@@ -1447,7 +1489,7 @@ yb::query::search::keys(){
     else
       yb_query_result=true
     fi
-  elif [[ "${yb_query_search_result}" == "" ]]; then
+  elif [[ "${yb_query_result}" == "" ]]; then
     yb_query_result=false
   else
     # no result

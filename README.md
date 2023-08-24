@@ -106,7 +106,7 @@ sudo cp yb /usr/local/bin/
 | `-L`   | level  | format | Prints `{{<level number>}}` on each lines. | `yb -f "file.yaml" -L -k "key"` | |
 | `-R`   | raw    | format | Prints the ouptut without added colors. | `yb -f "file.yaml" -R -k "key"` | |
 | `-n`   | number | format | Prints `{{<line number>}}` on each lines. | `yb -f "file.yaml" -n -k "key"` | |
-| `-T`   | type   | format | Prints a value type. | `yb -f "file.yaml" -T -k "key"` | Supports `null`, `boolean`, `integers`, `floating numbers`, `string`. |
+| `-T`   | type   | format | Prints a value type. | `yb -f "file.yaml" -T -k "key"` | Supports `null`, `boolean`, `integer`, `floating number`, `string`. |
 | `-s`   | spaces | Deprecated | Spaces number selection. | | |
 
 ## Development
@@ -121,10 +121,6 @@ To launch it, run the below command from the repository root level :
 ```bash
 ./tests/yb_test.sh
 ```
-
-## License
-
-Licensed under the MIT license.
 
 ## Thank you
 

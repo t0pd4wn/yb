@@ -1,6 +1,11 @@
 # yb - a bash yaml parser
 
-`yb` provides a pure bash solution to the yaml parsing problem.
+`yb` provides a pure bash solution to YAML parsing. It is easily packageable as a single bash file in any UNIX projects.
+
+- [Usage](#Usage)
+- [Installation](#Installation)
+- [API](#API)
+- [Development](#Development)
 
 ## Usage:
 
@@ -14,7 +19,7 @@
 ./yb -f file.yaml -k "key.childkey"
 ```
 
-You can do a quick try like so:
+From the repository, you can do a quick try like so:
 ```bash
 ./yb -f ./tests/user.yaml -k "yb"
 ```
@@ -24,14 +29,19 @@ Create keys:
 ./yb -af ./tests/user.yaml -k "new.key"
 ```
 
-Add inline-values:
+add inline-values:
 ```bash
-./yb -af ./tests/user.yaml -k "new.key" -v "one"
+./yb -af ./tests/user.yaml -k "new.key" -v "one, two"
 ```
 
-Or list-values:
+add list-values:
 ```bash
-./yb -af ./tests/user.yaml -k "new.list" -v "- one"
+./yb -af ./tests/user.yaml -k "new.- list" -v "- one - two"
+```
+
+add an ASCII within a pipe-key:
+```bash
+./yb -af ./tests/user.yaml -k "new.ascii|" -v "|>  ___  _ |>  \  \// |>   \  / |>   / / |>  /_/"
 ```
 
 And remove everything:
@@ -39,7 +49,64 @@ And remove everything:
 ./yb -rf ./tests/user.yaml -k "new"
 ```
 
-## Tests:
+## Installation:
+
+### From the repository:
+
+```bash
+git clone [yb_repo]
+cd yb
+```
+
+`yb` can then be used directly from the repository folder or copied and used as a single file within a project.
+
+### From an url:
+
+You can use this command to dowload directly the `yb` script where needed :
+
+```bash
+bash <(echo https://topdawn.gitlab.io/yb/yb|(read l; wget -qO- $l 2>/dev/null || curl -L $l));
+```
+
+If you want `yb` to be available system wide, run this command from the repository folder :
+
+```bash
+sudo cp yb /usr/local/bin/
+```
+
+## API:
+
+| Option | Name | Type | Description | Example | Notes |
+| ------ | ------ | ------ | ------ | ------ | ------ |
+| `-a`   | add    | action | Adds key(s), value(s) or both. | `yb -f "file.yaml" -a -k "key" -v "value"` | |
+| `-c`   | change | action | Changes value(s). | `yb -f "file.yaml" -c -k "key" -v "new_value"` | |
+| `-q`   | query  | action | Prints `true` or `false` if key(s), value(s) or both are present or not. | `yb -f "file.yaml" -q -k "key"` |        |
+| `-r`   | remove | action | Removes key(s), value(s) or both. | `yb -f "file.yaml" -r -k "key" -v "value"` | |
+| `-f`   | file   | input  | YAML file path. | `yb -f "file.yaml"`| A file can be presented without the `-f` option, as the `$1` option. |
+| `-k`   | key    | input  | Key(s) selection path. | `yb -f "file.yaml" -k "key"` | Support keys in this format :`key`, `key.childkey`, `- list-key`, `pipe-key|`. Multiple key(s) can be provided with a `.` as the separator.|
+| `-v`   | value  | input  | Value(s) to be added, removed, queried or changed. | `yb -f "file.yaml" -k "key" -v "value"` | Support values in this format : `value`,  `- list-value`, `|> pipe-value`. |
+| `-A`   | array  | format | Prints the output as a bash array. | `yb -f "file.yaml" -A -k "key"` | Will provide a different formatting if used with `-F` or `-d`. |
+| `-d`   | depth  | format | Provides the output with original depth. | `yb -f "file.yaml" -d -k "key.childkey" -v "new_value"`  |        |
+| `-F`   | format | format | Prints a formatted output to represent the arborescence inline. | `yb -f "file.yaml" -F -k "key"` | Will provide a different formatting if used with `-A` or `-d`. |
+| `-l`   | line   | format | Prints `{{line}}` on each lines. | `yb -f "file.yaml" -l -k "key"` | |
+| `-L`   | level  | format | Prints `{{<level number>}}` on each lines. | `yb -f "file.yaml" -L -k "key"` | |
+| `-R`   | raw    | format | Prints the ouptut without added colors. | `yb -f "file.yaml" -R -k "key"` | |
+| `-n`   | number | format | Prints `{{<line number>}}` on each lines. | `yb -f "file.yaml" -n -k "key"` | |
+| `-T`   | type   | format | Prints a value type. | `yb -f "file.yaml" -T -k "key"` | Supports `null`, `boolean`, `integers`, `floating numbers`, `string`. |
+| `-s`   | spaces | Deprecated | Spaces number selection. | | |
+
+### Notes:
+
+`yb` API is divided under 3 types:
+- `action` : actions are ran against the file and are not compatible with each others. They are compatible with `input`, but not `format`.
+- `input` : inputs are user options available as strings, and are compatible with each others. They are compatible with both `action` and `format` types.
+- `format` : formats are options printing the output in various ways. They are compatible with each others, with `input` , but not `action`.
+
+## Development:
+
+Full sources are made available in the `/src/` folder. The version present at the root level is built with the `/src/dist/yb_minify.sh` script.
+
+### Tests:
 
 A simple test suite is made available in the `tests/` folder. It introduces the various `yb` use cases.
 
@@ -48,33 +115,12 @@ To launch it, run the below command from the repository root level :
 ./tests/yb_test.sh
 ```
 
-## Todo:
-
-- [x] `-f` file option 
-- [x] `-k <key>` selection
-- [x] `-k <key.childkey>` selection
-- [x] `-v` value option (supported for add)
-- [x] `-a` add option
-- [x] `-r` remove option
-- [ ] `-c` change option
-- [x] `-R` raw option (no color codes in the output)
-- [x] `-d` depth option (keeps original depth)
-- [x] `-F` format option
-- [x] `-A` array option
-- [x] `-l` line spacer option
-- [x] `-L` level spacer option
-- [x] `-n` line number spacer option
-- [x] `-q` query option (check for keys path)
-- [x] `-s` spaces indentation option (to be deprecated)
-- [x] `-T` typing support (partial)
-- [ ] `-t` color themes option
-- [ ] `---` group selection support
-- [ ] better escaping management
-- [ ] complex sets and mappings
-- [ ] error code propagation
-
 ## License
 
 Licensed under the MIT license.
+
+## Thank you
+
+***All of you, YAML'ers !***
 
 Made in Bash.

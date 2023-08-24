@@ -1,6 +1,6 @@
 # yb - a bash yaml parser
 
-`yb` provides a pure bash solution to YAML parsing. It is easily packageable as a single bash file in any UNIX projects.
+`yb` provides a pure Bash solution to YAML parsing.
 
 - [Usage](#usage)
 - [Installation](#installation)
@@ -53,7 +53,7 @@ And remove everything:
 
 ### One-liner
 
-You can use this command to install yb on your system in one-line:
+You can use this command to install yb on your system in one line:
 
 ```bash
 bash <(echo "https://gitlab.com/t0pd4wn/yb/-/raw/main/yb"|(read l; wget $l || curl $l >yb)) && chmod +x yb && sudo cp yb /usr/local/bin;
@@ -64,6 +64,7 @@ bash <(echo "https://gitlab.com/t0pd4wn/yb/-/raw/main/yb"|(read l; wget $l || cu
 ```bash
 git clone [yb_repo]
 cd yb
+chmod +x yb
 ```
 
 `yb` can then be used directly from the repository folder or copied and used as a single file within a project.
@@ -73,7 +74,7 @@ cd yb
 You can use this command to dowload directly the `yb` script where needed:
 
 ```bash
-bash <(echo https://gitlab.com/t0pd4wn/yb/-/raw/main/yb|(read l; wget $l || curl $l >yb));
+bash <(echo https://gitlab.com/t0pd4wn/yb/-/raw/main/yb|(read l; wget $l || curl $l >yb)) && chmod +x yb;
 ```
 
 If you want `yb` to be available system wide, run this command from the repository folder:
@@ -86,7 +87,7 @@ sudo cp yb /usr/local/bin/
 
 `yb` options API is divided under 3 types:
 - `action`: action options are ran against the file and are not compatible with each others. They are compatible with `input`, but not `format`.
-- `input`: input options are user settable options, and are compatible with each others. They are compatible with both `action` and `format` types.  
+- `input`: input options are user settable options, and are compatible with each others. They are compatible with both `action` and `format`.  
 - `format`: format options are printing the output in various ways. They are compatible with each others, with `input` , but not `action`.
 
 | Option | Name | Type | Description | Example | Notes |
@@ -96,7 +97,7 @@ sudo cp yb /usr/local/bin/
 | `-q`   | query  | action | Prints `true` or `false` if key(s), value(s) or both are present or not. | `yb -f "file.yaml" -q -k "key"` |        |
 | `-r`   | remove | action | Removes key(s), value(s) or both. | `yb -f "file.yaml" -r -k "key" -v "value"` | |
 | `-f`   | file   | input  | YAML file path. | `yb -f "file.yaml"`| A file can be presented without the `-f` option, as the `$1` option. `-f` and `-c` are not compatible with each others. |
-| `-k`   | key    | input  | Key(s) selection path. | `yb -f "file.yaml" -k "key"` | Support keys in this format :`key`, `key.childkey`, `- list-key`, `pipe-key|`. Multiple key(s) can be provided with a `.` as the separator.|
+| `-k`   | key    | input  | Key(s) selection path. | `yb -f "file.yaml" -k "key"` | Support keys in this format :`key`, `key.childkey`, `- list-key`, `pipe-key\|`. Multiple key(s) can be provided with a `.` as the separator.|
 | `-v`   | value  | input  | Value(s) to be added, removed, queried or changed. | `yb -f "file.yaml" -k "key" -v "value"` | Support values in this format : `value`,  `- list-value`, `|> pipe-value`. |
 | `-A`   | array  | format | Prints the output as a bash array. | `yb -f "file.yaml" -A -k "key"` | Will provide a different formatting if used with `-F` or `-d`. |
 | `-d`   | depth  | format | Provides the output with original depth. | `yb -f "file.yaml" -d -k "key.childkey" -v "new_value"`  |        |
@@ -110,7 +111,7 @@ sudo cp yb /usr/local/bin/
 
 ## Development
 
-Full sources are made available in the `/src/` folder. The version present at the root level is built with the `/src/dist/yb_minify.sh` script.
+Full sources are made available in the `/src/` folder. The version present at the root level is built with the `/src/tools/yb_minify.sh` script.
 
 ### Tests
 

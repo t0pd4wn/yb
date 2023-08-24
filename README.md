@@ -2,10 +2,10 @@
 
 `yb` provides a pure bash solution to YAML parsing. It is easily packageable as a single bash file in any UNIX projects.
 
-- [Usage](#Usage)
-- [Installation](#Installation)
-- [API](#API)
-- [Development](#Development)
+- [Usage](#usage)
+- [Installation](#installation)
+- [API](#api)
+- [Development](#development)
 
 ## Usage:
 

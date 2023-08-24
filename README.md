@@ -7,13 +7,13 @@
 - [API](#api)
 - [Development](#development)
 
-## Usage:
+## Usage
 
 ```bash
-./yb -aAdFlLnqRrT -f "<yaml_file>" -k "<key>" -v "<value>"
+./yb -aAcdFlLnqRrT -f "<yaml_file>" -k "<key>" -v "<value>"
 ```
 
-### Examples:
+### Examples
 
 ```bash
 ./yb -f file.yaml -k "key.childkey"
@@ -49,9 +49,17 @@ And remove everything:
 ./yb -rf ./tests/user.yaml -k "new"
 ```
 
-## Installation:
+## Installation
 
-### From the repository:
+### One-liner
+
+You can use this command to install yb on your system in one-line:
+
+```bash
+bash <(echo "https://gitlab.com/t0pd4wn/yb/-/raw/main/yb"|(read l; wget $l || curl $l >yb)) && chmod +x yb && sudo cp yb /usr/local/bin;
+```
+
+### From the repository
 
 ```bash
 git clone [yb_repo]
@@ -60,21 +68,26 @@ cd yb
 
 `yb` can then be used directly from the repository folder or copied and used as a single file within a project.
 
-### From an url:
+### From an url
 
-You can use this command to dowload directly the `yb` script where needed :
+You can use this command to dowload directly the `yb` script where needed:
 
 ```bash
-bash <(echo https://topdawn.gitlab.io/yb/yb|(read l; wget -qO- $l 2>/dev/null || curl -L $l));
+bash <(echo https://gitlab.com/t0pd4wn/yb/-/raw/main/yb|(read l; wget $l || curl $l >yb));
 ```
 
-If you want `yb` to be available system wide, run this command from the repository folder :
+If you want `yb` to be available system wide, run this command from the repository folder:
 
 ```bash
 sudo cp yb /usr/local/bin/
 ```
 
-## API:
+## Options API
+
+`yb` options API is divided under 3 types:
+- `action`: action options are ran against the file and are not compatible with each others. They are compatible with `input`, but not `format`.
+- `input`: input options are user settable options, and are compatible with each others. They are compatible with both `action` and `format` types.  
+- `format`: format options are printing the output in various ways. They are compatible with each others, with `input` , but not `action`.
 
 | Option | Name | Type | Description | Example | Notes |
 | ------ | ------ | ------ | ------ | ------ | ------ |
@@ -82,7 +95,7 @@ sudo cp yb /usr/local/bin/
 | `-c`   | change | action | Changes value(s). | `yb -f "file.yaml" -c -k "key" -v "new_value"` | |
 | `-q`   | query  | action | Prints `true` or `false` if key(s), value(s) or both are present or not. | `yb -f "file.yaml" -q -k "key"` |        |
 | `-r`   | remove | action | Removes key(s), value(s) or both. | `yb -f "file.yaml" -r -k "key" -v "value"` | |
-| `-f`   | file   | input  | YAML file path. | `yb -f "file.yaml"`| A file can be presented without the `-f` option, as the `$1` option. |
+| `-f`   | file   | input  | YAML file path. | `yb -f "file.yaml"`| A file can be presented without the `-f` option, as the `$1` option. `-f` and `-c` are not compatible with each others. |
 | `-k`   | key    | input  | Key(s) selection path. | `yb -f "file.yaml" -k "key"` | Support keys in this format :`key`, `key.childkey`, `- list-key`, `pipe-key|`. Multiple key(s) can be provided with a `.` as the separator.|
 | `-v`   | value  | input  | Value(s) to be added, removed, queried or changed. | `yb -f "file.yaml" -k "key" -v "value"` | Support values in this format : `value`,  `- list-value`, `|> pipe-value`. |
 | `-A`   | array  | format | Prints the output as a bash array. | `yb -f "file.yaml" -A -k "key"` | Will provide a different formatting if used with `-F` or `-d`. |
@@ -95,18 +108,11 @@ sudo cp yb /usr/local/bin/
 | `-T`   | type   | format | Prints a value type. | `yb -f "file.yaml" -T -k "key"` | Supports `null`, `boolean`, `integers`, `floating numbers`, `string`. |
 | `-s`   | spaces | Deprecated | Spaces number selection. | | |
 
-### Notes:
-
-`yb` API is divided under 3 types:
-- `action` : actions are ran against the file and are not compatible with each others. They are compatible with `input`, but not `format`.
-- `input` : inputs are user options available as strings, and are compatible with each others. They are compatible with both `action` and `format` types.
-- `format` : formats are options printing the output in various ways. They are compatible with each others, with `input` , but not `action`.
-
-## Development:
+## Development
 
 Full sources are made available in the `/src/` folder. The version present at the root level is built with the `/src/dist/yb_minify.sh` script.
 
-### Tests:
+### Tests
 
 A simple test suite is made available in the `tests/` folder. It introduces the various `yb` use cases.
 

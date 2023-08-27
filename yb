@@ -625,7 +625,7 @@ yb::file::update_file(){
 #   $@ # script user options
 ########################################
 yb::main(){
-  yb::main::set_globals
+  yb::main::globals
   yb::main::cli "${@}"
 
   # check for the existence of the parameter file
@@ -736,41 +736,50 @@ yb::main::cli(){
   fi
 }
 
-yb::main::help(){
-  echo '  -a  | Adds key(s), value(s) or both. | yb -f "file.yaml" -a -k "key" -v "value"'
-  echo '  -c  | Changes value(s). | yb -f "file.yaml" -c -k "key" -v "new_value"'
-  echo '  -q  | Prints "true" or "false" if key(s), value(s) or both are present or not. | yb -f "file.yaml" -q -k "key" | Using single quotes is advised to retrieve a pipe value "-v pipe value".'
-  echo '  -r  | Removes key(s), value(s) or both. | yb -f "file.yaml" -r -k "key" -v "value" | Using single quotes is advised to remove a pipe value "-v pipe value".'
-  echo '  -f  | YAML file path. | yb -f "file.yaml" | A file can be presented without the -f option, as the "$1" option. -f and -c are not compatible with each others.'
-  echo '  -o  | YAML object. | yb -o "${YAML_object}" | YAML object can be used with all actions. -f and -o are compatible together, only when adding an object to a file.'
-  echo '  -k  | Key(s) selection path. | yb -f "file.yaml" -k "key" | Support keys in this format :"key", "key.childkey", "- list-key", "pipe-key|". Multiple key(s) can be provided with a "."" as the separator.'
-  echo '  -v  | Value(s) to be added, removed, queried or changed. | yb -f "file.yaml" -k "key" -v "value" | Support values in this format : "value", "- list-value", "|> pipe-value".'
-  echo '  -A  | Prints the output as a bash array. | yb -f "file.yaml" -A -k "key" | Will provide a different formatting if used with -F or -d.'
-  echo '  -d  | Provides the output with the original depth. | yb -f "file.yaml" -d -k "key.childkey" -v "new_value"'
-  echo '  -F  || Prints a formatted output to represent the arborescence inline. | yb -f "file.yaml" -F -k "key" | Will provide a different formatting if used with -A or -d.'
-  echo '  -l  | Prints {{line}} on each lines. | yb -f "file.yaml" -l -k "key"'
-  echo '  -L  | Prints {{<level number>}} on each lines. | yb -f "file.yaml" -L -k "key"'
-  echo '  -R  | Prints the ouptut without added colors. | yb -f "file.yaml" -R -k "key"'
-  echo '  -n  | Prints {{<line number>}} on each lines. | yb -f "file.yaml" -n -k "key"'
-  echo '  -T  | Prints a value type. | yb -f "file.yaml" -T -k "key" | Supports null, boolean, integer, floating number, string.'
-  echo '  -s  | Spaces number selection.'
-}
-
 ########################################
 # Declare globals
 # Attributes:
 #   $@ # script user options
 ########################################
-yb::main::set_globals(){
+yb::main::globals(){
+  yb::main::globals::script_parameters
+  yb::main::globals::colors
+  yb::main::globals::cli_options
+  yb::main::globals::flags
+  yb::main::globals::others
+}
+
+########################################
+# Declare script parameters globals
+# Inherit:
+#   $@ # script user options
+########################################
+yb::main::globals::script_parameters(){
   # script parameters
   declare -g yb_spacing=2
   declare -g yb_pipe_delimeter="|>"
+}
+
+########################################
+# Declare colors globals
+# Inherit:
+#   $@ # script user options
+########################################
+yb::main::globals::colors(){
   # colors definition
   declare -g yb_grey="\e[3;30m"
   declare -g yb_blue="\e[1;36m"
   declare -g yb_orange="\e[1;33m"
   declare -g yb_red="\e[31m"
   declare -g yb_italic="\e[3m"
+}
+
+########################################
+# Declare cli options
+# Inherit:
+#   $@ # script user options
+########################################
+yb::main::globals::cli_options(){
   # cli user options
   declare -g yb_file=""
   declare -g yb_object=""
@@ -790,7 +799,14 @@ yb::main::set_globals(){
   declare -g yb_is_array=false
   declare -g yb_is_raw=false
   declare -g yb_help=false
-  # other flags or temp variables
+}
+
+########################################
+# Declare global flags
+# Inherit:
+#   $@ # script user options
+########################################
+yb::main::globals::flags(){
   declare -g yb_show_level=false
   declare -g yb_show_line=false
   declare -g yb_show_line_number=false
@@ -804,6 +820,15 @@ yb::main::set_globals(){
   declare -g yb_is_colored=false
   declare -g yb_has_key=false
   declare -g yb_inclusive=false
+}
+
+########################################
+# Declare globals temp variables
+# Inherit:
+#   $@ # script user options
+########################################
+yb::main::globals::others(){
+  # other flags or temp variables
   declare -g yb_sequence_retrieved=0
   declare -g yb_original_key_length=""
   declare -g yb_key_length=0
@@ -835,6 +860,30 @@ yb::main::set_globals(){
   declare -ga yb_query_result
   declare -ga yb_array
   declare -gA yb_keys
+}
+
+
+########################################
+# Print the help message
+########################################
+yb::main::help(){
+  echo '  -a  | Adds key(s), value(s) or both. | yb -f "file.yaml" -a -k "key" -v "value"'
+  echo '  -c  | Changes value(s). | yb -f "file.yaml" -c -k "key" -v "new_value"'
+  echo '  -q  | Prints "true" or "false" if key(s), value(s) or both are present or not. | yb -f "file.yaml" -q -k "key" | Using single quotes is advised to retrieve a pipe value "-v pipe value".'
+  echo '  -r  | Removes key(s), value(s) or both. | yb -f "file.yaml" -r -k "key" -v "value" | Using single quotes is advised to remove a pipe value "-v pipe value".'
+  echo '  -f  | YAML file path. | yb -f "file.yaml" | A file can be presented without the -f option, as the "$1" option. -f and -c are not compatible with each others.'
+  echo '  -o  | YAML object. | yb -o "${YAML_object}" | YAML object can be used with all actions. -f and -o are compatible together, only when adding an object to a file.'
+  echo '  -k  | Key(s) selection path. | yb -f "file.yaml" -k "key" | Support keys in this format :"key", "key.childkey", "- list-key", "pipe-key|". Multiple key(s) can be provided with a "."" as the separator.'
+  echo '  -v  | Value(s) to be added, removed, queried or changed. | yb -f "file.yaml" -k "key" -v "value" | Support values in this format : "value", "- list-value", "|> pipe-value".'
+  echo '  -A  | Prints the output as a bash array. | yb -f "file.yaml" -A -k "key" | Will provide a different formatting if used with -F or -d.'
+  echo '  -d  | Provides the output with the original depth. | yb -f "file.yaml" -d -k "key.childkey" -v "new_value"'
+  echo '  -F  || Prints a formatted output to represent the arborescence inline. | yb -f "file.yaml" -F -k "key" | Will provide a different formatting if used with -A or -d.'
+  echo '  -l  | Prints {{line}} on each lines. | yb -f "file.yaml" -l -k "key"'
+  echo '  -L  | Prints {{<level number>}} on each lines. | yb -f "file.yaml" -L -k "key"'
+  echo '  -R  | Prints the ouptut without added colors. | yb -f "file.yaml" -R -k "key"'
+  echo '  -n  | Prints {{<line number>}} on each lines. | yb -f "file.yaml" -n -k "key"'
+  echo '  -T  | Prints a value type. | yb -f "file.yaml" -T -k "key" | Supports null, boolean, integer, floating number, string.'
+  echo '  -s  | Spaces number selection.'
 }
 
 ########################################

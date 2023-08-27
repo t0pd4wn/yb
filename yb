@@ -27,7 +27,7 @@ yb::add(){
   if [[ -n "${yb_value_option}" ]]; then
     yb::add::manage::values "${yb_value_option}"
   fi
-}
+} 
 
 ########################################
 # Manage object addition
@@ -609,7 +609,7 @@ yb::file::update_file(){
 
   # loop through each line of the YAML object
   while IFS= read -r line; do
-   echo "${line}" >> "${temp_file}"
+    echo "${line}" >> "${temp_file}"
   done <<< "${yb_YAML}"
 
   # unset IFS
@@ -629,11 +629,21 @@ yb::main(){
   yb::main::cli "${@}"
 
   # check for the existence of the parameter file
-  if ! [[ -f "${yb_file}" ]] &&\
-    [[ -z "${yb_object}" ]]; then
-    if [[ "${yb_help}" == false ]]; then
-      echo "A YAML file or object needs to be provided through the '-f' or '-o' options."
+  if ! [[ -f "${yb_file}" ]]; then
+    if [[ "${yb_file}" == *".yaml" ]]; then
+      yb_is_file=true
+      yb_is_empty_file=true
     fi
+  else
+    yb_is_file=true
+  fi
+
+
+  # check for the existence of the parameter file
+  if [[ "${yb_is_file}" == false ]] &&\
+    [[ -z "${yb_object}" ]]; then
+    echo "A YAML file or object needs to be provided\
+ through the '-f' or '-o' options."
     return
   fi
 
@@ -641,7 +651,8 @@ yb::main(){
   if [[ -f "${yb_file}" ]] &&\
     [[ -n "${yb_object}" ]]; then
     if [[ "${yb_add}" == false ]]; then
-      echo "YAML file and object can only be used together through the '-a' option."
+      echo "YAML file and object can only be used together\
+ through the '-a' option."
       return
     fi
   fi
@@ -799,6 +810,9 @@ yb::main::globals::cli_options(){
   declare -g yb_is_array=false
   declare -g yb_is_raw=false
   declare -g yb_help=false
+  declare -g yb_show_level=false
+  declare -g yb_show_line=false
+  declare -g yb_show_line_number=false
 }
 
 ########################################
@@ -807,9 +821,8 @@ yb::main::globals::cli_options(){
 #   $@ # script user options
 ########################################
 yb::main::globals::flags(){
-  declare -g yb_show_level=false
-  declare -g yb_show_line=false
-  declare -g yb_show_line_number=false
+  declare -g yb_is_file=false
+  declare -g yb_is_empty_file=false
   declare -g yb_is_locked=false
   declare -g yb_is_sequence=false
   declare -g yb_is_empty=true
@@ -820,6 +833,7 @@ yb::main::globals::flags(){
   declare -g yb_is_colored=false
   declare -g yb_has_key=false
   declare -g yb_inclusive=false
+  declare -g yb_YAML_is_modified=false
 }
 
 ########################################
@@ -835,12 +849,12 @@ yb::main::globals::others(){
   declare -g yb_key_step=0
   declare -g yb_key_base_level=0
   declare -g yb_added_lines=0
+  declare -g yb_file_lines_number=0
   declare -g yb_previous_parent=""
   declare -g yb_parent_type=""
   declare -g yb_parent_level=""
   declare -g yb_set_level=""
   declare -g yb_line=""
-  declare -g yb_file_lines_number=""
   declare -g yb_value=""
   declare -g yb_value_type=""
   declare -g yb_key_option=""
@@ -1468,7 +1482,17 @@ yb::parse::yaml() {
   # unset IFS
   yb::core::unset_IFS
 
-  yb_file_lines_number="${line_number}"
+  if [[ "${yb_is_empty_file}" == true ]]; then
+    if [[ "${yb_YAML_is_modified}" == false ]]; then
+      yb_file_lines_number=0
+    else
+      yb_file_lines_number="${line_number}"
+      # reset the flag
+      yb_is_empty_file=false
+    fi
+  else
+    yb_file_lines_number="${line_number}"
+  fi
 }
 
 ########################################
@@ -2285,6 +2309,7 @@ yb::string::set_color(){
 # Globals:
 #   $yb_YAML
 #   $yb_file_lines_number
+#   $yb_YAML_is_modified
 ########################################
 yb::yaml::append_line(){
   local line_to_append="${1-}"
@@ -2297,36 +2322,44 @@ yb::yaml::append_line(){
   yb::core::set_IFS $'\n'
 
   # loop through each line of the YAML object
-  while IFS= read -r line; do
-    line_count=$(( $line_count + 1 ))
+  if [[ -n "${yb_YAML}" ]]; then
+    while IFS= read -r line; do
+      line_count=$(( $line_count + 1 )) 
 
-    if [[ "${line_count}" -eq "${yb_file_lines_number}" ]]; then
-      # reached last line
-      if [[ "${line_count}" -eq "${line_to_append}" ]]; then
-        temp_yaml+="${line}"$'\n'
-        temp_yaml+="${content_to_copy}"
-        yb_file_lines_number=$(( $yb_file_lines_number + 1 ))
+      if [[ "${line_count}" -eq "${yb_file_lines_number}" ]]; then
+        # reached last line
+        if [[ "${line_count}" -eq "${line_to_append}" ]]; then
+          temp_yaml+="${line}"$'\n'
+          temp_yaml+="${content_to_copy}"
+          yb_file_lines_number=$(( $yb_file_lines_number + 1 ))
+        else
+          temp_yaml+="${line}"
+        fi
+        break;
       else
-        temp_yaml+="${line}"
+        # within the file lines
+        temp_yaml+="${line}"$'\n'
+        if [[ "${line_count}" -eq "${line_to_append}" ]]; then
+          temp_yaml+="${content_to_copy}"$'\n'
+          yb_file_lines_number=$(( $yb_file_lines_number + 1 ))
+          line_count=$(( $line_count + 1 ))
+        fi
       fi
-      break;
-    else
-      # within the file lines
-      temp_yaml+="${line}"$'\n'
-      if [[ "${line_count}" -eq "${line_to_append}" ]]; then
-        temp_yaml+="${content_to_copy}"$'\n'
-        yb_file_lines_number=$(( $yb_file_lines_number + 1 ))
-        line_count=$(( $line_count + 1 ))
-      fi
-    fi
-
-  done <<< "${yb_YAML}"
+    done <<< "${yb_YAML}"
+  else
+    # if the YAML object is empty
+    temp_yaml="${content_to_copy}"$'\n'
+    yb_file_lines_number=$(( $yb_file_lines_number + 1 ))
+  fi
 
   # unset IFS
   yb::core::unset_IFS
 
+  # set temp value to global variable
   yb_YAML="${temp_yaml}"
 
+  # set modified flag
+  yb_YAML_is_modified=true
 }
 
 ########################################
@@ -2336,6 +2369,7 @@ yb::yaml::append_line(){
 # Globals:
 #   $yb_YAML
 #   $yb_file_lines_number
+#   $yb_YAML_is_modified
 ########################################
 yb::yaml::append_object(){
   local line_to_append="${1-}"
@@ -2361,8 +2395,11 @@ yb::yaml::append_object(){
   # unset IFS
   yb::core::unset_IFS
 
+  # set temp value to global variable
   yb_YAML="${temp_yaml}"
 
+  # set modified flag
+  yb_YAML_is_modified=true
 }
 
 ########################################
@@ -2388,8 +2425,8 @@ yb::yaml::cache(){
 # Attributes:
 #   $1 # line to delete
 # Globals:
-#   yb_file
-#   yb_YAML
+#   $yb_YAML
+#   $yb_YAML_is_modified
 ########################################
 yb::yaml::copy_line(){
   local line_to_copy="${1-}"
@@ -2417,8 +2454,9 @@ yb::yaml::copy_line(){
 # Attributes:
 #   $1 # line to delete
 # Globals:
-#   yb_file
-#   yb_YAML
+#   $yb_file_lines_number
+#   $yb_YAML
+#   $yb_YAML_is_modified
 ########################################
 yb::yaml::delete_line(){
   local line_to_delete="${1-}"
@@ -2478,6 +2516,9 @@ yb::yaml::delete_line(){
 
   # set temp value to global variable
   yb_YAML="${temp_yaml}"
+
+  # set modified flag
+  yb_YAML_is_modified=true
 }
 
 ########################################
@@ -2535,7 +2576,7 @@ yb::yaml::replace_line(){
 #   $yb_YAML
 ########################################
 yb::yaml::output(){
-  if [[ -f "${yb_file}" ]]; then
+  if [[ "${yb_is_file}" == true ]]; then
     yb::file::update_file
   else
     echo "${yb_YAML}"

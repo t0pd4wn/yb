@@ -10,7 +10,7 @@
 ## Usage
 
 ```bash
-./yb -aAcdFlLnqRrT -f "<yaml_file>" -k "<key>" -v "<value>"
+./yb -aAcdFlLnoqRrT -f "<yaml_file>" -k "<key>" -v "<value>"
 ```
 
 ### Examples
@@ -29,9 +29,14 @@ Create keys:
 ./yb -af ./tests/user.yaml -k "new.key"
 ```
 
-add inline-values:
+add an inline-value:
 ```bash
 ./yb -af ./tests/user.yaml -k "new.key" -v "one, two"
+```
+
+change it:
+```bash
+./yb -cf ./tests/user.yaml -k "new.key" -v "three"
 ```
 
 add list-values:
@@ -44,20 +49,29 @@ add an ASCII within a pipe-key:
 ./yb -af ./tests/user.yaml -k "new.ascii|" -v "|>  ___  _ |>  \  \// |>   \  / |>   / / |>  /_/"
 ```
 
-And remove everything:
+manipulate a YAML bash variable:
+```bash
+# using the '-R' raw option is advised to retrieve the content without color codes
+my_YAML=$(./yb -Rf ./tests/user.yaml -k "yb")
+my_YAML=$(./yb -ao "${my_YAML}" -k "new.variable" -v "one, two")
+```
+
+add it to a file:
+```bash
+./yb -af ./tests/user.yaml -k "yb" -o "${my_YAML}"
+```
+
+Remove one value:
+```bash
+./yb -rf ./tests/user.yaml -k "new.- list" -v "- one"
+```
+
+or remove everything:
 ```bash
 ./yb -rf ./tests/user.yaml -k "new"
 ```
 
 ## Installation
-
-### One-liner
-
-You can use this command to install yb on your system in one line:
-
-```bash
-bash <(echo "https://gitlab.com/t0pd4wn/yb/-/raw/main/yb"|(read l; wget $l || curl $l >yb)) && chmod +x yb && sudo cp yb /usr/local/bin;
-```
 
 ### From the repository
 
@@ -83,6 +97,14 @@ If you want `yb` to be available system wide, run this command from the reposito
 sudo cp yb /usr/local/bin/
 ```
 
+### One-liner
+
+You can use this command to install `yb` on your system in one line:
+
+```bash
+bash <(echo "https://gitlab.com/t0pd4wn/yb/-/raw/main/yb"|(read l; wget $l || curl $l >yb)) && chmod +x yb && sudo cp yb /usr/local/bin && rm yb;
+```
+
 ## Options API
 
 `yb` options API is divided under 3 types:
@@ -94,13 +116,14 @@ sudo cp yb /usr/local/bin/
 | ------ | ------ | ------ | ------ | ------ | ------ |
 | `-a`   | add    | action | Adds key(s), value(s) or both. | `yb -f "file.yaml" -a -k "key" -v "value"` | |
 | `-c`   | change | action | Changes value(s). | `yb -f "file.yaml" -c -k "key" -v "new_value"` | |
-| `-q`   | query  | action | Prints `true` or `false` if key(s), value(s) or both are present or not. | `yb -f "file.yaml" -q -k "key"` |        |
-| `-r`   | remove | action | Removes key(s), value(s) or both. | `yb -f "file.yaml" -r -k "key" -v "value"` | |
+| `-q`   | query  | action | Prints `true` or `false` if key(s), value(s) or both are present or not. | `yb -f "file.yaml" -q -k "key"` | Using single quotes is advised to retrieve a pipe value `-v 'pipe value'`. |
+| `-r`   | remove | action | Removes key(s), value(s) or both. | `yb -f "file.yaml" -r -k "key" -v "value"` | Using single quotes is advised to remove a pipe value `-v 'pipe value'`. |
 | `-f`   | file   | input  | YAML file path. | `yb -f "file.yaml"`| A file can be presented without the `-f` option, as the `$1` option. `-f` and `-c` are not compatible with each others. |
+| `-o`   | object   | input  | YAML object. | `yb -o "${YAML_object}"`| YAML object can be used with all actions. `-f` and `-o` are compatible together, only when adding an object to a file. |
 | `-k`   | key    | input  | Key(s) selection path. | `yb -f "file.yaml" -k "key"` | Support keys in this format :`key`, `key.childkey`, `- list-key`, `pipe-key\|`. Multiple key(s) can be provided with a `.` as the separator.|
 | `-v`   | value  | input  | Value(s) to be added, removed, queried or changed. | `yb -f "file.yaml" -k "key" -v "value"` | Support values in this format : `value`,  `- list-value`, `\|> pipe-value`. |
 | `-A`   | array  | format | Prints the output as a bash array. | `yb -f "file.yaml" -A -k "key"` | Will provide a different formatting if used with `-F` or `-d`. |
-| `-d`   | depth  | format | Provides the output with original depth. | `yb -f "file.yaml" -d -k "key.childkey" -v "new_value"`  |        |
+| `-d`   | depth  | format | Provides the output with the original depth. | `yb -f "file.yaml" -d -k "key.childkey" -v "new_value"`  |        |
 | `-F`   | format | format | Prints a formatted output to represent the arborescence inline. | `yb -f "file.yaml" -F -k "key"` | Will provide a different formatting if used with `-A` or `-d`. |
 | `-l`   | line   | format | Prints `{{line}}` on each lines. | `yb -f "file.yaml" -l -k "key"` | |
 | `-L`   | level  | format | Prints `{{<level number>}}` on each lines. | `yb -f "file.yaml" -L -k "key"` | |

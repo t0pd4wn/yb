@@ -20,9 +20,37 @@ yb::add(){
     yb::add::manage::keys "${yb_key_option}"
   fi
 
-  if [[ -n "${yb_value_option-}" ]]; then
+  if [[ -n "${yb_YAML_object}" ]]; then
+    yb::add::manage::object "${yb_YAML_object}"
+  fi
+
+  if [[ -n "${yb_value_option}" ]]; then
     yb::add::manage::values "${yb_value_option}"
   fi
+}
+
+########################################
+# Manage object addition
+# Globals:
+#   $yb_keys
+#   $yb_key_length
+#   $yb_key_option
+#   $yb_query_result
+########################################
+yb::add::manage::object(){
+  declare -a keys=("${yb_keys[@]}")
+  local sequence_length="${yb_key_length}"
+  local counter=$sequence_length
+  local has_key
+
+  # query for lines coordinates
+  yb::query::search::keys_lines "${yb_key_option}"
+
+  # get result
+  has_key=("${yb_query_result}")
+
+  # add values in file
+  yb::add::object::to_YAML "${has_key}"
 }
 
 ########################################
@@ -286,15 +314,6 @@ yb::add::new_keys::to_file(){
       fi
     fi
 
-    # # write in cached file object on the last line
-    # if [[ "${level}" -eq 0 ]]; then
-    #   yb_YAML+=$'\n'"${child_key}"$'\n'
-    # elif [[ "${aif}" -eq $(( $yb_key_length - 1 ))  ]]; then
-    #   yb_YAML+="${child_key}"
-    # else
-    #   yb_YAML+="${child_key}"$'\n'
-    # fi
-
     yb::yaml::append_line "${yb_file_lines_number}" "${child_key}" 
 
     # increment levels and line numbers for next iteration
@@ -348,6 +367,59 @@ yb::add::manage::keys(){
   else
     yb::add::child_keys::to_file "${has_key}"
   fi
+}
+
+########################################
+# Add value(s) to file
+# Attributes:
+#   $1 # parent keys
+# Globals:
+#   yb_value_option
+########################################
+yb::add::object::to_YAML(){
+  declare -a parents=(${1})
+
+  declare -a parents=("${@}")
+  local string
+  local delimeter
+  local condition
+  local key_line
+  local clean_value
+  local key_level
+  local spacer
+  local spacing="  "
+  local counter=0
+  local line_number=0
+
+  # iterate over parent keys
+  counter=0
+  for key in "${parents[@]}"; do
+    key_line="${key##*_N}"
+    key_level="${key%%_N*}"
+    key_level="${key_level##L}"
+    # build spacer
+    spacer=""
+    for (( sp = 0; sp < $key_level + 1; sp++ )); do
+      spacer+="${spacing}"
+    done
+
+    # loop through each line of the YAML object
+    counter=0
+
+
+  # set IFS on newline
+  yb::core::set_IFS $'\n'
+
+    while IFS= read -r line; do
+      echo "${line}"
+      line_number=$(( $key_line + $counter ))
+      yb::yaml::append_line "${line_number}" "${spacer}${line}"
+      counter=$(( $counter + 1 ))
+    done <<< "${yb_YAML_object}"
+
+    yb::core::unset_IFS
+
+  done
 }
 
 ########################################
@@ -557,9 +629,21 @@ yb::main(){
   yb::main::cli "${@}"
 
   # check for the existence of the parameter file
-  if ! [[ -f "${yb_file-}" ]]; then
-    echo "A YAML file needs to be provided through the '-f' option."
-    exit
+  if ! [[ -f "${yb_file}" ]] &&\
+    [[ -z "${yb_object}" ]]; then
+    if [[ "${yb_help}" == false ]]; then
+      echo "A YAML file or object needs to be provided through the '-f' or '-o' options."
+    fi
+    return
+  fi
+
+  # check if both file and object are set
+  if [[ -f "${yb_file}" ]] &&\
+    [[ -n "${yb_object}" ]]; then
+    if [[ "${yb_add}" == false ]]; then
+      echo "YAML file and object can only be used together through the '-a' option."
+      return
+    fi
   fi
 
   # trap the exit function
@@ -583,7 +667,7 @@ yb::main(){
 #   $@ # script user options
 ########################################
 yb::main::cli(){
-  while getopts "aAcdf:Fk:lLnqrRTv:" arg; do
+  while getopts "aAcdf:Fhk:lLno:qrRTv:" arg; do
     case $arg in
       a)
         yb_add=true
@@ -603,6 +687,10 @@ yb::main::cli(){
       F)
         yb_format=true
         ;;
+      h)
+        yb_help=true
+        yb::main::help
+        ;;
       k)
         yb_key_option="${OPTARG}"
         ;;
@@ -617,6 +705,9 @@ yb::main::cli(){
         ;;
       n)
         yb_show_line_number=true
+        ;;
+      o)
+        yb_object="${OPTARG}"
         ;;
       r)
         yb_remove=true
@@ -639,10 +730,30 @@ yb::main::cli(){
       yb_file="${1-}"
       yb_key_option="${2-}"
     else
-      echo "No parameters provided"
+      echo "No parameters provided. See the '-h' help option for usage details."
       exit
     fi
   fi
+}
+
+yb::main::help(){
+  echo '  -a  | Adds key(s), value(s) or both. | yb -f "file.yaml" -a -k "key" -v "value"'
+  echo '  -c  | Changes value(s). | yb -f "file.yaml" -c -k "key" -v "new_value"'
+  echo '  -q  | Prints "true" or "false" if key(s), value(s) or both are present or not. | yb -f "file.yaml" -q -k "key" | Using single quotes is advised to retrieve a pipe value "-v pipe value".'
+  echo '  -r  | Removes key(s), value(s) or both. | yb -f "file.yaml" -r -k "key" -v "value" | Using single quotes is advised to remove a pipe value "-v pipe value".'
+  echo '  -f  | YAML file path. | yb -f "file.yaml" | A file can be presented without the -f option, as the "$1" option. -f and -c are not compatible with each others.'
+  echo '  -o  | YAML object. | yb -o "${YAML_object}" | YAML object can be used with all actions. -f and -o are compatible together, only when adding an object to a file.'
+  echo '  -k  | Key(s) selection path. | yb -f "file.yaml" -k "key" | Support keys in this format :"key", "key.childkey", "- list-key", "pipe-key|". Multiple key(s) can be provided with a "."" as the separator.'
+  echo '  -v  | Value(s) to be added, removed, queried or changed. | yb -f "file.yaml" -k "key" -v "value" | Support values in this format : "value", "- list-value", "|> pipe-value".'
+  echo '  -A  | Prints the output as a bash array. | yb -f "file.yaml" -A -k "key" | Will provide a different formatting if used with -F or -d.'
+  echo '  -d  | Provides the output with the original depth. | yb -f "file.yaml" -d -k "key.childkey" -v "new_value"'
+  echo '  -F  || Prints a formatted output to represent the arborescence inline. | yb -f "file.yaml" -F -k "key" | Will provide a different formatting if used with -A or -d.'
+  echo '  -l  | Prints {{line}} on each lines. | yb -f "file.yaml" -l -k "key"'
+  echo '  -L  | Prints {{<level number>}} on each lines. | yb -f "file.yaml" -L -k "key"'
+  echo '  -R  | Prints the ouptut without added colors. | yb -f "file.yaml" -R -k "key"'
+  echo '  -n  | Prints {{<line number>}} on each lines. | yb -f "file.yaml" -n -k "key"'
+  echo '  -T  | Prints a value type. | yb -f "file.yaml" -T -k "key" | Supports null, boolean, integer, floating number, string.'
+  echo '  -s  | Spaces number selection.'
 }
 
 ########################################
@@ -660,6 +771,10 @@ yb::main::set_globals(){
   declare -g yb_orange="\e[1;33m"
   declare -g yb_red="\e[31m"
   declare -g yb_italic="\e[3m"
+  # cli user options
+  declare -g yb_file=""
+  declare -g yb_object=""
+  declare -g yb_value_option=""
   # cli options flags
   declare -g yb_add=false
   declare -g yb_change=false
@@ -674,6 +789,8 @@ yb::main::set_globals(){
   declare -g yb_format=false
   declare -g yb_is_array=false
   declare -g yb_is_raw=false
+  declare -g yb_help=false
+  # other flags or temp variables
   declare -g yb_show_level=false
   declare -g yb_show_line=false
   declare -g yb_show_line_number=false
@@ -686,7 +803,7 @@ yb::main::set_globals(){
   declare -g yb_one_line=false
   declare -g yb_is_colored=false
   declare -g yb_has_key=false
-  # other flags or temp variables
+  declare -g yb_inclusive=false
   declare -g yb_sequence_retrieved=0
   declare -g yb_original_key_length=""
   declare -g yb_key_length=0
@@ -702,8 +819,8 @@ yb::main::set_globals(){
   declare -g yb_value=""
   declare -g yb_value_type=""
   declare -g yb_key_option=""
-  declare -g yb_value_option=""
   declare -g yb_YAML=""
+  declare -g yb_YAML_object=""
   declare -g yb_IFS=""
   declare -g yb_trimmed=""
   declare -g yb_spacer=""
@@ -726,8 +843,8 @@ yb::main::set_globals(){
 #   yb_line_number_query
 ########################################
 yb::main::start(){
-  # put the yaml file into a variable
-  yb::yaml::cache_file "${yb_file}"
+  # put the yaml file or object into a variable
+  yb::yaml::cache
 
   # if looking for a key or value "-q"
   if [[ "${yb_query}" == true ]]; then
@@ -743,7 +860,7 @@ yb::main::start(){
   # if adding a key or value "-a"
   elif [[ "${yb_add}" == true ]]; then
     yb::add
-    yb::file::update_file
+    yb::yaml::output
   # if removing a key or value "-r"
   elif [[ "${yb_remove}" == true ]]; then
     if [[ -n "${yb_value_option}" ]]; then
@@ -751,17 +868,17 @@ yb::main::start(){
     else
       yb::remove
     fi
-    yb::file::update_file
+    yb::yaml::output
   # if changing a value "-c"
   elif [[ "${yb_change}" == true ]]; then
     yb::change
-    yb::file::update_file
+    yb::yaml::output  
   # if parsing a key
   elif [[ -n "${yb_key_option}" ]]; then
     yb::sequence
-    yb::parse::yaml "${yb_file}"
+    yb::parse::yaml "${yb_YAML}"
   elif [[ -z "${yb_key_option}" ]]; then
-    yb::parse::yaml "${yb_file}"
+    yb::parse::yaml "${yb_YAML}"
   fi
 
   # if parsing with an array output
@@ -1233,7 +1350,6 @@ yb::parse::search::is_retrievable(){
 #   yb_spacing
 ########################################
 yb::parse::yaml() {
-  local raw_line
   local spaces
   local level
   local line_number=0
@@ -1433,7 +1549,6 @@ yb::parse::yaml::list_value(){
 # Globals:
 #   $yb_line
 # Inherit:
-#   $raw_line
 #   ${line_[@]}
 ########################################
 yb::parse::yaml::other(){
@@ -1441,8 +1556,9 @@ yb::parse::yaml::other(){
   line_["value"]="${yb_line}"
   if [[ "${yb_parent_type}" == *"key:pipe" ]]; then
     line_["type"]="pipe-value"
-    line_["value"]="${raw_line}"
     line_["level"]=$(( $yb_parent_level + 1 ))
+    yb::string::trim::pipe_value::space
+    line_["value"]="${yb_trimmed}"
   fi
 }
 
@@ -2067,6 +2183,24 @@ yb::string::trim::space(){
 }
 
 ########################################
+# Trim leading and trailing spaces
+# Inherit:
+#   $raw_line
+#   ${line_[@]}
+########################################
+yb::string::trim::pipe_value::space(){
+  local spacing="  "
+  local spacer=""
+
+  for (( i = 0; i < ${line_["level"]}; i++ )); do
+    spacer+="${spacing}"
+  done
+
+  # assign to global
+  yb_trimmed="${raw_line##"${spacer}"}"
+}
+
+########################################
 # Trim a leading hyphen and one space
 # Attributes:
 #   $1 # string
@@ -2147,13 +2281,57 @@ yb::yaml::append_line(){
 }
 
 ########################################
+# Append line in a file
+# Attributes:
+#   $1 # line to append
+# Globals:
+#   $yb_YAML
+#   $yb_file_lines_number
+########################################
+yb::yaml::append_object(){
+  local line_to_append="${1-}"
+  local content_to_copy="${2-}"
+  local line_count=0
+  local line=""
+  local temp_yaml=""
+
+  # set IFS on newline
+  yb::core::set_IFS $'\n'
+
+  # loop through each line of the YAML object
+  while IFS= read -r line; do
+    line_count=$(( $line_count + 1 ))
+      if [[ "${line_count}" -eq "${line_to_append}" ]]; then
+        temp_yaml+="${line}"$'\n'
+        temp_yaml+="${yb_YAML_object}"
+      else
+        temp_yaml+="${line}"
+      fi
+  done <<< "${yb_YAML}"
+
+  # unset IFS
+  yb::core::unset_IFS
+
+  yb_YAML="${temp_yaml}"
+
+}
+
+########################################
 # Cache yaml file into a global variable
 # Attributes:
 #   $1 # a yaml file path
 ########################################
-yb::yaml::cache_file(){
-  local file="${1:-${yb_file}}"
-  yb_YAML=$(<"${file}")
+yb::yaml::cache(){
+  if [[ -f "${yb_file}" && -n "${yb_object}" ]]; then 
+    yb_YAML=$(<"${yb_file}")
+    yb_YAML_object="${yb_object}"
+  else
+    if [[ -f "${yb_file}" ]]; then
+      yb_YAML=$(<"${yb_file}")
+    elif [[ -n "${yb_object}" ]]; then 
+      yb_YAML="${yb_object}"
+    fi
+  fi
 }
 
 ########################################
@@ -2299,6 +2477,20 @@ yb::yaml::replace_line(){
   yb::core::unset_IFS
 
   yb_YAML="${temp_yaml}"
+}
+
+########################################
+# Prepare the ouptut, either file update or object print
+# Globals:
+#   $yb_file
+#   $yb_YAML
+########################################
+yb::yaml::output(){
+  if [[ -f "${yb_file}" ]]; then
+    yb::file::update_file
+  else
+    echo "${yb_YAML}"
+  fi
 }
 
 # Launch main function

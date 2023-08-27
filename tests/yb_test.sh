@@ -14,7 +14,7 @@ tests(){
 
 	echo -e "\U1F4AC Test 1.1: parse without an existing file"
 	parse=$(./yb "not_a_file")
-	check_test "A YAML file needs to be provided through the '-f' option." "${parse}"
+	check_test "A YAML file or object needs to be provided through the '-f' or '-o' options." "${parse}"
 	
 	echo -e "\U1F4AC Test 1.2: parse file with key selection without options"
 	parse=$(./yb tests/yb.yaml "y")
@@ -136,7 +136,8 @@ true" "${parse}"
   check_test "true" "${parse}"
 
   echo -e "\U1F4AC Test 2.7: query for existing pipe values"
-  parse=$(./yb -qf tests/yb.yaml -k "- ascii|" -v "  ___  _ ____  \  \///  __\   \  / | | //   / /  | |_\\\  /_/   \____/")
+  # parse=$(./yb -qf tests/yb.yaml -k "- ascii|" -v "  ___  _ ____  \  \///  __\   \  / | | //   / /  | |_\\\  /_/   \____/")
+  parse=$(./yb -qf tests/yb.yaml -k "- ascii|" -v '___  _ ____\  \///  __\ \  / | | // / /  | |_\\/_/   \____/')
   check_test "true" "${parse}"
 
   echo -e "\U1F4AC PART 3 - Addition "
@@ -210,12 +211,12 @@ false true" "${parse}"
 
   echo -e "\U1F4AC Test 3.12: add pipe type values to a non existing pipe key"
   ./yb -af tests/yb.yaml -k "- ascii-test|" -v "|> ___  _ ____ |> \  \///  __\ |>  \  / | | // |>  / /  | |_\\\ |> /_/   \____/"
-  parse=$(./yb -qf tests/yb.yaml -k "- ascii-test|" -v "  ___  _ ____  \  \///  __\   \  / | | //   / /  | |_\\\  /_/   \____/")
+  parse=$(./yb -qf tests/yb.yaml -k "- ascii|" -v '___  _ ____\  \///  __\ \  / | | // / /  | |_\\/_/   \____/')
   check_test "true" "${parse}"
 
   echo -e "\U1F4AC Test 3.13: add pipe type values to an existing pipe key"
   ./yb -af tests/yb.yaml -k "- ascii|" -v "|>  ___  _ |>  \  \// |>   \  / |>   / / |>  /_/"
-  parse=$(./yb -qf tests/yb.yaml -k "- ascii|" -v "   ___  _   \  \//    \  /    / /   /_/")
+  parse=$(./yb -qf tests/yb.yaml -k "- ascii|" -v ' ___  _ \  \//  \  /  / / /_/')
   check_test "true" "${parse}"
 	
   echo -e "\U1F4AC PART 4 - Removal "
@@ -255,12 +256,12 @@ FALSE" "${parse}"
   ./yb -rf tests/yb.yaml -k "is.- empty"
 
   echo -e "\U1F4AC Test 4.6: remove nested pipe value"
-  ./yb -rf tests/yb.yaml -k "- ascii|" -v "   ___  _   \  \//    \  /    / /   /_/"
-  parse=$(./yb -qf tests/yb.yaml -k "- ascii-test|" -v "  ___  _ ____  \  \///  __\   \  / | | //   / /  | |_\\\  /_/   \____/")
+  ./yb -rf tests/yb.yaml -k "- ascii|" -v ' ___  _ \  \//  \  /  / / /_/'
+  parse=$(./yb -qf tests/yb.yaml -k "- ascii|" -v '___  _ ____\  \///  __\ \  / | | // / /  | |_\\/_/   \____/')
   check_test "true" "${parse}"
 
   echo -e "\U1F4AC Test 4.7: remove existing pipe value"
-  ./yb -rf tests/yb.yaml -k "- ascii-test|" -v "  ___  _ ____  \  \///  __\   \  / | | //   / /  | |_\\\  /_/   \____/"
+  ./yb -rf tests/yb.yaml -k "- ascii-test|" -v '___  _ ____\  \///  __\ \  / | | // / /  | |_\\/_/   \____/'
   parse=$(./yb -f tests/yb.yaml -k "- ascii-test|")
   check_test "" "${parse}"
   ./yb -rf tests/yb.yaml -k "- ascii-test|"

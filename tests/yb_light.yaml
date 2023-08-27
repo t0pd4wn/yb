@@ -2,7 +2,6 @@
 y: b
 yb:
   yaml:
-    unix:
     bash:
       - IFS
       - BASED

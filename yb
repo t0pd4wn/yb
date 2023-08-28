@@ -1597,6 +1597,7 @@ yb::parse::yaml::list_key(){
   line_["key"]="${yb_trimmed}"
   line_["key"]="${line_["key"]%%:*}"
   line_["prefix"]="- "
+  line_["suffix"]=": "
   line_["parent"]="${line_["key"]}"
   yb_previous_parent="${line_["key"]}"
 }

@@ -461,6 +461,7 @@ yb::add::values::to_file(){
 yb::change(){
   # check for value option
   if [[ -z "${yb_value_option-}" ]]; then
+    yb_is_output=false
     echo "Values are needed when using the -c option."
   else
     # check for existing keys
@@ -804,7 +805,6 @@ yb::main::globals::cli_options(){
   declare -g yb_boolean_query=false
   declare -g yb_value_query=false
   declare -g yb_line_number_query=false
-  declare -g yb_silent_query=false
   declare -g yb_depth=false
   declare -g yb_format=false
   declare -g yb_is_array=false
@@ -831,9 +831,11 @@ yb::main::globals::flags(){
   declare -g yb_is_print=false
   declare -g yb_one_line=false
   declare -g yb_is_colored=false
+  declare -g yb_silent_query=false
   declare -g yb_has_key=false
   declare -g yb_inclusive=false
   declare -g yb_YAML_is_modified=false
+  declare -g yb_is_output=true
 }
 
 ########################################
@@ -2579,7 +2581,7 @@ yb::yaml::replace_line(){
 yb::yaml::output(){
   if [[ "${yb_is_file}" == true ]]; then
     yb::file::update_file
-  else
+  elif [[ "${yb_is_output}" == true ]]; then
     echo "${yb_YAML}"
   fi
 }

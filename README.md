@@ -21,54 +21,54 @@
 
 From the repository, you can do a quick try like so:
 ```bash
-./yb -f ./tests/user.yaml -k "yb"
+./yb -f tests/user.yaml -k "yb"
 ```
 
 Create keys:
 ```bash
-./yb -af ./tests/user.yaml -k "new.key"
+./yb -af tests/user.yaml -k "new.key"
 ```
 
 add an inline-value:
 ```bash
-./yb -af ./tests/user.yaml -k "new.key" -v "one, two"
+./yb -af tests/user.yaml -k "new.key" -v "one, two"
 ```
 
 change it:
 ```bash
-./yb -cf ./tests/user.yaml -k "new.key" -v "three"
+./yb -cf tests/user.yaml -k "new.key" -v "three"
 ```
 
 add list-values:
 ```bash
-./yb -af ./tests/user.yaml -k "new.- list" -v "- one - two"
+./yb -af tests/user.yaml -k "new.- list" -v "- one - two"
 ```
 
 add an ASCII within a pipe-key:
 ```bash
-./yb -af ./tests/user.yaml -k "new.ascii|" -v "|>  ___  _ |>  \  \// |>   \  / |>   / / |>  /_/"
+./yb -af tests/user.yaml -k "new.ascii|" -v "|>  ___  _ |>  \  \// |>   \  / |>   / / |>  /_/"
 ```
 
-manipulate a YAML bash variable:
+manipulate the YAML as a bash variable:
 ```bash
 # using the '-R' raw option is advised to retrieve the content without color codes
-my_YAML=$(./yb -Rf ./tests/user.yaml -k "yb")
-my_YAML=$(./yb -ao "${my_YAML}" -k "new.variable" -v "one, two")
+my_YAML=$(./yb -Rf tests/user.yaml -k "new")
+my_YAML=$(./yb -ao "${my_YAML}" -k "in_memory" -v "true")
 ```
 
 add it to a file:
 ```bash
-./yb -af ./tests/user.yaml -k "yb" -o "${my_YAML}"
+./yb -af tests/user.yaml -k "new.copy" -o "${my_YAML}"
 ```
 
 Remove one value:
 ```bash
-./yb -rf ./tests/user.yaml -k "new.- list" -v "- one"
+./yb -rf tests/user.yaml -k "new.- list" -v "- one"
 ```
 
 or remove everything:
 ```bash
-./yb -rf ./tests/user.yaml -k "new"
+./yb -rf tests/user.yaml -k "new"
 ```
 
 ## Installation
@@ -119,7 +119,7 @@ bash <(echo "https://gitlab.com/t0pd4wn/yb/-/raw/main/yb"|(read l; wget $l || cu
 | `-q`   | query  | action | Prints `true` or `false` if key(s), value(s) or both are present or not. | `yb -f "file.yaml" -q -k "key"` | Using single quotes is advised to retrieve a pipe value `-v 'pipe value'`. |
 | `-r`   | remove | action | Removes key(s), value(s) or both. | `yb -f "file.yaml" -r -k "key" -v "value"` | Using single quotes is advised to remove a pipe value `-v 'pipe value'`. |
 | `-f`   | file   | input  | YAML file path. | `yb -f "file.yaml"`| A file can be presented without the `-f` option, as the `$1` option. `-f` and `-c` are not compatible with each others. |
-| `-o`   | object   | input  | YAML object. | `yb -o "${YAML_object}"`| YAML object can be used with all actions. `-f` and `-o` are compatible together, only when adding an object to a file. |
+| `-o`   | object | input  | YAML object. | `yb -o "${YAML_object}"`| YAML object can be used with all actions. `-f` and `-o` are compatible together, only when adding an object to a file. |
 | `-k`   | key    | input  | Key(s) selection path. | `yb -f "file.yaml" -k "key"` | Support keys in this format :`key`, `key.childkey`, `- list-key`, `pipe-key\|`. Multiple key(s) can be provided with a `.` as the separator.|
 | `-v`   | value  | input  | Value(s) to be added, removed, queried or changed. | `yb -f "file.yaml" -k "key" -v "value"` | Support values in this format : `value`,  `- list-value`, `\|> pipe-value`. |
 | `-A`   | array  | format | Prints the output as a bash array. | `yb -f "file.yaml" -A -k "key"` | Will provide a different formatting if used with `-F` or `-d`. |

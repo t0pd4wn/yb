@@ -7,7 +7,7 @@
 set -eu
 yb::main::help () 
 { 
-  echo 'yb version 0.8 by t0pd4wn.';
+  echo 'yb minified version 0.8 by t0pd4wn.';
   echo 'yb [-v|-h|-a|-c|-q|-r|-A-d-F-l-L-R-n-T] [-f <file>|-o <object>] [-k <key>] [-v <value>]';
   echo '';
   echo '  -a  | Adds key(s), value(s) or both. | yb -f "file.yaml" -a -k "key" -v "value"';
@@ -298,8 +298,8 @@ _a_m_vs "${_v_op}"
 fi
 }
 _cr_debug(){
-local message="${@}"
-echo "${BASH_LINENO} : ${message}"
+local me="${@}"
+echo "${BASH_LINENO} : ${me}"
 }
 _cr_exit_dump() {
 echo "${_ra[@]-}"
@@ -397,7 +397,7 @@ echo "File is currently being processd with yb."
 fi
 }
 _m_cli(){
-while getopts "aAcdf:Fhk:lLno:qrRTv:" arg; do
+while getopts "aAcdf:Fhk:lLno:qrRTv:V" arg; do
 case $arg in
 a)
 _a=true
@@ -451,6 +451,11 @@ _ty=true
 v)
 _v_op="${OPTARG}"
 ;;
+V)
+_version="0.8"
+echo ${_version}
+exit 0
+;;
 esac
 done
 if [[ "${OPTIND}" -eq 1 ]]; then
@@ -460,7 +465,7 @@ _k_op="${2-}"
 else
 echo "No parameters provided. \
 See the '-h' help option for usage details."
-exit
+exit 0
 fi
 fi
 }

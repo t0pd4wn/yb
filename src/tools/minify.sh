@@ -20,7 +20,8 @@ yb::minify(){
 
   help_function=$(declare -f yb::main::help)
   help_function=${help_function//    /  }
-  help_function=${help_function//dev version/version "${version_number}"}
+  help_function=${help_function//dev version/\
+minified version "${version_number}"}
 
   # remove comments
   sed -i '/^[[:blank:]]*#/d' "${copy_file}"
@@ -37,7 +38,7 @@ yb::minify(){
   rm "${copy_file}"
 
   # remove the help function source
-  cached_file="${cached_file//source yb_help/}"
+  cached_file="${cached_file//"source src/yb.help"/}"
   cached_file="${cached_file//set -eu/}"
 
   # replacements
@@ -90,6 +91,7 @@ yb::minify(){
   cached_file="${cached_file//list/lt}"
   cached_file="${cached_file//lock/lo}"
   cached_file="${cached_file//main/m}"
+  cached_file="${cached_file//message/me}"
   cached_file="${cached_file//next/nx}"
   cached_file="${cached_file//number/n}"
   cached_file="${cached_file//object/o}"

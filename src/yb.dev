@@ -9,7 +9,7 @@
 set -eu
 
 # source the help file
-source yb_help
+source src/yb.help
 
 ########################################
 # Add key(s) and/or value(s)
@@ -682,7 +682,7 @@ through the '-a' option."
 #   $@ # script user options
 ########################################
 yb::main::cli(){
-  while getopts "aAcdf:Fhk:lLno:qrRTv:" arg; do
+  while getopts "aAcdf:Fhk:lLno:qrRTv:V" arg; do
     case $arg in
       a)
         yb_add=true
@@ -736,6 +736,11 @@ yb::main::cli(){
       v)
         yb_value_option="${OPTARG}"
         ;;
+      V)
+        yb_version="0.8"
+        echo ${yb_version}
+        exit 0
+        ;;
     esac
   done
   # if no options were provided
@@ -747,7 +752,7 @@ yb::main::cli(){
     else
       echo "No parameters provided. \
 See the '-h' help option for usage details."
-      exit
+      exit 0
     fi
   fi
 }

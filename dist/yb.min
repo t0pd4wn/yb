@@ -1,0 +1,1493 @@
+#!/bin/bash
+#---------------------------------------
+# yb | yaml bash parser |  | Licensed under GNU GPL V3
+#---------------------------------------
+# Note: this is a minified version. The full code is available in 'src/yb_dev'.
+#---------------------------------------
+set -eu
+yb::main::help () 
+{ 
+  echo '  -a  | Adds key(s), value(s) or both. | yb -f "file.yaml" -a -k "key" -v "value"';
+  echo '  -c  | Changes value(s). | yb -f "file.yaml" -c -k "key" -v "new_value"';
+  echo '  -q  | Prints "true" or "false" if key(s), value(s) or both are present or not. | yb -f "file.yaml" -q -k "key" | Using single quotes is advised to retrieve a pipe value "-v pipe value".';
+  echo '  -r  | Removes key(s), value(s) or both. | yb -f "file.yaml" -r -k "key" -v "value" | Using single quotes is advised to remove a pipe value "-v pipe value".';
+  echo '  -f  | YAML file path. | yb -f "file.yaml" | A file can be presented without the -f option, as the "$1" option. -f and -c are not compatible with each others.';
+  echo '  -o  | YAML object. | yb -o "${YAML_object}" | YAML object can be used with all actions. -f and -o are compatible together, only when adding an object to a file.';
+  echo '  -k  | Key(s) selection path. | yb -f "file.yaml" -k "key" | Support keys in this format :"key", "key.childkey", "- list-key", "pipe-key|". Multiple key(s) can be provided with a "."" as the separator.';
+  echo '  -v  | Value(s) to be added, removed, queried or changed. | yb -f "file.yaml" -k "key" -v "value" | Support values in this format : "value", "- list-value", "|> pipe-value".';
+  echo '  -A  | Prints the output as a bash array. | yb -f "file.yaml" -A -k "key" | Will provide a different formatting if used with -F or -d.';
+  echo '  -d  | Provides the output with the original depth. | yb -f "file.yaml" -d -k "key.childkey" -v "new_value"';
+  echo '  -F  | Prints a formatted output to represent the arborescence inline. | yb -f "file.yaml" -F -k "key" | Will provide a different formatting if used with -A or -d.';
+  echo '  -l  | Prints {{line}} on each lines. | yb -f "file.yaml" -l -k "key"';
+  echo '  -L  | Prints {{<level number>}} on each lines. | yb -f "file.yaml" -L -k "key"';
+  echo '  -R  | Prints the ouptut without added colors. | yb -f "file.yaml" -R -k "key"';
+  echo '  -n  | Prints {{<line number>}} on each lines. | yb -f "file.yaml" -n -k "key"';
+  echo '  -T  | Prints a value type. | yb -f "file.yaml" -T -k "key" | Supports null, boolean, integer, floating number, string.';
+  echo '  -s  | Spaces number selection. (deprecated)'
+}
+_a(){
+_q_se_ks "${_k_op}"
+if [[ "${_q_rt}" == false ]]; then
+_a_m_ks "${_k_op}"
+fi
+if [[ -n "${_Y_o}" ]]; then
+_a_m_o "${_Y_o}"
+fi
+if [[ -n "${_v_op}" ]]; then
+_a_m_vs "${_v_op}"
+fi
+}
+_a_m_o(){
+declare -a ks=("${_ks[@]}")
+local s_le="${_k_le}"
+local ctr=$s_le
+local h_k
+_q_se_ks_ls "${_k_op}"
+h_k=("${_q_rt}")
+_a_o_to_Y "${h_k}"
+}
+_a_m_vs(){
+declare -a ks=("${_ks[@]}")
+local s_le="${_k_le}"
+local ctr=$s_le
+local h_k
+_q_se_ks_ls "${_k_op}"
+h_k=("${_q_rt}")
+_a_vs_to_f "${h_k}"
+}
+_a_vs_to_f_in(){
+declare -a pas=("${@-}")
+local k_l
+local pa_k_v
+local in_v
+for k in "${pas[@]}"; do
+k_l="${k##*_N}"
+_y_co_l "${k_l}"
+pa_k_v="${_l_co}"
+in_v="${pa_k_v} ${_v_op}"
+_y_re_l "${k_l}" "${in_v}"
+done
+}
+_a_vs_to_f_lt(){
+declare -a pas=("${@}")
+local st
+local dm
+local cn
+local ctr
+local k_l
+local cl_v
+local k_lv
+local sr
+local ra_le
+local sg="  "
+declare -a v_ra
+declare -a cl_v_ra
+st=" ${_v_op}"
+dm=' - '
+cn="${st}${dm}"
+while [[ "${cn}" ]]; do
+v_ra+=( "${cn%%"${dm}"*}" );
+cn=${cn#*"${dm}"};
+done;
+ctr=0
+for k in "${pas[@]}"; do
+k_l="${k##*_N}"
+k_lv="${k%%_N*}"
+k_lv="${k_lv##L}"
+sr=""
+for (( sp = 0; sp < $k_lv + 1; sp++ )); do
+sr+="${sg}"
+done
+ra_le=${#v_ra[@]}
+for (( cv = ra_le - 1; cv >= 1; cv-- )); do
+k_l=$(( $k_l + $ctr ))
+cl_v="${sr}- ${v_ra[$cv]}"
+_y_ap_l "${k_l}" "${cl_v}"
+done
+ctr=$(( $ctr + 1 ))
+done
+}
+_a_vs_to_f_pi(){
+declare -a pas=("${@}")
+local st
+local cn
+local k_l
+local k_lv
+local cl_v
+local ra_le
+local sr
+local sg="  "
+declare -a v_ra
+st=" ${_v_op}"
+dm=" ${_pi_dm} "
+cn="${st}${dm}"
+while [[ "${cn}" ]]; do
+v_ra+=( "${cn%%"${dm}"*}" );
+cn=${cn#*"${dm}"};
+done
+for k in "${pas[@]}"; do
+k_l="${k##*_N}"
+k_lv="${k%%_N*}"
+k_lv="${k_lv##L}"
+sr=""
+for (( sp = 0; sp < $k_lv + 1; sp++ )); do
+sr+="${sg}"
+done
+ra_le=${#v_ra[@]}
+for (( cv = ra_le - 1; cv >= 1; cv-- )); do
+cl_v="${sr}${v_ra[$cv]}"
+_y_ap_l "${k_l}" "${cl_v}"
+done
+done
+}
+_a_ks_to_f(){
+local pa_l_n="${1-}"
+local pa_lv="${2-}"
+local sg="  "
+local sr
+local tg_l_n
+local ctr=0
+tg_l_n=$(( $pa_l_n + $_ad_ls ))
+_s_k_to_ra "${_k_op}"
+for (( aif = $pa_lv + 1; aif < $_k_le; aif++ )); do
+sr=""
+for (( sp = 0; sp < $pa_lv + 1; sp++ )); do
+sr+="${sg}"
+done
+cd_k="${sr}${_ks[${aif}]}:"
+if [[ "${_ks[${aif}]}" == *"|" ]]; then
+if [[ "${aif}" -eq $(( $_k_le - 1 )) ]]; then
+cd_k="${sr}${_ks[${aif}]:0:-1}: |"
+fi
+fi
+_y_ap_l "${tg_l_n}" "${cd_k}"
+pa_lv=$(( $pa_lv + 1 ))
+tg_l_n=$(( $tg_l_n + 1 ))
+ctr=$(( $ctr + 1 ))
+done
+_ad_ls=$(( $_ad_ls + $ctr ))
+}
+_a_cd_ks_to_f(){
+declare -a ks_ans=(${@})
+local pa_lv
+local pa_l
+for an in "${ks_ans[@]}"; do
+pa_lv="${an%%_N*}"
+pa_lv="${pa_lv#*L}"
+pa_l="${an#*N}"
+_a_ks_to_f "${pa_l}" "${pa_lv}"
+done
+}
+_a_new_ks_to_f(){
+local lv=0
+local sg="  "
+local sr
+local ctr=0
+_s_k_to_ra "${_k_op}"
+for (( aif = 0 ; aif < $_k_le; aif++ )); do
+sr=""
+for (( sp = 0; sp < lv; sp++ )); do
+sr+="${sg}"
+done
+cd_k="${sr}${_ks[${aif}]}:"
+if [[ "${_ks[${aif}]}" == *"|" ]]; then
+if [[ "${aif}" -eq $(( $_k_le - 1 )) ]]; then
+cd_k="${sr}${_ks[${aif}]:0:-1}: |"
+fi
+fi
+_y_ap_l "${_f_ls_n}" "${cd_k}"
+lv=$(( $lv + 1 ))
+done
+}
+_a_m_ks(){
+local h_k
+local s_le="${_k_le}"
+local se_k=""
+local ctr=$s_le
+declare -a ks=("${_ks[@]}")
+declare -a coordinates
+declare -a reverse_ra
+for (( rk = ${#ks[@]} - 1; rk >= 0; rk-- )); do
+reverse_ra+=("${ks[rk]}")
+done
+for (( s = 0; s < $s_le; s++ )); do
+se_k=""
+for (( rs = 0; rs < $ctr; rs++ )); do
+se_k+=".${reverse_ra[$rs]}"
+done
+se_k="${se_k:1}"
+_q_se_ks_ls "${se_k}"
+h_k=("${_q_rt}")
+if [[ -n "${h_k}" ]]; then
+break;
+fi
+ctr=$(( $ctr - 1 ))
+done
+if [[ -z "${h_k}" ]]; then
+_a_new_ks_to_f
+else
+_a_cd_ks_to_f "${h_k}"
+fi
+}
+_a_o_to_Y(){
+declare -a pas=(${1})
+declare -a pas=("${@}")
+local st
+local delimeter
+local cn
+local k_l
+local cl_v
+local k_lv
+local sr
+local sg="  "
+local ctr=0
+local l_n=0
+ctr=0
+for k in "${pas[@]}"; do
+k_l="${k##*_N}"
+k_lv="${k%%_N*}"
+k_lv="${k_lv##L}"
+sr=""
+for (( sp = 0; sp < $k_lv + 1; sp++ )); do
+sr+="${sg}"
+done
+ctr=0
+_cr_sI $'\n'
+while IFS= read -r line; do
+echo "${line}"
+l_n=$(( $k_l + $ctr ))
+_y_ap_l "${l_n}" "${sr}${line}"
+ctr=$(( $ctr + 1 ))
+done <<< "${_Y_o}"
+_cr_uI
+done
+}
+_a_vs_to_f(){
+declare -a pas=(${1-})
+local v_ty
+if [[ "${_v_op}" == "- "* ]]; then
+v_ty="lt"
+elif [[ "${_v_op}" == "|"* ]]; then
+v_ty="pi"
+else
+v_ty="in"
+fi
+if [[ "${v_ty}" == "in" ]]; then
+_a_vs_to_f_in "${pas[@]}"
+elif [[ "${v_ty}" == "lt" ]]; then
+_a_vs_to_f_lt "${pas[@]}"
+elif [[ "${v_ty}" == "pi" ]]; then
+_a_vs_to_f_pi "${pas[@]}"
+fi
+}
+_c(){
+if [[ -z "${_v_op-}" ]]; then
+_is_ot=false
+echo "Values are needed when using the '-c' option."
+else
+_q_se_ks "${_k_op}"
+if [[ "${_q_rt}" == false ]]; then
+_a_m_ks "${_k_op}"
+else
+_r
+_a_m_ks "${_k_op}"
+fi
+_a_m_vs "${_v_op}"
+fi
+}
+_cr_debug(){
+local message="${@}"
+echo "${BASH_LINENO} : ${message}"
+}
+_cr_exit_dump() {
+echo "${_ra[@]-}"
+_cr_error "${@-}"
+_cr_exit
+}
+_cr_exit() {
+_f_unlo "${_f}"
+}
+_cr_error() {
+echo "${FUNCNAME[1]} @ [$(date +'%Y-%m-%dT%H:%M:%S%z')]: ${@-}"
+}
+_cr_sI(){
+local setting="${1-}"
+if [[ -z "${_IFS}" ]]; then
+_IFS=$IFS
+IFS="${setting}"
+fi
+}
+_cr_uI(){
+if [[ -n "${_IFS}" ]]; then
+IFS=$"${_IFS}"
+fi
+}
+_f_lo(){
+local f="${1-}"
+local path="${f%/*}"
+local fname="${f##*/}"
+if [[ "${f}" == */* ]]; then
+path="${path}/.${fname}._.lo"
+else
+path=".${f}._.lo"
+fi
+if [[ -f "${path}" ]]; then
+_is_lod=true
+else
+touch "${path}"
+fi
+}
+_f_unlo(){
+local f="${1-}"
+local path="${f%/*}"
+local fname="${f##*/}"
+if [[ "${f}" == */* ]]; then
+path="${path}/.${fname}._.lo"
+else
+path=".${f}._.lo"
+fi
+rm "${path}"
+}
+_f_u_f(){
+local t_f="${_f}.t"
+declare -a t_ra
+local t_l
+_cr_sI $'\n'
+while IFS= read -r line; do
+echo "${line}" >> "${t_f}"
+done <<< "${_Y}"
+_cr_uI
+cp "${t_f}" "${_f}"
+rm "${t_f}"
+}
+_m(){
+_m_g
+_m_cli "${@}"
+if ! [[ -f "${_f}" ]]; then
+if [[ "${_f}" == *".y" ]]; then
+_is_f=true
+_ie_f=true
+fi
+else
+_is_f=true
+fi
+if [[ "${_is_f}" == false ]] &&\
+[[ -z "${_o}" ]]; then
+echo "A YAML file or object needs to be provided \
+through the '-f' or '-o' options."
+return
+fi
+if [[ -f "${_f}" ]] &&\
+[[ -n "${_o}" ]]; then
+if [[ "${_a}" == false ]]; then
+echo "YAML file and object can only be used together \
+through the '-a' op."
+return
+fi
+fi
+trap _cr_exit_dump SIGINT
+trap _cr_exit EXIT
+_f_lo "${_f}"
+if [[ "${_is_lod}" == false ]]; then
+_m_sa
+else
+echo "File is currently being processd with yb."
+fi
+}
+_m_cli(){
+while getopts "aAcdf:Fhk:lLno:qrRTv:" arg; do
+case $arg in
+a)
+_a=true
+;;
+A)
+_is_ra=true
+;;
+c)
+_c=true
+;;
+d)
+_de=true
+;;
+f)
+_f="${OPTARG}"
+;;
+F)
+_fo=true
+;;
+h)
+_he=true
+yb::main::help
+;;
+k)
+_k_op="${OPTARG}"
+;;
+l)
+_sh_l=true
+;;
+L)
+_sh_lv=true
+;;
+q)
+_q=true
+;;
+n)
+_sh_l_n=true
+;;
+o)
+_o="${OPTARG}"
+;;
+r)
+_r=true
+;;
+R)
+_is_rw=true
+;;
+T)
+_ty=true
+;;
+v)
+_v_op="${OPTARG}"
+;;
+esac
+done
+if [[ "${OPTIND}" -eq 1 ]]; then
+if [[ "${#}" -gt 0 ]]; then
+_f="${1-}"
+_k_op="${2-}"
+else
+echo "No parameters provided. \
+See the '-h' help option for usage details."
+exit
+fi
+fi
+}
+_m_g(){
+_m_g_script_parameters
+_m_g_crs
+_m_g_cli_ops
+_m_g_flags
+_m_g_others
+}
+_m_g_script_parameters(){
+declare -g _sg=2
+declare -g _pi_dm="|>"
+}
+_m_g_crs(){
+declare -g _grey="\e[3;30m"
+declare -g _blue="\e[1;36m"
+declare -g _orange="\e[1;33m"
+declare -g _rd="\e[31m"
+declare -g _italic="\e[3m"
+}
+_m_g_cli_ops(){
+declare -g _f=""
+declare -g _o=""
+declare -g _v_op=""
+declare -g _a=false
+declare -g _c=false
+declare -g _r=false
+declare -g _q=false
+declare -g _ty=false
+declare -g _bo_q=false
+declare -g _v_q=false
+declare -g _l_n_q=false
+declare -g _de=false
+declare -g _fo=false
+declare -g _is_ra=false
+declare -g _is_rw=false
+declare -g _he=false
+declare -g _sh_lv=false
+declare -g _sh_l=false
+declare -g _sh_l_n=false
+}
+_m_g_flags(){
+declare -g _is_f=false
+declare -g _ie_f=false
+declare -g _is_lod=false
+declare -g _is_s=false
+declare -g _ie=true
+declare -g _rve=false
+declare -g _is_rvd=false
+declare -g _is_pt=false
+declare -g _one_l=false
+declare -g _is_crd=false
+declare -g _silent_q=false
+declare -g _h_k=false
+declare -g _iv=false
+declare -g _Y_im=false
+declare -g _is_ot=true
+}
+_m_g_others(){
+declare -g _s_rvd=0
+declare -g _ol_k_le=""
+declare -g _k_le=0
+declare -g _k_se=0
+declare -g _k_ba_lv=0
+declare -g _ad_ls=0
+declare -g _f_ls_n=0
+declare -g _pv_pa=""
+declare -g _pa_ty=""
+declare -g _pa_lv=""
+declare -g _set_lv=""
+declare -g _l=""
+declare -g _v=""
+declare -g _v_ty=""
+declare -g _k_op=""
+declare -g _Y=""
+declare -g _Y_o=""
+declare -g _IFS=""
+declare -g _tm=""
+declare -g _sr=""
+declare -g _an=""
+declare -g _cr_st=""
+declare -g _q_se_rt=""
+declare -g _q_ls_rt=""
+declare -g _q_se_vs_rt=""
+declare -g _q_pi_rt=""
+declare -g _q_pi_ft_l=""
+declare -ga _q_rt
+declare -ga _ra
+declare -gA _ks
+}
+_m_sa(){
+_y_ca
+if [[ "${_q}" == true ]]; then
+if [[ -n "${_v_op}" ]]; then
+_q_se_vs "${_k_op}"
+if [[ "${_q_rt}" == false ]]; then
+echo "${_q_rt}"
+fi
+else
+_q_se_ks "${_k_op}"
+echo "${_q_rt}"
+fi
+elif [[ "${_a}" == true ]]; then
+_a
+_y_ot
+elif [[ "${_r}" == true ]]; then
+if [[ -n "${_v_op}" ]]; then
+_r_vs
+else
+_r
+fi
+_y_ot
+elif [[ "${_c}" == true ]]; then
+_c
+_y_ot
+elif [[ -n "${_k_op}" ]]; then
+_s
+_p_y "${_Y}"
+elif [[ -z "${_k_op}" ]]; then
+_p_y "${_Y}"
+fi
+if [[ "${_is_ra}" == true ]]; then
+echo "${_ra[@]}"
+fi
+}
+_p_fr(){
+_st_b_sr
+_st_b_or
+if [[ "${_is_s}" == true ]]; then
+if [[ "${_l_n_q}" == true ]]; then
+_p_se
+else
+_p_se
+fi
+if [[ "${_is_pt}" == true ]]; then
+_p_pt
+fi
+elif [[ "${_is_s}" == false ]]; then
+_p_pt
+fi
+}
+_p_pt(){
+_is_crd=false
+_v=""
+_v_ty=""
+if [[ "${_l_n_q}" == true || "${_bo_q}" == true ]]; then
+return 0
+fi
+if [[ "${_ty}" == true ]]; then
+if [[ "${l_["ty"]}" == *"v"* ]]; then
+_st_v_ty "${l_["v"]}" "${l_["ty"]}"
+fi
+fi
+if [[ "${_v_q}" == true ]]; then
+_p_pt_is_v_q
+return 0
+fi
+if [[ "${_is_ra}" == true ]]; then
+_p_pt_is_ra
+return 0
+fi
+if [[ "${_is_rw}" == false && "${_fo}" == false ]]; then
+_p_pt_pr_crs
+fi
+_p_pt_ot
+}
+_p_pt_is_v_q(){
+local st=""
+if [[  "${_pa_ty}" == *"k:pi" ]]; then
+_q_pi_rt+="${l_["v"]}"
+if [[ "${_v_op}" =~ "${_q_pi_rt}"* ]]; then
+if [[ -z "${_q_pi_ft_l}" ]]; then
+_q_pi_ft_l="${l_["l_n"]}"
+fi
+if [[ "${_q_pi_rt}" == "${_v_op}" ]]; then
+if [[ "${_sh_l}" == true ]]; then
+st="${_q_pi_ft_l}_${l_["l_n"]}}}"
+_q_rt+="true{{T_${l_["ty"]}}}{{N_${st}"
+else
+_q_rt=true
+fi
+if [[ "${_silent_q}" == false ]]; then
+echo ${_q_rt}
+fi
+fi
+else
+_q_pi_rt=""
+_q_pi_ft_l=""
+fi
+fi
+if [[ "${_v_op}" == "${l_["v"]}" ]] ||\
+[[ "${_v_op}" == "- ${l_["v"]}" ]]; then
+if [[ "${_sh_l}" == true ]]; then
+_q_rt+="true{{T_${l_["ty"]}}}{{N_${l_["l_n"]}}} "
+else
+_q_rt=true
+fi
+if [[ "${_silent_q}" == false ]]; then
+echo ${_q_rt}
+fi
+fi
+}
+_p_pt_is_ra(){
+local st=""
+if [[ "${l_["ty"]}" != "cmt" && "${l_["ty"]}" != "empty" ]]; then
+if [[ "${l_["ty"]}" == *"k"* ]]; then
+if [[ "${l_["ty"]}" == "lt-k:v" ]]; then
+if [[ "${_one_l}" == false ]]; then
+st="${l_["sr"]}${l_["k"]}_"
+st+=" ${_v_ty}${l_["v"]}${l_["or"]}"
+_ra+=("${st}")
+else
+st="${l_["sr"]}${_v_ty}"
+st+="${l_["v"]}${l_["or"]}"
+_ra+=("${st}")
+fi
+else
+if [[ "${_one_l}" == false ]]; then
+st="${l_["sr"]}${l_["k"]}"
+st+="_${_v_ty}${l_["v"]}${l_["or"]}"
+_ra+=("${st}")
+else
+st="${l_["sr"]}${_v_ty}"
+st+="${l_["v"]}${l_["or"]}"
+_ra+=("${st}")
+fi
+fi
+else
+st="${l_["sr"]}${_v_ty}"
+st+="${l_["v"]}${l_["or"]}"
+_ra+=("${st}")
+fi
+fi
+}
+_p_pt_pr_crs(){
+if [[ "${l_["ty"]}" == "cmt" ]]; then
+_st_set_cr "${l_["v"]}" "${_grey}"
+l_["v"]="${_cr_st}"
+elif [[ "${l_["ty"]}" == *"k"* ]]; then
+_st_set_cr "${l_["k"]}" "${_blue}"
+l_["k"]="${_cr_st}"
+_st_set_cr "${l_["px"]}" "${_blue}"
+l_["px"]="${_cr_st}"
+fi
+if [[ "${l_["ty"]}" == *"v"* ]]; then
+_st_v_ty "${l_["v"]}" "${l_["ty"]}"
+_st_cr_ty "${l_["v"]}"
+if [[ -n "${_v}" ]]; then
+l_["v"]="${_v}"
+fi
+fi
+}
+_p_pt_ot(){
+local st=""
+if [[ "${_is_s}" == true && "${_one_l}" == true ]]; then
+if [[ "${l_["ty"]}" == *"k:v" ]]; then
+if [[ "${_is_crd}" == true ]]; then
+echo -e "${l_["v"]}${l_["or"]}"
+else
+echo "${l_["v"]}${l_["or"]}"
+fi
+_one_l=false
+_is_pt=false
+fi
+else
+if [[ "${l_["ty"]}" == "cmt" ]]; then
+st="${l_["px"]}${_v_ty}"
+st+="${l_["v"]}${l_["or"]}"
+st=$(echo -e "${st}")
+echo "${l_["sr"]}"${st}
+else
+if [[ ${_is_crd} == true ]]; then
+st="${l_["px"]}${l_["k"]}${l_["su"]}"
+st+=" ${_v_ty}${l_["v"]}${l_["or"]}"
+st=$(echo -e "${st}")
+else
+st="${l_["px"]}${l_["k"]}${l_["su"]}"
+st=$(echo -e "${st}" &&\
+echo "${_v_ty}${l_["v"]}${l_["or"]}")
+fi
+if [[ "${l_["ty"]}" == *"k:pi" ]]; then
+echo "${l_["sr"]}"${st}
+elif [[ "${_pa_ty}" == *"k:pi" ]]; then
+st="${l_["px"]}${l_["k"]}${l_["su"]}"
+st+="${_v_ty}${l_["v"]}${l_["or"]}"
+echo "${l_["sr"]}""${st}"
+else
+echo "${l_["sr"]}"${st}
+fi
+fi
+fi
+}
+_p_se(){
+local q_px
+local k="${l_["k"]-}"
+local new_lv
+_is_pt=false
+if [[ "${l_["lv"]}" -lt "${_k_se}" ]]; then
+_k_se=0
+_rve=false
+fi
+if [[ "${_k_se}" -eq "${_ol_k_le}" ]]; then
+_k_se=0
+fi
+if [[ "${l_["ty"]}" == *"k:pi" ]]; then
+if [[ ${_ks[${_k_se}]} == *"|" ]]; then
+k="${k}|"
+fi
+fi
+if [[ "${_rve}" == false ]]; then
+if [[ "${l_["px"]}${k}" == "${_ks[${_k_se}]}" ]]; then
+if [[ "${l_["lv"]}" -eq "${_k_se}" ]]; then
+_k_se=$(( $_k_se + 1 ))
+_p_se_is_nestd_pi
+if [[ "${_k_se}" -eq "${_k_le}" ]]; then
+_p_se_rve_ops
+fi
+fi
+fi
+elif [[ "${_rve}" == true  ]]; then
+_p_se_is_rvae
+fi
+}
+_p_se_rve_ops(){
+_rve=true
+_k_ba_lv="${l_["lv"]}"
+_h_k=true
+if [[ "${_l_n_q}" == true || "${_bo_q}" == true ]]; then
+_p_se_is_q
+return 0
+fi
+if [[ "${l_["ty"]}" == *"k:v" ]]; then
+_p_se_is_k_v
+return 0
+fi
+}
+_p_se_is_nestd_pi(){
+if [[ "${l_["ty"]}" == *"k:pi" ]]; then
+if [[ ${_k_se} -lt ${_ol_k_le} ]]; then
+echo "_: pi ty k can not be nestd in another pi ty k."
+exit 0
+fi
+fi
+}
+_p_se_is_q(){
+local q_px
+if [[ "${_l_n_q}" == true ]]; then
+q_px="L${l_["lv"]}_N${l_["l_n"]}"
+_q_ls_rt+=("${q_px}")
+elif [[ "${_bo_q}" == true ]]; then
+_q_rt=true
+if [[ "${_a}" == false && "${_c}" == false ]]; then
+echo ${_q_rt}
+fi
+fi
+_rve=false
+_k_se=0
+}
+_p_se_is_k_v(){
+_one_l=true
+_k_se=0
+_rve=false
+_is_pt=true
+_s_rvd=$(( _s_rvd + 1 ))
+_ie=false
+}
+_p_se_is_rvae(){
+if  [[ "${l_["lv"]}" -gt "${_k_ba_lv}" ]]; then
+_one_l=false
+_is_pt=true
+_ie=false
+else
+_one_l=false
+_is_pt=false
+_k_se=0
+_rve=false
+_s_rvd=$(( _s_rvd + 1 ))
+fi
+}
+_p_y() {
+local sp
+local lv
+local l_n=0
+declare -A l_
+_cr_sI $' \t\n'
+while IFS= read -r rw_l; do
+l_["lv"]=""
+l_["l_n"]=""
+l_["k"]=""
+l_["v"]=""
+l_["pa"]=""
+l_["px"]=""
+l_["su"]=""
+_tm=""
+l_n=$(( $l_n + 1 ))
+l_["l_n"]="${l_n}"
+_l="${rw_l}"
+sp="${_l%%[^[:space:]]*}"
+lv="${#sp}"
+l_["lv"]="$(( $lv / $_sg ))"
+_st_tr_sp "${_l}"
+_l="${_tm}"
+if [[ -z "${_l}" ]]; then
+l_["ty"]="empty"
+elif [[ "${_l}" == "#"* ]]; then
+_p_y_cmt
+elif [[ "${_l}" == *":" && "${_l}" != "-"*":"* ]]; then
+_p_y_k
+elif [[ "${_l}" == *": "* && ${_l} != "- "* ]]; then
+_p_y_k_v
+elif [[ "${_l}" == "- "*": "* && "${_l}" != *"_"* ]] &&\
+[[ "${_l}" != '- "'* && "${_l}" != "- '"* ]]; then
+_p_y_lt_k_v
+elif [[ "${_l}" == "-"*":"  && "${_l}" != *"_"* ]] &&\
+[[ "${_l}" != '- "'* && "${_l}" != "- '"* ]]; then
+_p_y_lt_k
+elif [[ "${_l}" == "-"* ]]; then
+_p_y_lt_v
+else
+_p_y_other
+fi
+_p_fr
+done <<< "${_Y}"
+_cr_uI
+if [[ "${_ie_f}" == true ]]; then
+if [[ "${_Y_im}" == false ]]; then
+_f_ls_n=0
+else
+_f_ls_n="${l_n}"
+_ie_f=false
+fi
+else
+_f_ls_n="${l_n}"
+fi
+}
+_p_y_cmt(){
+l_["ty"]="cmt"
+l_["v"]="${_l}"
+}
+_p_y_k(){
+l_["ty"]="k"
+l_["k"]="${_l%%:*}"
+l_["pa"]="${l_["k"]}"
+l_["su"]=": "
+_pv_pa="${l_["k"]}"
+_pa_ty="k"
+}
+_p_y_k_v(){
+l_["k"]="${_l%%:*}"
+l_["v"]="${_l#*:}"
+_st_tr_sp "${l_["k"]}"
+l_["k"]="${_tm}"
+_st_tr_sp "${l_["v"]}"
+l_["v"]="${_tm}"
+l_["pa"]="${l_["k"]}"
+l_["su"]=": "
+if [[ "${l_["v"]}" == "|" ]]; then
+l_["ty"]="k:pi"
+_pa_ty="k:pi"
+_pa_lv="${l_["lv"]}"
+else
+l_["ty"]="k:v"
+_pa_ty="k:v"
+fi
+}
+_p_y_lt_k_v(){
+l_["ty"]="lt-k:v"
+_pa_ty="lt-k:v"
+_st_tr_sp "${_l}"
+_st_tr_hy "${_tm}"
+l_["k"]="${_tm}"
+l_["k"]="${l_["k"]%%:*}"
+l_["v"]="${_l#*:}"
+_st_tr_sp "${l_["v"]}"
+l_["v"]="${_tm}"
+l_["px"]="- "
+l_["su"]=": "
+l_["pa"]="${_pv_pa}"
+if [[ "${l_["v"]}" == "|" ]]; then
+l_["ty"]="lt-k:pi"
+_pa_ty="lt-k:pi"
+_pa_lv="${l_["lv"]}"
+fi
+}
+_p_y_lt_k(){
+l_["ty"]="lt-k"
+_pa_ty="lt-k"
+_st_tr_sp "${_l}"
+_st_tr_hy "${_tm}"
+l_["k"]="${_tm}"
+l_["k"]="${l_["k"]%%:*}"
+l_["px"]="- "
+l_["su"]=": "
+l_["pa"]="${l_["k"]}"
+_pv_pa="${l_["k"]}"
+}
+_p_y_lt_v(){
+l_["ty"]="lt-v"
+_st_tr_sp "${_l}"
+_st_tr_hy "${_tm}"
+l_["v"]="${_tm}"
+l_["px"]="- "
+}
+_p_y_other(){
+l_["ty"]="other"
+l_["v"]="${_l}"
+if [[ "${_pa_ty}" == *"k:pi" ]]; then
+l_["ty"]="pi-v"
+l_["lv"]=$(( $_pa_lv + 1 ))
+_st_tr_pi_v_sp
+l_["v"]="${_tm}"
+fi
+}
+_q_se_ks(){
+declare -a k=("${1-}")
+_k_se=0
+_q_rt=""
+_bo_q=true
+_s "${k[@]}"
+_p_y "${_f}"
+if [[  "${_q_rt}" == *"true"* ]] &&\
+[[ "${_a}" == false ]] &&\
+[[ "${_c}" == false ]]; then
+exit 0
+fi
+if [[ -n "${_q_rt}" ]]; then
+_q_rt=true
+elif [[ "${_ie}" == false ]]; then
+if [[ -n "${_v_op}" ]]; then
+_q_rt=false
+else
+_q_rt=true
+fi
+elif [[ "${_q_rt}" == "" ]]; then
+_q_rt=false
+else
+_q_rt=false
+fi
+_bo_q=false
+}
+_q_se_vs(){
+declare -a k=(${@-})
+_k_se=0
+_q_rt=""
+_q_pi_rt=""
+_v_q=true
+_s "${k[@]}"
+_p_y "${_f}"
+if [[ -z "${_q_pi_rt}" ]]; then
+if [[ "${_q_pi_rt}" == "${_v_op}" ]]; then
+_q_rt=true
+fi
+fi
+if [[ -z "${_q_rt}" ]]; then
+_q_rt=false
+fi
+_v_q=false
+}
+_q_se_ks_ls(){
+declare -a k=("${1-}")
+_q_ls_rt=()
+_q_rt=()
+_k_se=0
+_l_n_q=true
+_s "${k[@]}"
+_p_y "${_f}"
+_q_rt="${_q_ls_rt[@]}"
+_l_n_q=false
+}
+_q_se_vs_ls(){
+declare -a k=("${1-}")
+_q_se_vs_rt=()
+_q_rt=()
+_k_se=0
+_is_ra=true
+_sh_l_n=true
+_se_vs_q=true
+_s "${k[@]}"
+_p_y "${_f}"
+_q_rt="${_ra[@]}"
+_is_ra=false
+}
+_r(){
+declare -a pa_ls=()
+declare -a cd_ls=()
+_q_rt=()
+declare -a cd_ra
+declare -a r_ls
+local nx_l
+local r_l
+local l_ctr=0
+_q_se_ks_ls "${_k_op}"
+pa_ls=(${_q_rt})
+_q_se_vs_ls "${_k_op}"
+cd_ls=(${_q_rt})
+if [[ -z "${pa_ls[@]}" && -z "${cd_ls[@]}" ]]; then
+return 0
+fi
+if [[ -n "${cd_ls[@]}" ]]; then
+for cd in "${cd_ls[@]}"; do
+cd="${cd##*'{{'}"
+cd="${cd%%'}}'}"
+cd_ra+=("${cd}")
+done
+fi
+for pa in "${pa_ls[@]}"; do
+pa="${pa##*_N}"
+nx_l=$(( $pa + 1 ))
+r_ls+=("${pa}")
+if [[ -n "${cd_ra[@]}" ]]; then
+for (( ch = 0; ch < "${#cd_ra[@]}"; ch++ )); do
+if [[ "${cd_ra[*]}" =~ "${nx_l}" ]]; then
+r_ls+=("${nx_l}")
+nx_l=$(( $nx_l + 1 ))
+else
+break;
+fi
+done
+fi
+done
+for (( li = 0; li < "${#r_ls[@]}"; li++ )); do
+r_l="${r_ls[${li}]}"
+r_l=$(( $r_l - $l_ctr ))
+_y_d_l "${r_l}"
+l_ctr=$(( $l_ctr + 1 ))
+done
+}
+_r_vs(){
+declare -a pa_ls
+declare -a cd_ls
+declare -a cd_ra
+declare -a r_ls
+local nx_l
+local r_l
+local l_ctr=0
+local ft_l_n
+local l_n
+local ls_to_d
+local l_ty
+local sg="\ \ "
+local sr=""
+local lt_k_ix
+local lt_k
+_sh_l=true
+_silent_q=true
+local pi_q=""
+if [[ "${_k_op: -1}" == "|" ]]; then
+pi_q=true
+fi
+_q_se_vs "${_k_op}"
+rt=(${_q_rt})
+if [[ "${rt}" == false ]]; then
+return 0
+fi
+if [[ "${pi_q}" == true ]]; then
+_r_vs_pi "${rt[@]}"
+else
+_r_vs_in_ad_lt "${rt[@]}"
+fi
+_sh_l=false
+_silent_q=false
+}
+_r_vs_pi(){
+declare -a rt=(${@})
+local l_ty
+local l_n
+local l_ctr=0
+local ls_to_d
+local ft_l_n
+for (( rs = 0; rs < "${#rt[@]}" ; rs++ )); do
+l_ty="${rt[$rs]##*'{{T_'}"
+l_ty="${l_ty%%'}}{{N_'*}"
+l_n="${rt[$rs]##*'{{N_'}"
+l_n="${l_n%%'}}'}"
+ft_l_n="${l_n%%'_'*}"
+l_n="${l_n##*'_'}"
+ft_l_n=$(( $ft_l_n - $l_ctr ))
+l_n=$(( $l_n - $l_ctr ))
+ls_to_d="${l_n}"
+for (( ld = $ft_l_n; ld <= $ls_to_d; ld++ )); do
+_y_d_l "${l_n}"
+l_n=$(( $l_n - 1 ))
+l_ctr=$(( $l_ctr + 1 ))
+done
+done
+}
+_r_vs_in_ad_lt(){
+declare -a rt=(${@})
+local l_ty
+local l_n
+local l_ctr=0
+local ls_to_d
+local ft_l_n
+local lt_k
+local lt_k_ix
+local sg="  "
+local sr=""
+for (( rs = 0; rs < "${#rt[@]}" ; rs++ )); do
+l_ty="${rt[$rs]##*'{{T_'}"
+l_ty="${l_ty%%'}}{{N_'*}"
+l_n="${rt[$rs]##*'{{N_'}"
+l_n="${l_n%%'}}'}"
+l_n=$(( $l_n - $l_ctr ))
+if [[ "${l_ty}" == *"k:v" ]]; then
+_y_d_l "${l_n}"
+l_n=$(( $l_n - 1 ))
+for (( sp = 0; sp < $_k_le - 1; sp++ )); do
+sr+="${sg}"
+done
+lt_k_ix=$(( $_k_le - 1 ))
+lt_k="${_ks[$lt_k_ix]}"
+if [[ "${l_ty}" == "k:v" ]]; then
+lt_k="${sr}${lt_k}:"
+elif [[  "${l_ty}" == "lt-k:v" ]]; then
+lt_k="${sr}${lt_k}:"
+fi
+_y_ap_l "${l_n}" "${lt_k}"
+sr=""
+else
+_y_d_l "${l_n}"
+l_ctr=$(( $l_ctr + 1 ))
+fi
+done
+}
+_s(){
+local k=${@:-"${_k_op}"}
+_is_s=true
+_rve=false
+_s_k_to_ra "${k}"
+}
+_s_k_to_ra(){
+local ks="${1:-"${_k_op}"}"
+_ks=()
+ks="${ks// /\\}"
+ks="${ks//./ }"
+ks=(${ks})
+_k_le="${#ks[@]}"
+for (( yk = 0; yk < $_k_le; yk++ )); do
+k="${ks[$yk]}"
+if [[ "${k}" == *\\* ]]; then
+k="${k//\\/ }"
+fi
+_ks[$yk]="${k}"
+done
+if [[ -z "${_ol_k_le}" ]]; then
+_ol_k_le="${_k_le}"
+fi
+}
+_st_b_sr(){
+local lv="${l_["lv"]}"
+local sy=""
+local spa=""
+local sr=""
+if [[ ${_is_s} == true ]]; then
+lv=$(( $lv - 1 ))
+else
+lv=$(( $lv + 1 ))
+fi
+if [[  "${_fo}" == true ]]; then
+sy="."
+spa="${sy}"
+lv=$(( $lv + 1 ))
+else
+sy=" "
+for (( i = 0; i < $_sg; i++ )); do
+spa+="${sy}"
+done
+fi
+_st_set_lv "${lv}"
+lv="${_set_lv}"
+for (( i = 0; i < $lv; i++ )); do
+sr+="${spa}"
+done
+if [[ "${l_["ty"]}" == *"v"* && "${_fo}" == true ]]; then
+sr+="${_pv_pa}_"
+fi
+l_["sr"]="${sr}"
+}
+_st_set_lv(){
+local lv="${1-}"
+if [[ ${_is_s} == false ]]; then
+lv=$(( $lv - 1 ))
+elif [[ ${_de} == true ]]; then
+lv=$(( $lv + 1 ))
+elif [[ "${_is_ra}" == true && "${_fo}" == false ]]; then
+lv=0
+elif [[ "${_is_s}" == true ]]; then
+local ba_lv="${_k_ba_lv}"
+lv=$(( $lv - $ba_lv ))
+fi
+_set_lv="${lv}"
+}
+_st_b_or(){
+local or=""
+local l_sr="{{line}}"
+local l_lv_sr="{{${l_["lv"]}}}"
+local l_n_sr="{{${l_["l_n"]}}}"
+if [[ "${_sh_l}" == true ]]; then
+or+="${l_sr}"
+fi
+if [[ "${_sh_lv}" == true ]]; then
+or+="${l_lv_sr}"
+fi
+if [[ "${_sh_l_n}" == true ]]; then
+or+="${l_n_sr}"
+fi
+l_["or"]="${or}"
+}
+_st_v_ty(){
+local v="${1-}"
+local ty="${1-}"
+local bo_rx='^(?i)true$'
+local float_rx='^[0-9.]+$'
+_v_ty=""
+if [[ "${ty}" == "cmt" ]]; then
+continue
+elif [[ "${v}" =~ ^(true|TRUE|false|FALSE)$ ]]; then
+_v_ty="!! bool "
+elif [[ "${v}" =~ ^[0-9]+$ ]]; then
+_v_ty="!! int "
+elif [[ "${v}" =~ ^(null|NULL)$ ]]; then
+_v_ty="!! null "
+elif [[ "${v}" =~ ${float_rx} ]]; then
+_v_ty="!! float "
+elif [[ -n "${v}" ]]; then
+_v_ty="!! str "
+fi
+}
+_st_cr_ty(){
+local v="${1-}"
+if [[ "${_v_ty}" == "!! bool " ]]; then
+_st_set_cr "${v}" "${_rd}"
+_v="${_cr_st}"
+_is_crd=true
+elif [[ "${_v_ty}" == "!! int " || "${_v_ty}" == "!! float " ]]; then
+_st_set_cr "${v}" "${_orange}"
+_v="${_cr_st}"
+_is_crd=true
+elif [[ "${_v_ty}" == "!! null " ]]; then
+_st_set_cr "${v}" "${_italic}"
+_v="${_cr_st}"
+_is_crd=true
+fi
+if [[ "${_ty}" == false ]]; then
+_v_ty=""
+fi
+}
+_st_tr_sp(){
+local st="${@-}"
+st="${st#"${st%%[![:space:]]*}"}"
+st="${st%"${st##*[![:space:]]}"}"
+_tm="${st}"
+}
+_st_tr_pi_v_sp(){
+local sg="  "
+local sr=""
+for (( i = 0; i < ${l_["lv"]}; i++ )); do
+sr+="${sg}"
+done
+_tm="${rw_l##"${sr}"}"
+}
+_st_tr_hy(){
+local st="${@-}"
+st="${st#- }"
+_tm="${st}"
+}
+_st_set_cr(){
+local text="${1-}"
+local cr="${2-}"
+_cr_st="${cr}${text}\033[0m"
+}
+_y_ap_l(){
+local l_to_ap="${1-}"
+local cnt_to_co="${2-}"
+local l_ct=0
+local line=""
+local t_y=""
+_cr_sI $'\n'
+if [[ -n "${_Y}" ]]; then
+while IFS= read -r line; do
+l_ct=$(( $l_ct + 1 ))
+if [[ "${l_ct}" -eq "${_f_ls_n}" ]]; then
+if [[ "${l_ct}" -eq "${l_to_ap}" ]]; then
+t_y+="${line}"$'\n'
+t_y+="${cnt_to_co}"
+_f_ls_n=$(( $_f_ls_n + 1 ))
+else
+t_y+="${line}"
+fi
+break;
+else
+t_y+="${line}"$'\n'
+if [[ "${l_ct}" -eq "${l_to_ap}" ]]; then
+t_y+="${cnt_to_co}"$'\n'
+_f_ls_n=$(( $_f_ls_n + 1 ))
+l_ct=$(( $l_ct + 1 ))
+fi
+fi
+done <<< "${_Y}"
+else
+t_y="${cnt_to_co}"$'\n'
+_f_ls_n=$(( $_f_ls_n + 1 ))
+fi
+_cr_uI
+_Y="${t_y}"
+_Y_im=true
+}
+_y_ap_o(){
+local l_to_ap="${1-}"
+local cnt_to_co="${2-}"
+local l_ct=0
+local line=""
+local t_y=""
+_cr_sI $'\n'
+while IFS= read -r line; do
+l_ct=$(( $l_ct + 1 ))
+if [[ "${l_ct}" -eq "${l_to_ap}" ]]; then
+t_y+="${line}"$'\n'
+t_y+="${_Y_o}"
+else
+t_y+="${line}"
+fi
+done <<< "${_Y}"
+_cr_uI
+_Y="${t_y}"
+_Y_im=true
+}
+_y_ca(){
+if [[ -f "${_f}" && -n "${_o}" ]]; then
+_Y=$(<"${_f}")
+_Y_o="${_o}"
+else
+if [[ -f "${_f}" ]]; then
+_Y=$(<"${_f}")
+elif [[ -n "${_o}" ]]; then
+_Y="${_o}"
+fi
+fi
+}
+_y_co_l(){
+local l_to_co="${1-}"
+local l_ct=0
+local line=""
+_cr_sI $'\n'
+while IFS= read -r line; do
+l_ct=$(( $l_ct + 1 ))
+if [[ $l_ct -eq $l_to_co ]]; then
+_l_co="${line}"
+return 0
+fi
+done <<< "${_Y}"
+_cr_uI
+}
+_y_d_l(){
+local l_to_d="${1-}"
+local l_ct=0
+local lt_l=0
+local nx_l_ct=1
+local t_y=""
+_cr_sI $'\n'
+while IFS= read -r line; do
+l_ct=$(( $l_ct + 1 ))
+nx_l_ct=$(( $nx_l_ct + 1 ))
+if [[ "${l_ct}" -gt "${_f_ls_n}" ]]; then
+t_y+="${line}"
+break;
+fi
+if [[ "${l_ct}" -eq "${_f_ls_n}" ]]; then
+if [[ "${l_ct}" -eq "${l_to_d}" ]]; then
+_f_ls_n=$(( $_f_ls_n - 1 ))
+break
+else
+t_y+="${line}"$'\n'
+fi
+else
+if [[ "${l_ct}" -eq "${l_to_d}" ]]; then
+_f_ls_n=$(( $_f_ls_n - 1 ))
+continue
+else
+if [[ "${nx_l_ct}" -eq "${_f_ls_n}" ]]; then
+if [[ "${nx_l_ct}" -eq "${l_to_d}" ]]; then
+t_y+="${line}"
+else
+t_y+="${line}"$'\n'
+fi
+else
+t_y+="${line}"$'\n'
+fi
+fi
+fi
+done <<< "${_Y}"
+_cr_uI
+_Y="${t_y}"
+_Y_im=true
+}
+_y_re_l(){
+local l_to_re="${1-}"
+local cnt_to_co="${2-}"
+local l_ct=0
+local line
+local t_y
+_cr_sI $'\n'
+while IFS= read -r line; do
+l_ct=$(( $l_ct + 1 ))
+if [[ "${l_ct}" -eq "${_f_ls_n}" ]]; then
+if [[ "${l_ct}" -eq "${l_to_re}" ]]; then
+t_y+="${cnt_to_co}"
+else
+t_y+="${line}"
+fi
+break;
+else
+if [[ "${l_ct}" -eq "${l_to_re}" ]]; then
+t_y+="${cnt_to_co}"$'\n'
+else
+t_y+="${line}"$'\n'
+fi
+fi
+done <<< "${_Y}"
+_cr_uI
+_Y="${t_y}"
+}
+_y_ot(){
+if [[ "${_is_f}" == true ]]; then
+_f_u_f
+elif [[ "${_is_ot}" == true ]]; then
+echo "${_Y}"
+fi
+}
+_m "${@}"
+set +eu

@@ -110,7 +110,7 @@ bash <(echo "https://gitlab.com/t0pd4wn/yb/-/raw/main/yb"|(read l; wget $l || cu
 `yb` options API is divided under 3 types:
 - `action`: action options are ran against the file and are not compatible with each others. They are compatible with `input`, but not `format`.
 - `input`: input options are user settable options, and are compatible with each others. They are compatible with both `action` and `format`.  
-- `format`: format options are printing the output in various ways. They are compatible with each others, with `input` , but not `action`.
+- `format`: format options are printing the output in various ways. They are compatible with each others, with `input` type , but not the `action` one.
 
 | Option | Name | Type | Description | Example | Notes |
 | ------ | ------ | ------ | ------ | ------ | ------ |
@@ -134,7 +134,7 @@ bash <(echo "https://gitlab.com/t0pd4wn/yb/-/raw/main/yb"|(read l; wget $l || cu
 
 ## Development
 
-Full sources are made available in the `/src/` folder. The version present at the root level is built with the `/src/tools/yb_minify.sh` script.
+Full sources are made available in the `/src/` folder. The version present at the root level is built with the `/src/tools/dist.sh` script.
 
 ### Tests
 
@@ -142,7 +142,7 @@ A simple test suite is made available in the `tests/` folder. It introduces the 
 
 To launch it, run the below command from the repository root level :
 ```bash
-./tests/yb_test.sh
+./tests/yb_tests.sh
 ```
 
 ## Thank you

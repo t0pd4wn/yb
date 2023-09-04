@@ -1,33 +1,16 @@
 #!/bin/bash
 #---------------------------------------
-# yb | yaml bash parser |  | Licensed under GNU GPL V3
+# yb | yaml bash parser | Licensed under GNU GPL V3
 #---------------------------------------
-# Note: this is an automatically built version. The full code is available in 'src/yb_dev'.
+# Notee: This is the dev version, built versions can be found under '/yb' and '/dist/yb.min'.
 #---------------------------------------
+
+# Set the eu flag
 set -eu
-########################################
-# Print the help message
-########################################
-yb::main::help () 
-{ 
-  echo '  -a  | Adds key(s), value(s) or both. | yb -f "file.yaml" -a -k "key" -v "value"';
-  echo '  -c  | Changes value(s). | yb -f "file.yaml" -c -k "key" -v "new_value"';
-  echo '  -q  | Prints "true" or "false" if key(s), value(s) or both are present or not. | yb -f "file.yaml" -q -k "key" | Using single quotes is advised to retrieve a pipe value "-v pipe value".';
-  echo '  -r  | Removes key(s), value(s) or both. | yb -f "file.yaml" -r -k "key" -v "value" | Using single quotes is advised to remove a pipe value "-v pipe value".';
-  echo '  -f  | YAML file path. | yb -f "file.yaml" | A file can be presented without the -f option, as the "$1" option. -f and -c are not compatible with each others.';
-  echo '  -o  | YAML object. | yb -o "${YAML_object}" | YAML object can be used with all actions. -f and -o are compatible together, only when adding an object to a file.';
-  echo '  -k  | Key(s) selection path. | yb -f "file.yaml" -k "key" | Support keys in this format :"key", "key.childkey", "- list-key", "pipe-key|". Multiple key(s) can be provided with a "."" as the separator.';
-  echo '  -v  | Value(s) to be added, removed, queried or changed. | yb -f "file.yaml" -k "key" -v "value" | Support values in this format : "value", "- list-value", "|> pipe-value".';
-  echo '  -A  | Prints the output as a bash array. | yb -f "file.yaml" -A -k "key" | Will provide a different formatting if used with -F or -d.';
-  echo '  -d  | Provides the output with the original depth. | yb -f "file.yaml" -d -k "key.childkey" -v "new_value"';
-  echo '  -F  | Prints a formatted output to represent the arborescence inline. | yb -f "file.yaml" -F -k "key" | Will provide a different formatting if used with -A or -d.';
-  echo '  -l  | Prints {{line}} on each lines. | yb -f "file.yaml" -l -k "key"';
-  echo '  -L  | Prints {{<level number>}} on each lines. | yb -f "file.yaml" -L -k "key"';
-  echo '  -R  | Prints the ouptut without added colors. | yb -f "file.yaml" -R -k "key"';
-  echo '  -n  | Prints {{<line number>}} on each lines. | yb -f "file.yaml" -n -k "key"';
-  echo '  -T  | Prints a value type. | yb -f "file.yaml" -T -k "key" | Supports null, boolean, integer, floating number, string.';
-  echo '  -s  | Spaces number selection. (deprecated)'
-}
+
+# source the help file
+source yb_help
+
 ########################################
 # Add key(s) and/or value(s)
 # Globals:
@@ -37,16 +20,20 @@ yb::main::help ()
 ########################################
 yb::add(){
   yb::query::search::keys "${yb_key_option}"
+
   if [[ "${yb_query_result}" == false ]]; then
     yb::add::manage::keys "${yb_key_option}"
   fi
+
   if [[ -n "${yb_YAML_object}" ]]; then
     yb::add::manage::object "${yb_YAML_object}"
   fi
+
   if [[ -n "${yb_value_option}" ]]; then
     yb::add::manage::values "${yb_value_option}"
   fi
-}
+} 
+
 ########################################
 # Manage object addition
 # Globals:
@@ -60,13 +47,17 @@ yb::add::manage::object(){
   local sequence_length="${yb_key_length}"
   local counter=$sequence_length
   local has_key
+
   # query for lines coordinates
   yb::query::search::keys_lines "${yb_key_option}"
+
   # get result
   has_key=("${yb_query_result}")
+
   # add values in file
   yb::add::object::to_YAML "${has_key}"
 }
+
 ########################################
 # Manage value addition
 # Globals:
@@ -80,13 +71,17 @@ yb::add::manage::values(){
   local sequence_length="${yb_key_length}"
   local counter=$sequence_length
   local has_key
+
   # query for lines coordinates
   yb::query::search::keys_lines "${yb_key_option}"
+
   # get result
   has_key=("${yb_query_result}")
+
   # add values in file
   yb::add::values::to_file "${has_key}"
 }
+
 ########################################
 # Add inline value(s) to file
 # Attributes:
@@ -95,23 +90,27 @@ yb::add::manage::values(){
 #   $yb_file
 #   $yb_value_option
 ########################################
-yb::add::values::to_file::inline(){
+yb::add::values::to_file::inline(){  
   declare -a parents=("${@-}")
   local key_line
   local parent_key_value
   local inline_value
+
   # iterate over parent keys
   for key in "${parents[@]}"; do
     key_line="${key##*_N}"
+
     # get the existing content from the line
     yb::yaml::copy_line "${key_line}"
     parent_key_value="${yb_line_copy}"
+
     # prepare line value
     inline_value="${parent_key_value} ${yb_value_option}"
     # write key:value on the same line
     yb::yaml::replace_line "${key_line}" "${inline_value}"
   done
 }
+
 ########################################
 # Add list value(s) to file
 # Attributes:
@@ -119,7 +118,7 @@ yb::add::values::to_file::inline(){
 # Globals:
 #   $yb_value_option
 ########################################
-yb::add::values::to_file::list(){
+yb::add::values::to_file::list(){  
   declare -a parents=("${@}")
   local string
   local delimiter
@@ -133,6 +132,7 @@ yb::add::values::to_file::list(){
   local spacing="  "
   declare -a value_array
   declare -a clean_value_array
+
   # declare parsing values
   # add a space before the string to cope with delimeter
   string=" ${yb_value_option}"
@@ -143,6 +143,7 @@ yb::add::values::to_file::list(){
       value_array+=( "${condition%%"${delimiter}"*}" );
       condition=${condition#*"${delimiter}"};
   done;
+
   # iterate over parent keys
   counter=0
   for key in "${parents[@]}"; do
@@ -163,6 +164,7 @@ yb::add::values::to_file::list(){
     counter=$(( $counter + 1 ))
   done
 }
+
 ########################################
 # Add pipe value(s) to file
 # Attributes:
@@ -171,7 +173,7 @@ yb::add::values::to_file::list(){
 #   $yb_value_option
 #   $yb_pipe_delimiter
 ########################################
-yb::add::values::to_file::pipe(){
+yb::add::values::to_file::pipe(){  
   declare -a parents=("${@}")
   local string
   local condition
@@ -182,6 +184,7 @@ yb::add::values::to_file::pipe(){
   local spacer
   local spacing="  "
   declare -a value_array
+
   # declare parsing values
   # add a space before the string to cope with delimeter
   string=" ${yb_value_option}"
@@ -194,6 +197,7 @@ yb::add::values::to_file::pipe(){
     # update condition
     condition=${condition#*"${delimiter}"};
   done
+
   # iterate over parent keys
   for key in "${parents[@]}"; do
     key_line="${key##*_N}"
@@ -211,6 +215,8 @@ yb::add::values::to_file::pipe(){
     done
   done
 }
+
+
 ########################################
 # Add key(s) in a file
 # Attributes:
@@ -229,15 +235,19 @@ yb::add::keys::to_file(){
   local spacer
   local target_line_number
   local counter=0
+
   # find the correct line depending on previous additions
   target_line_number=$(( $parent_line_number + $yb_added_lines ))
+
   # referesh keys referential
   yb::sequence::key_to_array "${yb_key_option}"
-  for (( aif = $parent_level + 1; aif < $yb_key_length; aif++ )); do
+
+  for (( aif = $parent_level + 1; aif < $yb_key_length; aif++ )); do 
     spacer=""
     for (( sp = 0; sp < $parent_level + 1; sp++ )); do
       spacer+="${spacing}"
     done
+
     # if a pipe key
     child_key="${spacer}${yb_keys[${aif}]}:"
     if [[ "${yb_keys[${aif}]}" == *"|" ]]; then
@@ -245,6 +255,7 @@ yb::add::keys::to_file(){
        child_key="${spacer}${yb_keys[${aif}]:0:-1}: |"
       fi
     fi
+
     # write in file
     yb::yaml::append_line "${target_line_number}" "${child_key}"
     # increment levels and line numbers for next iteration
@@ -253,8 +264,10 @@ yb::add::keys::to_file(){
     # increment the global added lines
     counter=$(( $counter + 1 ))
   done
+
   yb_added_lines=$(( $yb_added_lines + $counter ))
 }
+
 #########################################
 # # Add path child keys
 # # Attributes:
@@ -264,13 +277,16 @@ yb::add::child_keys::to_file(){
     declare -a keys_anchors=(${@})
     local parent_level
     local parent_line
+
     for anchor in "${keys_anchors[@]}"; do
       parent_level="${anchor%%_N*}"
       parent_level="${parent_level#*L}"
       parent_line="${anchor#*N}"
+
       yb::add::keys::to_file "${parent_line}" "${parent_level}"
     done
 }
+
 ########################################
 # Add new key(s) in a file
 # Globals:
@@ -283,13 +299,16 @@ yb::add::new_keys::to_file(){
   local spacer
   # local target_line_number
   local counter=0
+
   # referesh keys referential
   yb::sequence::key_to_array "${yb_key_option}"
-  for (( aif = 0 ; aif < $yb_key_length; aif++ )); do
+
+  for (( aif = 0 ; aif < $yb_key_length; aif++ )); do 
     spacer=""
     for (( sp = 0; sp < level; sp++ )); do
       spacer+="${spacing}"
     done
+
     child_key="${spacer}${yb_keys[${aif}]}:"
     # if a pipe key, check it is the last one
     if [[ "${yb_keys[${aif}]}" == *"|" ]]; then
@@ -298,11 +317,14 @@ yb::add::new_keys::to_file(){
         child_key="${spacer}${yb_keys[${aif}]:0:-1}: |"
       fi
     fi
-    yb::yaml::append_line "${yb_file_lines_number}" "${child_key}"
+
+    yb::yaml::append_line "${yb_file_lines_number}" "${child_key}" 
+
     # increment levels and line numbers for next iteration
     level=$(( $level + 1 ))
   done
 }
+
 ########################################
 # Build the key coordinates
 # Globals:
@@ -313,36 +335,44 @@ yb::add::manage::keys(){
   local has_key
   local sequence_length="${yb_key_length}"
   local search_key=""
-  local counter=$sequence_length
+  local counter=$sequence_length  
   declare -a keys=("${yb_keys[@]}")
   declare -a coordinates
   declare -a reverse_array
+
   for (( rk = ${#keys[@]} - 1; rk >= 0; rk-- )); do
       reverse_array+=("${keys[rk]}")
-  done
+  done  
+
   for (( s = 0; s < $sequence_length; s++ )); do
     search_key=""
+
     for (( rs = 0; rs < $counter; rs++ )); do
       search_key+=".${reverse_array[$rs]}"
-    done
+    done  
+
     # strip first "." character
     search_key="${search_key:1}"
+
     yb::query::search::keys_lines "${search_key}"
     # get result
     has_key=("${yb_query_result}")
-    # this gives a behavior where only
+
+    # this gives a behavior where only 
     # the first level of parents are targeted
     if [[ -n "${has_key}" ]]; then
       break;
     fi
     counter=$(( $counter - 1 ))
   done
+
   if [[ -z "${has_key}" ]]; then
     yb::add::new_keys::to_file
   else
     yb::add::child_keys::to_file "${has_key}"
   fi
 }
+
 ########################################
 # Add value(s) to file
 # Attributes:
@@ -352,6 +382,7 @@ yb::add::manage::keys(){
 ########################################
 yb::add::object::to_YAML(){
   declare -a parents=(${1})
+
   declare -a parents=("${@}")
   local string
   local delimeter
@@ -363,6 +394,7 @@ yb::add::object::to_YAML(){
   local spacing="  "
   local counter=0
   local line_number=0
+
   # iterate over parent keys
   counter=0
   for key in "${parents[@]}"; do
@@ -374,19 +406,26 @@ yb::add::object::to_YAML(){
     for (( sp = 0; sp < $key_level + 1; sp++ )); do
       spacer+="${spacing}"
     done
+
     # loop through each line of the YAML object
     counter=0
+
+
   # set IFS on newline
   yb::core::set_IFS $'\n'
+
     while IFS= read -r line; do
       echo "${line}"
       line_number=$(( $key_line + $counter ))
       yb::yaml::append_line "${line_number}" "${spacer}${line}"
       counter=$(( $counter + 1 ))
     done <<< "${yb_YAML_object}"
+
     yb::core::unset_IFS
+
   done
 }
+
 ########################################
 # Add value(s) to file
 # Attributes:
@@ -397,14 +436,16 @@ yb::add::object::to_YAML(){
 yb::add::values::to_file(){
   declare -a parents=(${1-})
   local value_type
+
   # set mode
   if [[ "${yb_value_option}" == "- "* ]]; then
     value_type="list"
   elif [[ "${yb_value_option}" == "|"* ]]; then
     value_type="pipe"
-  else
+  else 
     value_type="inline"
   fi
+
   if [[ "${value_type}" == "inline" ]]; then
     yb::add::values::to_file::inline "${parents[@]}"
   elif [[ "${value_type}" == "list" ]]; then
@@ -413,6 +454,7 @@ yb::add::values::to_file(){
     yb::add::values::to_file::pipe "${parents[@]}"
   fi
 }
+
 ########################################
 # Add key(s) and/or value(s)
 # Globals:
@@ -435,11 +477,13 @@ yb::change(){
       # remove and readd if existing
       yb::remove
       yb::add::manage::keys "${yb_key_option}"
-    fi
+    fi  
+
     # add values to the keys
     yb::add::manage::values "${yb_value_option}"
   fi
 }
+
 ########################################
 # Print a debug message
 # Attributes:
@@ -447,9 +491,11 @@ yb::change(){
 ########################################
 yb::core::debug(){
   local message="${@}"
+
   # print calling line number and message
   echo "${BASH_LINENO} : ${message}"
 }
+
 ########################################
 # Dump array, print an error and exit
 # Globals:
@@ -462,6 +508,7 @@ yb::core::exit_dump() {
   yb::core::error "${@-}"
   yb::core::exit
 }
+
 ########################################
 # Print an error and exit
 # Globals:
@@ -471,6 +518,7 @@ yb::core::exit() {
   # unlock YAML file
   yb::file::unlock "${yb_file}"
 }
+
 ########################################
 # Print an error message in STDERR
 # Attributes:
@@ -479,6 +527,7 @@ yb::core::exit() {
 yb::core::error() {
   echo "${FUNCNAME[1]} @ [$(date +'%Y-%m-%dT%H:%M:%S%z')]: ${@-}"
 }
+
 ########################################
 # Set IFS
 # Globals:
@@ -493,6 +542,7 @@ yb::core::set_IFS(){
     IFS="${setting}"
   fi
 }
+
 ########################################
 # Unset IFS
 # Globals:
@@ -503,6 +553,7 @@ yb::core::unset_IFS(){
     IFS=$"${yb_IFS}"
   fi
 }
+
 ########################################
 # Lock YAML file
 # Attributes:
@@ -512,17 +563,20 @@ yb::file::lock(){
   local file="${1-}"
   local path="${file%/*}"
   local filename="${file##*/}"
+
   if [[ "${file}" == */* ]]; then
     path="${path}/.${filename}.yb.lock"
   else
     path=".${file}.yb.lock"
   fi
+
   if [[ -f "${path}" ]]; then
     yb_is_locked=true
   else
     touch "${path}"
   fi
 }
+
 ########################################
 # Unlock YAML file
 # Attributes:
@@ -532,13 +586,16 @@ yb::file::unlock(){
   local file="${1-}"
   local path="${file%/*}"
   local filename="${file##*/}"
+
   if [[ "${file}" == */* ]]; then
     path="${path}/.${filename}.yb.lock"
   else
     path=".${file}.yb.lock"
   fi
+
   rm "${path}"
 }
+
 ########################################
 # Delete line in a file
 # Attributes:
@@ -551,17 +608,22 @@ yb::file::update_file(){
   local temp_file="${yb_file}.temp"
   declare -a temp_array
   local temp_line
+
   # set local IFS on newline
   yb::core::set_IFS $'\n'
+
   # loop through each line of the YAML object
   while IFS= read -r line; do
     echo "${line}" >> "${temp_file}"
   done <<< "${yb_YAML}"
+
   # unset IFS
   yb::core::unset_IFS
+
   cp "${temp_file}" "${yb_file}"
   rm "${temp_file}"
 }
+
 ########################################
 # Main function
 # Attributes:
@@ -570,6 +632,7 @@ yb::file::update_file(){
 yb::main(){
   yb::main::globals
   yb::main::cli "${@}"
+
   # check for the existence of the parameter file
   if ! [[ -f "${yb_file}" ]]; then
     if [[ "${yb_file}" == *".yaml" ]]; then
@@ -579,6 +642,8 @@ yb::main(){
   else
     yb_is_file=true
   fi
+
+
   # check for the existence of the parameter file
   if [[ "${yb_is_file}" == false ]] &&\
     [[ -z "${yb_object}" ]]; then
@@ -586,6 +651,7 @@ yb::main(){
 through the '-f' or '-o' options."
     return
   fi
+
   # check if both file and object are set
   if [[ -f "${yb_file}" ]] &&\
     [[ -n "${yb_object}" ]]; then
@@ -595,11 +661,14 @@ through the '-a' option."
       return
     fi
   fi
+
   # trap the exit function
   trap yb::core::exit_dump SIGINT
   trap yb::core::exit EXIT
+
   # lock YAML file
   yb::file::lock "${yb_file}"
+
   if [[ "${yb_is_locked}" == false ]]; then
     # parse cli options and launch methods
     yb::main::start
@@ -607,6 +676,7 @@ through the '-a' option."
     echo "File is currently being processed with yb."
   fi
 }
+
 ########################################
 # Initialize the cli
 # Attributes:
@@ -682,6 +752,7 @@ See the '-h' help option for usage details."
     fi
   fi
 }
+
 ########################################
 # Declare globals
 # Attributes:
@@ -694,6 +765,7 @@ yb::main::globals(){
   yb::main::globals::flags
   yb::main::globals::others
 }
+
 ########################################
 # Declare script parameters globals
 # Inherit:
@@ -704,6 +776,7 @@ yb::main::globals::script_parameters(){
   declare -g yb_spacing=2
   declare -g yb_pipe_delimiter="|>"
 }
+
 ########################################
 # Declare colors globals
 # Inherit:
@@ -717,6 +790,7 @@ yb::main::globals::colors(){
   declare -g yb_red="\e[31m"
   declare -g yb_italic="\e[3m"
 }
+
 ########################################
 # Declare cli options
 # Inherit:
@@ -745,6 +819,7 @@ yb::main::globals::cli_options(){
   declare -g yb_show_line=false
   declare -g yb_show_line_number=false
 }
+
 ########################################
 # Declare global flags
 # Inherit:
@@ -767,6 +842,7 @@ yb::main::globals::flags(){
   declare -g yb_YAML_is_modified=false
   declare -g yb_is_output=true
 }
+
 ########################################
 # Declare globals temp variables
 # Inherit:
@@ -805,6 +881,7 @@ yb::main::globals::others(){
   declare -ga yb_array
   declare -gA yb_keys
 }
+
 # ########################################
 # # Print the help message
 # ########################################
@@ -827,6 +904,7 @@ yb::main::globals::others(){
 #   echo '  -T  | Prints a value type. | yb -f "file.yaml" -T -k "key" | Supports null, boolean, integer, floating number, string.'
 #   echo '  -s  | Spaces number selection. (deprecated)'
 # }
+
 ########################################
 # Parse script options
 # Globals:
@@ -835,6 +913,7 @@ yb::main::globals::others(){
 yb::main::start(){
   # put the yaml file or object into a variable
   yb::yaml::cache
+
   # if looking for a key or value "-q"
   if [[ "${yb_query}" == true ]]; then
     if [[ -n "${yb_value_option}" ]]; then
@@ -861,7 +940,7 @@ yb::main::start(){
   # if changing a value "-c"
   elif [[ "${yb_change}" == true ]]; then
     yb::change
-    yb::yaml::output
+    yb::yaml::output  
   # if parsing a key
   elif [[ -n "${yb_key_option}" ]]; then
     yb::sequence
@@ -869,11 +948,13 @@ yb::main::start(){
   elif [[ -z "${yb_key_option}" ]]; then
     yb::parse::yaml "${yb_YAML}"
   fi
+
   # if parsing with an array output
   if [[ "${yb_is_array}" == true ]]; then
     echo "${yb_array[@]}"
   fi
 }
+
 ########################################
 # Manage lines structures depending on action
 # Globals:
@@ -886,6 +967,7 @@ yb::parse::filter(){
   # build $spacer and $outer
   yb::string::build_spacer
   yb::string::build_outer
+
   # if a sequence, search if the path is correct
   if [[ "${yb_is_sequence}" == true ]]; then
     if [[ "${yb_line_number_query}" == true ]]; then
@@ -901,6 +983,7 @@ yb::parse::filter(){
     yb::parse::print
   fi
 }
+
 ########################################
 # Print to terminal
 # Globals:
@@ -922,34 +1005,41 @@ yb::parse::print(){
   yb_is_colored=false
   yb_value=""
   yb_value_type=""
+
   # if a line-number query or a boolean query, return
   # note: they are dealt with in yb::parse::search
   if [[ "${yb_line_number_query}" == true || "${yb_boolean_query}" == true ]]; then
     return 0
   fi
+
   # if '-T' is true
   if [[ "${yb_type}" == true ]]; then
     if [[ "${line_["type"]}" == *"value"* ]]; then
       yb::string::value_type "${line_["value"]}" "${line_["type"]}"
     fi
   fi
+
   # if a value query
   if [[ "${yb_value_query}" == true ]]; then
     yb::parse::print::is_value_query
     return 0
   fi
+
   # if '-A' is true
   if [[ "${yb_is_array}" == true ]]; then
     yb::parse::print::is_array
     return 0
   fi
+
   # if '-R' and "-F" are false, use colors
   if [[ "${yb_is_raw}" == false && "${yb_format}" == false ]]; then
     yb::parse::print::prepare_colors
   fi
+
   # print output
   yb::parse::print::output
 }
+
 ########################################
 # Print value queries
 # Globals:
@@ -1006,6 +1096,7 @@ yb::parse::print::is_value_query(){
     fi
   fi
 }
+
 ########################################
 # Print array
 # Globals:
@@ -1047,6 +1138,7 @@ yb::parse::print::is_array(){
     fi
   fi
 }
+
 ########################################
 # Prepare colors for print
 # Globals:
@@ -1072,6 +1164,7 @@ yb::parse::print::prepare_colors(){
     fi
   fi
 }
+
 ########################################
 # Print final output
 # Globals:
@@ -1121,6 +1214,7 @@ yb::parse::print::output(){
     fi
   fi
 }
+
 ########################################
 # Search the correct key path
 # Globals:
@@ -1137,21 +1231,25 @@ yb::parse::search(){
   local key="${line_["key"]-}"
   local new_level
   yb_is_print=false
+
   # if the current level is lower than the expected one, reset
   if [[ "${line_["level"]}" -lt "${yb_key_step}" ]]; then
     yb_key_step=0
     yb_retrieve=false
   fi
+
   # if the current step (base 0) is equal to the total ones (base 1), reset
   if [[ "${yb_key_step}" -eq "${yb_original_key_length}" ]]; then
     yb_key_step=0
   fi
+
   # if the current key introduces a pipe value
   if [[ "${line_["type"]}" == *"key:pipe" ]]; then
     if [[ ${yb_keys[${yb_key_step}]} == *"|" ]]; then
       key="${key}|"
     fi
   fi
+
   # if retrieve is false, check for current state
   if [[ "${yb_retrieve}" == false ]]; then
     # if the current key is the expected one
@@ -1174,6 +1272,7 @@ yb::parse::search(){
     yb::parse::search::is_retrievable
   fi
 }
+
 ########################################
 # Check if the sequence is retrievable
 # Globals:
@@ -1203,6 +1302,7 @@ yb::parse::search::retrieve_options(){
     return 0
   fi
 }
+
 ########################################
 # Check if the ancestor is a pipe key
 # Globals:
@@ -1212,13 +1312,14 @@ yb::parse::search::retrieve_options(){
 #   ${line_[@]}
 ########################################
 yb::parse::search::is_nested_pipe(){
-  if [[ "${line_["type"]}" == *"key:pipe" ]]; then
+  if [[ "${line_["type"]}" == *"key:pipe" ]]; then 
     if [[ ${yb_key_step} -lt ${yb_original_key_length} ]]; then
       echo "yb: pipe type key can not be nested in another pipe type key."
       exit 0
     fi
   fi
 }
+
 ########################################
 # Check if a query type search
 # Globals:
@@ -1246,10 +1347,12 @@ yb::parse::search::is_query(){
       echo ${yb_query_result}
     fi
   fi
+
   # query result found, reset flag and counter
   yb_retrieve=false
   yb_key_step=0
 }
+
 ########################################
 # Check if a key:value search
 # Globals:
@@ -1273,6 +1376,7 @@ yb::parse::search::is_key_value(){
   # assume the value was filled once
   yb_is_empty=false
 }
+
 ########################################
 # Check if the sequence can be retrieved
 # Globals:
@@ -1304,6 +1408,7 @@ yb::parse::search::is_retrievable(){
     yb_sequence_retrieved=$(( yb_sequence_retrieved + 1 ))
   fi
 }
+
 ########################################
 # Parse a yaml object
 # Globals:
@@ -1316,11 +1421,14 @@ yb::parse::yaml() {
   local spaces
   local level
   local line_number=0
+
   # associative array that holds the $yb_line information
   # it is made available to the yb::parse::* functions
   declare -A line_
+
   # set field separator
   yb::core::set_IFS $' \t\n'
+
   # loop through each line of the YAML file
   while IFS= read -r raw_line; do
     # reset variables values
@@ -1332,21 +1440,26 @@ yb::parse::yaml() {
     line_["prefix"]=""
     line_["suffix"]=""
     yb_trimmed=""
+
     # keep track of current line number
     line_number=$(( $line_number + 1 ))
     line_["line_number"]="${line_number}"
+
     # copy the raw line to $yb_line
     # used to retrieve original spacing for pipe selection
     yb_line="${raw_line}"
+
     # count the leading spaces to set the indentation level
     spaces="${yb_line%%[^[:space:]]*}"
     level="${#spaces}"
     line_["level"]="$(( $level / $yb_spacing ))"
+
     # remove the leading and trailing spaces
     yb::string::trim::space "${yb_line}"
     yb_line="${yb_trimmed}"
+
     # check the line type
-    if [[ -z "${yb_line}" ]]; then
+    if [[ -z "${yb_line}" ]]; then 
       line_["type"]="empty"
     elif [[ "${yb_line}" == "#"* ]]; then
       yb::parse::yaml::comment
@@ -1365,11 +1478,15 @@ yb::parse::yaml() {
     else
       yb::parse::yaml::other
     fi
+
     # call the filtering function
     yb::parse::filter
+
   done <<< "${yb_YAML}"
+
   # unset IFS
   yb::core::unset_IFS
+
   if [[ "${yb_is_empty_file}" == true ]]; then
     if [[ "${yb_YAML_is_modified}" == false ]]; then
       yb_file_lines_number=0
@@ -1382,6 +1499,7 @@ yb::parse::yaml() {
     yb_file_lines_number="${line_number}"
   fi
 }
+
 ########################################
 # Parse the type comment
 # Globals:
@@ -1393,6 +1511,7 @@ yb::parse::yaml::comment(){
   line_["type"]="comment"
   line_["value"]="${yb_line}"
 }
+
 ########################################
 # Parse the type key
 # Globals:
@@ -1408,6 +1527,7 @@ yb::parse::yaml::key(){
   yb_previous_parent="${line_["key"]}"
   yb_parent_type="key"
 }
+
 ########################################
 # Parse the type key:value
 # Globals:
@@ -1424,6 +1544,7 @@ yb::parse::yaml::key_value(){
   line_["value"]="${yb_trimmed}"
   line_["parent"]="${line_["key"]}"
   line_["suffix"]=": "
+
   # check if a pipe value
   if [[ "${line_["value"]}" == "|" ]]; then
     line_["type"]="key:pipe"
@@ -1434,6 +1555,7 @@ yb::parse::yaml::key_value(){
     yb_parent_type="key:value"
   fi
 }
+
 ########################################
 # Parse the type list-key:value
 # Globals:
@@ -1454,6 +1576,7 @@ yb::parse::yaml::list_key_value(){
   line_["value"]="${yb_trimmed}"
   line_["prefix"]="- "
   line_["suffix"]=": "
+
   # in this case, the parent is on the previous line
   line_["parent"]="${yb_previous_parent}"
   if [[ "${line_["value"]}" == "|" ]]; then
@@ -1462,6 +1585,7 @@ yb::parse::yaml::list_key_value(){
     yb_parent_level="${line_["level"]}"
   fi
 }
+
 ########################################
 # Parse the type list-key
 # Globals:
@@ -1482,6 +1606,7 @@ yb::parse::yaml::list_key(){
   line_["parent"]="${line_["key"]}"
   yb_previous_parent="${line_["key"]}"
 }
+
 ########################################
 # Parse the type list-value
 # Globals:
@@ -1497,6 +1622,7 @@ yb::parse::yaml::list_value(){
   line_["value"]="${yb_trimmed}"
   line_["prefix"]="- "
 }
+
 ########################################
 # Parse the type other
 # Globals:
@@ -1514,6 +1640,7 @@ yb::parse::yaml::other(){
     line_["value"]="${yb_trimmed}"
   fi
 }
+
 ########################################
 # Query file for an existing key
 # Attributes:
@@ -1531,11 +1658,14 @@ yb::query::search::keys(){
   declare -a key=("${1-}")
   yb_key_step=0
   yb_query_result=""
+
   # set the query mode
   yb_boolean_query=true
+
   # prepare the search sequence and parse file
   yb::sequence "${key[@]}"
   yb::parse::yaml "${yb_file}"
+
   # if result contains true and not an addition scenario
   if [[  "${yb_query_result}" == *"true"* ]] &&\
   [[ "${yb_add}" == false ]] &&\
@@ -1543,6 +1673,7 @@ yb::query::search::keys(){
     # output has been returned, exit
     exit 0
   fi
+
   if [[ -n "${yb_query_result}" ]]; then
     # has result
     yb_query_result=true
@@ -1559,9 +1690,11 @@ yb::query::search::keys(){
     # no result
     yb_query_result=false
   fi
+
   # reset flag
   yb_boolean_query=false
 }
+
 ########################################
 # Query file for an existing value
 # Attributes:
@@ -1575,29 +1708,35 @@ yb::query::search::keys(){
 #   yb_file
 ########################################
 yb::query::search::values(){
-  declare -a key=(${@-})
+  declare -a key=(${@-})  
   # reset flags and temp values
   yb_key_step=0
   yb_query_result=""
   yb_query_pipe_result=""
+
   # set the query mode
   yb_value_query=true
+
   # prepare the search sequence and parse file
   yb::sequence "${key[@]}"
   yb::parse::yaml "${yb_file}"
+
   # if a pipe result is retrieved
   if [[ -z "${yb_query_pipe_result}" ]]; then
     if [[ "${yb_query_pipe_result}" == "${yb_value_option}" ]]; then
       yb_query_result=true
     fi
   fi
+
   # if no results are found
   if [[ -z "${yb_query_result}" ]]; then
     yb_query_result=false
   fi
+
   # reset the query mode
   yb_value_query=false
 }
+
 ########################################
 # Query file for an existing key
 # Attributes:
@@ -1616,16 +1755,21 @@ yb::query::search::keys_lines(){
   yb_query_lines_result=()
   yb_query_result=()
   yb_key_step=0
+
   # set mode flag
   yb_line_number_query=true
+
   # prepare the search sequence
   yb::sequence "${key[@]}"
   yb::parse::yaml "${yb_file}"
+
   # get the result
   yb_query_result="${yb_query_lines_result[@]}"
+
   # reset flag
   yb_line_number_query=false
 }
+
 ########################################
 # Query file for values coordinates
 # Attributes:
@@ -1644,18 +1788,23 @@ yb::query::search::values_lines(){
   yb_query_search_values_result=()
   yb_query_result=()
   yb_key_step=0
+
   # set mode flag
   yb_is_array=true
   yb_show_line_number=true
   yb_search_values_query=true
+
   # prepare the search sequence
   yb::sequence "${key[@]}"
   yb::parse::yaml "${yb_file}"
+
   # get the result
   yb_query_result="${yb_array[@]}"
+
   # reset flag
   yb_is_array=false
 }
+
 ########################################
 # Remove key(s) and/or value(s)
 # Globals:
@@ -1666,21 +1815,25 @@ yb::query::search::values_lines(){
 yb::remove(){
   declare -a parent_lines=()
   declare -a child_lines=()
+
   yb_query_result=()
   declare -a child_array
   declare -a remove_lines
   local next_line
   local remove_line
   local line_counter=0
+
   # get lines for parents and children
   yb::query::search::keys_lines "${yb_key_option}"
   parent_lines=(${yb_query_result})
   yb::query::search::values_lines "${yb_key_option}"
   child_lines=(${yb_query_result})
+
   if [[ -z "${parent_lines[@]}" && -z "${child_lines[@]}" ]]; then
     # nothing to remove
     return 0
   fi
+
   # prepare child lines numbers
   if [[ -n "${child_lines[@]}" ]]; then
     for child in "${child_lines[@]}"; do
@@ -1689,6 +1842,7 @@ yb::remove(){
       child_array+=("${child}")
     done
   fi
+
   # prepare overall line numbers
   for parent in "${parent_lines[@]}"; do
     parent="${parent##*_N}"
@@ -1707,6 +1861,7 @@ yb::remove(){
       done
     fi
   done
+
   # iteratevely delete line numbers and adjust line number accordingly
   for (( li = 0; li < "${#remove_lines[@]}"; li++ )); do
     remove_line="${remove_lines[${li}]}"
@@ -1715,6 +1870,7 @@ yb::remove(){
     line_counter=$(( $line_counter + 1 ))
   done
 }
+
 ########################################
 # Remove a value
 # Globals:
@@ -1738,27 +1894,34 @@ yb::remove::values(){
   local spacer=""
   local last_key_index
   local last_key
+
   yb_show_line=true
   yb_silent_query=true
   local pipe_query=""
+
   # check if a pipe value
   if [[ "${yb_key_option: -1}" == "|" ]]; then
     pipe_query=true
   fi
+
   yb::query::search::values "${yb_key_option}"
   result=(${yb_query_result})
+
   if [[ "${result}" == false ]]; then
     return 0
   fi
+
   if [[ "${pipe_query}" == true ]]; then
     yb::remove::values::pipe "${result[@]}"
   else
     yb::remove::values::inline_and_list "${result[@]}"
   fi
+
   # reset flag
   yb_show_line=false
   yb_silent_query=false
 }
+
 ########################################
 # Remove pipe value(s) from file
 # Attributes:
@@ -1771,16 +1934,18 @@ yb::remove::values::pipe(){
   local line_counter=0
   local lines_to_delete
   local first_line_number
+
   for (( rs = 0; rs < "${#result[@]}" ; rs++ )); do
     line_type="${result[$rs]##*'{{T_'}"
     line_type="${line_type%%'}}{{N_'*}"
     line_number="${result[$rs]##*'{{N_'}"
     line_number="${line_number%%'}}'}"
     first_line_number="${line_number%%'_'*}"
-    line_number="${line_number##*'_'}"
+    line_number="${line_number##*'_'}"  
     # adjust the line numbers in regards to previous modifications
     first_line_number=$(( $first_line_number - $line_counter ))
-    line_number=$(( $line_number - $line_counter ))
+    line_number=$(( $line_number - $line_counter )) 
+
     lines_to_delete="${line_number}"
     for (( ld = $first_line_number; ld <= $lines_to_delete; ld++ )); do
       yb::yaml::delete_line "${line_number}"
@@ -1789,6 +1954,7 @@ yb::remove::values::pipe(){
     done
   done
 }
+
 ########################################
 # Remove inline and list value(s) from file
 # Attributes:
@@ -1808,6 +1974,7 @@ yb::remove::values::inline_and_list(){
   local last_key_index
   local spacing="  "
   local spacer=""
+
   for (( rs = 0; rs < "${#result[@]}" ; rs++ )); do
     line_type="${result[$rs]##*'{{T_'}"
     line_type="${line_type%%'}}{{N_'*}"
@@ -1815,8 +1982,11 @@ yb::remove::values::inline_and_list(){
     line_number="${line_number%%'}}'}"
     # adjust the line number in regards to previous modifications
     line_number=$(( $line_number - $line_counter ))
+
     if [[ "${line_type}" == *"key:value" ]]; then
+
       yb::yaml::delete_line "${line_number}"
+
       line_number=$(( $line_number - 1 ))
       # create spacer
       for (( sp = 0; sp < $yb_key_length - 1; sp++ )); do
@@ -1835,12 +2005,14 @@ yb::remove::values::inline_and_list(){
       # clean spacer
       spacer=""
     else
+
       yb::yaml::delete_line "${line_number}"
       # increment line count
       line_counter=$(( $line_counter + 1 ))
     fi
   done
 }
+
 ########################################
 # Prepare globals for sequence search
 # Attributes:
@@ -1848,12 +2020,15 @@ yb::remove::values::inline_and_list(){
 ########################################
 yb::sequence(){
   local key=${@:-"${yb_key_option}"}
+
   # set flags
   yb_is_sequence=true
   yb_retrieve=false
+
   # transform string into an array
   yb::sequence::key_to_array "${key}"
 }
+
 ########################################
 # Transform original key option into an array
 # Attributes:
@@ -1867,13 +2042,16 @@ yb::sequence(){
 yb::sequence::key_to_array(){
   local keys="${1:-"${yb_key_option}"}"
   yb_keys=()
+
   # replace space with anti-backslash
   keys="${keys// /\\}"
   # replace points with spaces
   keys="${keys//./ }"
   # transform the string in an array
   keys=(${keys})
+
   yb_key_length="${#keys[@]}"
+
   for (( yk = 0; yk < $yb_key_length; yk++ )); do
     key="${keys[$yk]}"
       if [[ "${key}" == *\\* ]]; then
@@ -1882,10 +2060,13 @@ yb::sequence::key_to_array(){
       fi
       yb_keys[$yk]="${key}"
   done
+
   if [[ -z "${yb_original_key_length}" ]]; then
     yb_original_key_length="${yb_key_length}"
   fi
 }
+
+
 ########################################
 # Build the spacer that comes before a key or value
 # Globals:
@@ -1901,12 +2082,14 @@ yb::string::build_spacer(){
   local style=""
   local separator=""
   local spacer=""
+
   # set the correct starting level
   if [[ ${yb_is_sequence} == true ]]; then
     level=$(( $level - 1 ))
-  else
+  else 
     level=$(( $level + 1 ))
   fi
+
   # switch the separator type
   if [[  "${yb_format}" == true ]]; then
     style="."
@@ -1919,16 +2102,22 @@ yb::string::build_spacer(){
       separator+="${style}"
     done
   fi
+
   yb::string::set_level "${level}"
+
   level="${yb_set_level}"
+
   for (( i = 0; i < $level; i++ )); do
     spacer+="${separator}"
   done
+  
   if [[ "${line_["type"]}" == *"value"* && "${yb_format}" == true ]]; then
     spacer+="${yb_previous_parent}_"
   fi
+
   line_["spacer"]="${spacer}"
 }
+
 ########################################
 # Set the correct level depending on cli options
 # Globals:
@@ -1942,6 +2131,7 @@ yb::string::build_spacer(){
 ########################################
 yb::string::set_level(){
   local level="${1-}"
+
   # set the correct level number
   if [[ ${yb_is_sequence} == false ]]; then
     level=$(( $level - 1 ))
@@ -1953,9 +2143,11 @@ yb::string::set_level(){
     local base_level="${yb_key_base_level}"
     level=$(( $level - $base_level ))
   fi
+
   # assign the resulting value to the global
   yb_set_level="${level}"
 }
+
 ########################################
 # Build the outer that comes after a key or value
 # Globals:
@@ -1971,6 +2163,7 @@ yb::string::build_outer(){
   local line_spacer="{{line}}"
   local line_level_spacer="{{${line_["level"]}}}"
   local line_number_spacer="{{${line_["line_number"]}}}"
+
   # add an outer {{line}} for each line
   if [[ "${yb_show_line}" == true ]]; then
     outer+="${line_spacer}"
@@ -1985,6 +2178,7 @@ yb::string::build_outer(){
   fi
   line_["outer"]="${outer}"
 }
+
 ########################################
 # Check for a value type
 # Attributes:
@@ -1999,6 +2193,7 @@ yb::string::value_type(){
   local boolean_regex='^(?i)true$'
   local float_regex='^[0-9.]+$'
   yb_value_type=""
+
   # see https://yaml.org/spec/1.2.2/#1011-tags
   # partial support, missing keys types
   if [[ "${type}" == "comment" ]]; then
@@ -2016,6 +2211,7 @@ yb::string::value_type(){
     yb_value_type="!! str "
   fi
 }
+
 ########################################
 # Check for a value type
 # Attributes:
@@ -2023,6 +2219,7 @@ yb::string::value_type(){
 ########################################
 yb::string::color_type(){
   local value="${1-}"
+
   if [[ "${yb_value_type}" == "!! bool " ]]; then
     yb::string::set_color "${value}" "${yb_red}"
     yb_value="${yb_color_string}"
@@ -2031,16 +2228,19 @@ yb::string::color_type(){
     yb::string::set_color "${value}" "${yb_orange}"
     yb_value="${yb_color_string}"
     yb_is_colored=true
+
   elif [[ "${yb_value_type}" == "!! null " ]]; then
     yb::string::set_color "${value}" "${yb_italic}"
     yb_value="${yb_color_string}"
     yb_is_colored=true
   fi
+
   # empty the global variable if not expected
   if [[ "${yb_type}" == false ]]; then
     yb_value_type=""
   fi
 }
+
 ########################################
 # Trim leading and trailing spaces
 # Attributes:
@@ -2048,13 +2248,17 @@ yb::string::color_type(){
 ########################################
 yb::string::trim::space(){
   local string="${@-}"
+
   # remove spaces before
   string="${string#"${string%%[![:space:]]*}"}"
+
   # remove spaces after
   string="${string%"${string##*[![:space:]]}"}"
+
   # assign to global
   yb_trimmed="${string}"
 }
+
 ########################################
 # Trim leading and trailing spaces
 # Inherit:
@@ -2064,12 +2268,15 @@ yb::string::trim::space(){
 yb::string::trim::pipe_value::space(){
   local spacing="  "
   local spacer=""
+
   for (( i = 0; i < ${line_["level"]}; i++ )); do
     spacer+="${spacing}"
   done
+
   # assign to global
   yb_trimmed="${raw_line##"${spacer}"}"
 }
+
 ########################################
 # Trim a leading hyphen and one space
 # Attributes:
@@ -2077,11 +2284,14 @@ yb::string::trim::pipe_value::space(){
 ########################################
 yb::string::trim::hyphen(){
   local string="${@-}"
+
   # remove hyphen
   string="${string#- }"
+
   # assign to global
   yb_trimmed="${string}"
 }
+
 ########################################
 # Add some color tags to a string
 # Attributes:
@@ -2091,9 +2301,11 @@ yb::string::trim::hyphen(){
 yb::string::set_color(){
   local text="${1-}"
   local color="${2-}"
+
   # assign to global
   yb_color_string="${color}${text}\033[0m"
 }
+
 ########################################
 # Append line in a file
 # Attributes:
@@ -2109,12 +2321,15 @@ yb::yaml::append_line(){
   local line_count=0
   local line=""
   local temp_yaml=""
+
   # set IFS on newline
   yb::core::set_IFS $'\n'
+
   # loop through each line of the YAML object
   if [[ -n "${yb_YAML}" ]]; then
     while IFS= read -r line; do
-      line_count=$(( $line_count + 1 ))
+      line_count=$(( $line_count + 1 )) 
+
       if [[ "${line_count}" -eq "${yb_file_lines_number}" ]]; then
         # reached last line
         if [[ "${line_count}" -eq "${line_to_append}" ]]; then
@@ -2140,13 +2355,17 @@ yb::yaml::append_line(){
     temp_yaml="${content_to_copy}"$'\n'
     yb_file_lines_number=$(( $yb_file_lines_number + 1 ))
   fi
+
   # unset IFS
   yb::core::unset_IFS
+
   # set temp value to global variable
   yb_YAML="${temp_yaml}"
+
   # set modified flag
   yb_YAML_is_modified=true
 }
+
 ########################################
 # Append line in a file
 # Attributes:
@@ -2162,8 +2381,10 @@ yb::yaml::append_object(){
   local line_count=0
   local line=""
   local temp_yaml=""
+
   # set IFS on newline
   yb::core::set_IFS $'\n'
+
   # loop through each line of the YAML object
   while IFS= read -r line; do
     line_count=$(( $line_count + 1 ))
@@ -2174,30 +2395,35 @@ yb::yaml::append_object(){
         temp_yaml+="${line}"
       fi
   done <<< "${yb_YAML}"
+
   # unset IFS
   yb::core::unset_IFS
+
   # set temp value to global variable
   yb_YAML="${temp_yaml}"
+
   # set modified flag
   yb_YAML_is_modified=true
 }
+
 ########################################
 # Cache yaml file into a global variable
 # Attributes:
 #   $1 # a yaml file path
 ########################################
 yb::yaml::cache(){
-  if [[ -f "${yb_file}" && -n "${yb_object}" ]]; then
+  if [[ -f "${yb_file}" && -n "${yb_object}" ]]; then 
     yb_YAML=$(<"${yb_file}")
     yb_YAML_object="${yb_object}"
   else
     if [[ -f "${yb_file}" ]]; then
       yb_YAML=$(<"${yb_file}")
-    elif [[ -n "${yb_object}" ]]; then
+    elif [[ -n "${yb_object}" ]]; then 
       yb_YAML="${yb_object}"
     fi
   fi
 }
+
 ########################################
 # Delete line in a file
 # Attributes:
@@ -2210,8 +2436,10 @@ yb::yaml::copy_line(){
   local line_to_copy="${1-}"
   local line_count=0
   local line=""
+
   # set IFS on newline
   yb::core::set_IFS $'\n'
+
   # loop through each line of the YAML object
   while IFS= read -r line; do
     line_count=$(( $line_count + 1 ))
@@ -2220,9 +2448,11 @@ yb::yaml::copy_line(){
       return 0
     fi
   done <<< "${yb_YAML}"
+
   # unset IFS
   yb::core::unset_IFS
 }
+
 ########################################
 # Delete line in a file
 # Attributes:
@@ -2238,17 +2468,22 @@ yb::yaml::delete_line(){
   local last_line=0
   local next_line_count=1
   local temp_yaml=""
+
   # set IFS on newline
   yb::core::set_IFS $'\n'
+
   # loop through each line of the YAML object
   while IFS= read -r line; do
+
     line_count=$(( $line_count + 1 ))
     next_line_count=$(( $next_line_count + 1 ))
+
     # if deleted already
     if [[ "${line_count}" -gt "${yb_file_lines_number}" ]]; then
       temp_yaml+="${line}"
       break;
     fi
+
     # if line count is the same as the yaml one
     if [[ "${line_count}" -eq "${yb_file_lines_number}" ]]; then
       # reached last line
@@ -2260,7 +2495,7 @@ yb::yaml::delete_line(){
       fi
     # else within the YAML body
     else
-      if [[ "${line_count}" -eq "${line_to_delete}" ]]; then
+      if [[ "${line_count}" -eq "${line_to_delete}" ]]; then     
         yb_file_lines_number=$(( $yb_file_lines_number - 1 ))
         continue
       else
@@ -2277,14 +2512,19 @@ yb::yaml::delete_line(){
         fi
       fi
     fi
+
   done <<< "${yb_YAML}"
+
   # unset IFS
   yb::core::unset_IFS
+
   # set temp value to global variable
   yb_YAML="${temp_yaml}"
+
   # set modified flag
   yb_YAML_is_modified=true
 }
+
 ########################################
 # Replace line in a file
 # Attributes:
@@ -2299,11 +2539,15 @@ yb::yaml::replace_line(){
   local line_count=0
   local line
   local temp_yaml
+
   # set IFS on newline
   yb::core::set_IFS $'\n'
+
   # loop through each line of the YAML object
   while IFS= read -r line; do
+
     line_count=$(( $line_count + 1 ))
+
     if [[ "${line_count}" -eq "${yb_file_lines_number}" ]]; then
       # reached last line
       if [[ "${line_count}" -eq "${line_to_replace}" ]]; then
@@ -2320,11 +2564,15 @@ yb::yaml::replace_line(){
        temp_yaml+="${line}"$'\n'
       fi
     fi
+
   done <<< "${yb_YAML}"
+
   # unset IFS
   yb::core::unset_IFS
+
   yb_YAML="${temp_yaml}"
 }
+
 ########################################
 # Prepare the ouptut, either file update or object print
 # Globals:
@@ -2338,6 +2586,7 @@ yb::yaml::output(){
     echo "${yb_YAML}"
   fi
 }
+
 # Launch main function
 yb::main "${@}"
 # Unset the eu flag

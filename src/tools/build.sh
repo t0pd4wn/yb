@@ -20,6 +20,7 @@ yb::build(){
   rm "${help_file}"
   help_function=$(declare -f yb::main::help)
   help_function=${help_function//    /  }
+  help_function=${help_function//dev version/version "${version_number}"}
 
   # remove file header
   sed -i '1,12d;' "${copy_file}"
@@ -64,7 +65,7 @@ yb::build(){
   ./tests/yb_tests.sh "yb"
 }
 
-yb::build
+yb::build "${@}"
 
 # Unset the eu flag
 set +eu

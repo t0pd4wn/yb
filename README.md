@@ -10,7 +10,7 @@
 ## Usage
 
 ```bash
-./yb -aAcdFlLnoqRrT -f "<yaml_file>" -k "<key>" -v "<value>"
+yb [-v|-h|-a|-c|-q|-r|-A-d-F-l-L-R-n-T] [-f <file>|-o <object>] [-k <key>] [-v <value>]
 ```
 
 ### Examples
@@ -98,6 +98,12 @@ sudo cp yb /usr/local/bin/
 ```
 
 ### One-liner
+
+You can use this command to download `yb` on your system in one line:
+
+```bash
+bash <(echo "https://gitlab.com/t0pd4wn/yb/-/raw/main/yb"|(read l; wget $l || curl $l >yb)) && chmod +x yb;
+```
 
 You can use this command to install `yb` on your system in one line:
 

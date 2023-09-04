@@ -1,12 +1,15 @@
 #!/bin/bash
 #---------------------------------------
-# yb | yaml bash parser |  | Licensed under GNU GPL V3
+# yb | yaml bash parser | 0.8 | Licensed under GNU GPL V3
 #---------------------------------------
 # Note: this is a minified version. The full code is available in 'src/yb_dev'.
 #---------------------------------------
 set -eu
 yb::main::help () 
 { 
+  echo 'yb version 0.8 by t0pd4wn.';
+  echo 'yb [-v|-h|-a|-c|-q|-r|-A-d-F-l-L-R-n-T] [-f <file>|-o <object>] [-k <key>] [-v <value>]';
+  echo '';
   echo '  -a  | Adds key(s), value(s) or both. | yb -f "file.yaml" -a -k "key" -v "value"';
   echo '  -c  | Changes value(s). | yb -f "file.yaml" -c -k "key" -v "new_value"';
   echo '  -q  | Prints "true" or "false" if key(s), value(s) or both are present or not. | yb -f "file.yaml" -q -k "key" | Using single quotes is advised to retrieve a pipe value "-v pipe value".';
@@ -205,7 +208,6 @@ local s_le="${_k_le}"
 local se_k=""
 local ctr=$s_le
 declare -a ks=("${_ks[@]}")
-declare -a coordinates
 declare -a reverse_ra
 for (( rk = ${#ks[@]} - 1; rk >= 0; rk-- )); do
 reverse_ra+=("${ks[rk]}")

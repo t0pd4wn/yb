@@ -337,7 +337,6 @@ yb::add::manage::keys(){
   local search_key=""
   local counter=$sequence_length  
   declare -a keys=("${yb_keys[@]}")
-  declare -a coordinates
   declare -a reverse_array
 
   for (( rk = ${#keys[@]} - 1; rk >= 0; rk-- )); do

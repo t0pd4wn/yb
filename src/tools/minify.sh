@@ -20,6 +20,7 @@ yb::minify(){
 
   help_function=$(declare -f yb::main::help)
   help_function=${help_function//    /  }
+  help_function=${help_function//dev version/version "${version_number}"}
 
   # remove comments
   sed -i '/^[[:blank:]]*#/d' "${copy_file}"
@@ -32,7 +33,6 @@ yb::minify(){
   sed -i 's/^[[:space:]]*//' "${copy_file}"
 
   cached_file=$(< "${copy_file}")
-  # help_file=$(< "${help_file}")
 
   rm "${copy_file}"
 
@@ -187,7 +187,7 @@ yb::minify(){
   ./tests/yb_tests.sh "dist/yb.min"
 }
 
-yb::minify
+yb::minify "${@}"
 
 # Unset the eu flag
 set +eu

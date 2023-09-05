@@ -54,16 +54,16 @@ tests(){
 - PARSER" "${parse}"
 
 	echo -e "\U1F4AC Test 1.${test_num}: parse file with key chain, targetting an inline key"
-	parse=$("./${program}" -f "${yaml_file}" -k "yaml.yaml.bash.- IFS")
+	parse=$("./${program}" -Rf "${yaml_file}" -k "yaml.yaml.bash.- IFS")
 	check_test "BASED PARSER" "${parse}"
 
   echo -e "\U1F4AC Test 1.${test_num}: parse object with key chain, targetting an inline key"
-  parse=$("./${program}" -o "${yaml_object}" -k "yaml.yaml.bash.- IFS")
+  parse=$("./${program}" -Ro "${yaml_object}" -k "yaml.yaml.bash.- IFS")
   check_test "BASED PARSER" "${parse}"
 
 	echo -e "\U1F4AC Test 1.${test_num}: parse file with key chain, targetting an inline-key containing a space"
-	parse=$("./${program}" -f "${yaml_file}" -k "complex.strings.- I am")
-	check_test "a complex string" "${parse}"
+	parse=$("./${program}" -Rf "${yaml_file}" -k "complex.strings.- I am")
+  check_test "a complex string" "${parse}"
 
   echo -e "\U1F4AC Test 1.${test_num}: parse object with key chain, targetting an inline-key containing a space"
   parse=$("./${program}" -o "${yaml_object}" -k "complex.strings.- I am")
@@ -165,9 +165,9 @@ tests(){
 
   echo -e "\U1F4AC Test 1.${test_num}: parse object with all -lLn outer options"
   parse=$("./${program}" -RlLno "${yaml_object}" -k "yb.yaml.bash")
-  check_test "- IFS{{line}}{{3}}{{7}}
-- BASED{{line}}{{3}}{{8}}
-- PARSER{{line}}{{3}}{{9}}" "${parse}"
+  check_test "- IFS{{line}}{{3}}{{5}}
+- BASED{{line}}{{3}}{{6}}
+- PARSER{{line}}{{3}}{{7}}" "${parse}"
 
   echo -e "\U1F4AC Test 1.${test_num}: parse file with all options but depth"
   parse=$("./${program}" -FARlLnf "${yaml_file}" -k "yb.yaml.bash")
@@ -175,7 +175,7 @@ tests(){
        
   echo -e "\U1F4AC Test 1.${test_num}: parse object with all options but depth"
   parse=$("./${program}" -FARlLno "${yaml_object}" -k "yb.yaml.bash")
-  check_test ".bash_IFS{{line}}{{3}}{{7}} .bash_BASED{{line}}{{3}}{{8}} .bash_PARSER{{line}}{{3}}{{9}}" "${parse}"
+  check_test ".bash_IFS{{line}}{{3}}{{5}} .bash_BASED{{line}}{{3}}{{6}} .bash_PARSER{{line}}{{3}}{{7}}" "${parse}"
 
   echo -e "\U1F4AC Test 1.${test_num}: parse file with type options"
   parse=$("./${program}" -RTf "${yaml_file}" -k "yaml.yaml.yaml.bash.- IFS.- BASED")
@@ -201,7 +201,7 @@ float-number: !! float 101.01" "${parse}"
 
   echo -e "\U1F4AC Test 1.${test_num}: parse object with all compatible options"
   parse=$("./${program}" -FARTldLno "${yaml_object}" -k "yb.yaml.bash")
-  check_test "....bash_!! str IFS{{line}}{{3}}{{7}} ....bash_!! str BASED{{line}}{{3}}{{8}} ....bash_!! str PARSER{{line}}{{3}}{{9}}" "${parse}"
+  check_test "....bash_!! str IFS{{line}}{{3}}{{5}} ....bash_!! str BASED{{line}}{{3}}{{6}} ....bash_!! str PARSER{{line}}{{3}}{{7}}" "${parse}"
 
   # 
   # part 2
@@ -581,7 +581,7 @@ FALSE" "${parse}"
   echo "Total tests: ${total_num}"
 
   # yb Ascii
-  "./${program}" -o "${yaml_object}" -k "- ascii|"
+  "./${program}" -f "${yaml_file}" -k "- ascii|"
 }
 
 check_test(){

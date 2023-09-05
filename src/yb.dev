@@ -1167,6 +1167,14 @@ yb::parse::print::prepare_colors(){
       line_["value"]="${yb_value}"
     fi
   fi
+  if [[ -n "${line_["comment"]}" ]]; then
+    if [[ "${yb_parent_type}" == *"key:pipe" &&\
+    "${line_["type"]}" == *"key:pipe" ]] ||\
+    [[ ! "${yb_parent_type}" == *"key:pipe" ]] ; then
+      yb::string::set_color "${line_["comment"]}" "${yb_grey}"
+      line_["comment"]="${yb_color_string}"
+    fi
+  fi
 }
 
 ########################################
@@ -1178,13 +1186,22 @@ yb::parse::print::prepare_colors(){
 ########################################
 yb::parse::print::output(){
   local string=""
+  local comment=""
+
+  if [[ "${yb_is_raw}" == true ]]; then
+    line_["comment"]=""
+    if [[ "${line_["type"]}" == "comment" || "${line_["type"]}" == "empty" ]]; then
+      return
+    fi
+  fi
+
   # if a *key:value sequence
   if [[ "${yb_is_sequence}" == true && "${yb_one_line}" == true ]]; then
     if [[ "${line_["type"]}" == *"key:value" ]]; then
       if [[ "${yb_is_colored}" == true ]]; then
-        echo -e "${line_["value"]}${line_["outer"]}"
+        echo -e "${line_["value"]}${line_["outer"]}${line_["comment"]}"
       else
-        echo "${line_["value"]}${line_["outer"]}"
+        echo "${line_["value"]}${line_["outer"]}${line_["comment"]}"
       fi
       yb_one_line=false
       yb_is_print=false
@@ -1197,20 +1214,22 @@ yb::parse::print::output(){
       echo "${line_["spacer"]}"${string}
     else
       if [[ ${yb_is_colored} == true ]]; then
+        comment=$(echo -e ${line_["comment"]})
         string="${line_["prefix"]}${line_["key"]}${line_["suffix"]}"
-        string+=" ${yb_value_type}${line_["value"]}${line_["outer"]}"
+        string+=" ${yb_value_type}${line_["value"]}${line_["outer"]}${comment}"
         string=$(echo -e "${string}")
       else
         string="${line_["prefix"]}${line_["key"]}${line_["suffix"]}"
         string=$(echo -e "${string}" &&\
-        echo "${yb_value_type}${line_["value"]}${line_["outer"]}")
+        echo "${yb_value_type}${line_["value"]}${line_["outer"]}" &&\
+        echo -e "${line_["comment"]}")
       fi
-    if [[ "${line_["type"]}" == *"key:pipe" ]]; then
-       echo "${line_["spacer"]}"${string}
-      # if a pipe value no color support
-     elif [[ "${yb_parent_type}" == *"key:pipe" ]]; then
+      if [[ "${line_["type"]}" == *"key:pipe" ]]; then
+         echo "${line_["spacer"]}"${string}
+        # if a pipe value no color support
+      elif [[ "${yb_parent_type}" == *"key:pipe" ]]; then
         string="${line_["prefix"]}${line_["key"]}${line_["suffix"]}"
-        string+="${yb_value_type}${line_["value"]}${line_["outer"]}"
+        string+="${yb_value_type}${line_["value"]}${line_["outer"]}${line_["comment"]}"
         echo "${line_["spacer"]}""${string}"
       else
         echo "${line_["spacer"]}"${string}
@@ -1440,6 +1459,7 @@ yb::parse::yaml() {
     line_["line_number"]=""
     line_["key"]=""
     line_["value"]=""
+    line_["comment"]=""
     line_["parent"]=""
     line_["prefix"]=""
     line_["suffix"]=""
@@ -1462,12 +1482,15 @@ yb::parse::yaml() {
     yb::string::trim::space "${yb_line}"
     yb_line="${yb_trimmed}"
 
+
+local regex="\\*\\.!.*|\\*\\.|\\.!.*"
     # check the line type
     if [[ -z "${yb_line}" ]]; then 
       line_["type"]="empty"
     elif [[ "${yb_line}" == "#"* ]]; then
       yb::parse::yaml::comment
-    elif [[ "${yb_line}" == *":" && "${yb_line}" != "-"*":"* ]]; then
+
+    elif [[ "${yb_line}" == *":" || "${yb_line}" == *": #"* && "${yb_line}" != "-"*":"* ]]; then
       yb::parse::yaml::key
     elif [[ "${yb_line}" == *": "* && ${yb_line} != "- "* ]]; then
       yb::parse::yaml::key_value
@@ -1482,6 +1505,11 @@ yb::parse::yaml() {
     else
       yb::parse::yaml::other
     fi
+
+    # check for inline comment
+    if [[ "${yb_line}" == *" #"* ]]; then 
+      yb::parse::yaml::inline_comment
+    fi 
 
     # call the filtering function
     yb::parse::filter
@@ -1514,6 +1542,18 @@ yb::parse::yaml() {
 yb::parse::yaml::comment(){
   line_["type"]="comment"
   line_["value"]="${yb_line}"
+}
+
+########################################
+# Parse the type comment
+# Globals:
+#   $yb_line
+# Inherit:
+#   ${line_[@]}
+########################################
+yb::parse::yaml::inline_comment(){
+  line_["comment"]=" #${yb_line#*#}"
+  line_["value"]="${line_["value"]%% #*}"
 }
 
 ########################################
@@ -1583,10 +1623,12 @@ yb::parse::yaml::list_key_value(){
 
   # in this case, the parent is on the previous line
   line_["parent"]="${yb_previous_parent}"
-  if [[ "${line_["value"]}" == "|" ]]; then
+  if [[ "${line_["value"]}" == "|" || "${line_["value"]}" == "| #"* ]]; then
     line_["type"]="list-key:pipe"
     yb_parent_type="list-key:pipe"
     yb_parent_level="${line_["level"]}"
+    line_["value"]="|"
+    line_["comment"]="hah"
   fi
 }
 
@@ -2232,10 +2274,11 @@ yb::string::color_type(){
     yb::string::set_color "${value}" "${yb_orange}"
     yb_value="${yb_color_string}"
     yb_is_colored=true
-
   elif [[ "${yb_value_type}" == "!! null " ]]; then
     yb::string::set_color "${value}" "${yb_italic}"
     yb_value="${yb_color_string}"
+    yb_is_colored=true
+  elif [[ "${yb_value_type}" == "!! str " ]]; then
     yb_is_colored=true
   fi
 

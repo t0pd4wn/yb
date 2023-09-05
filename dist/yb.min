@@ -718,15 +718,30 @@ if [[ -n "${_v}" ]]; then
 l_["v"]="${_v}"
 fi
 fi
+if [[ -n "${l_["cmt"]}" ]]; then
+if [[ "${_pa_ty}" == *"k:pi" &&\
+"${l_["ty"]}" == *"k:pi" ]] ||\
+[[ ! "${_pa_ty}" == *"k:pi" ]] ; then
+_st_set_cr "${l_["cmt"]}" "${_grey}"
+l_["cmt"]="${_cr_st}"
+fi
+fi
 }
 _p_pt_ot(){
 local st=""
+local cmt=""
+if [[ "${_is_rw}" == true ]]; then
+l_["cmt"]=""
+if [[ "${l_["ty"]}" == "cmt" || "${l_["ty"]}" == "empty" ]]; then
+return
+fi
+fi
 if [[ "${_is_s}" == true && "${_one_l}" == true ]]; then
 if [[ "${l_["ty"]}" == *"k:v" ]]; then
 if [[ "${_is_crd}" == true ]]; then
-echo -e "${l_["v"]}${l_["or"]}"
+echo -e "${l_["v"]}${l_["or"]}${l_["cmt"]}"
 else
-echo "${l_["v"]}${l_["or"]}"
+echo "${l_["v"]}${l_["or"]}${l_["cmt"]}"
 fi
 _one_l=false
 _is_pt=false
@@ -739,19 +754,21 @@ st=$(echo -e "${st}")
 echo "${l_["sr"]}"${st}
 else
 if [[ ${_is_crd} == true ]]; then
+cmt=$(echo -e ${l_["cmt"]})
 st="${l_["px"]}${l_["k"]}${l_["su"]}"
-st+=" ${_v_ty}${l_["v"]}${l_["or"]}"
+st+=" ${_v_ty}${l_["v"]}${l_["or"]}${cmt}"
 st=$(echo -e "${st}")
 else
 st="${l_["px"]}${l_["k"]}${l_["su"]}"
 st=$(echo -e "${st}" &&\
-echo "${_v_ty}${l_["v"]}${l_["or"]}")
+echo "${_v_ty}${l_["v"]}${l_["or"]}" &&\
+echo -e "${l_["cmt"]}")
 fi
 if [[ "${l_["ty"]}" == *"k:pi" ]]; then
 echo "${l_["sr"]}"${st}
 elif [[ "${_pa_ty}" == *"k:pi" ]]; then
 st="${l_["px"]}${l_["k"]}${l_["su"]}"
-st+="${_v_ty}${l_["v"]}${l_["or"]}"
+st+="${_v_ty}${l_["v"]}${l_["or"]}${l_["cmt"]}"
 echo "${l_["sr"]}""${st}"
 else
 echo "${l_["sr"]}"${st}
@@ -857,6 +874,7 @@ l_["lv"]=""
 l_["l_n"]=""
 l_["k"]=""
 l_["v"]=""
+l_["cmt"]=""
 l_["pa"]=""
 l_["px"]=""
 l_["su"]=""
@@ -869,11 +887,12 @@ lv="${#sp}"
 l_["lv"]="$(( $lv / $_sg ))"
 _st_tr_sp "${_l}"
 _l="${_tm}"
+local rx="\\*\\.!.*|\\*\\.|\\.!.*"
 if [[ -z "${_l}" ]]; then
 l_["ty"]="empty"
 elif [[ "${_l}" == "#"* ]]; then
 _p_y_cmt
-elif [[ "${_l}" == *":" && "${_l}" != "-"*":"* ]]; then
+elif [[ "${_l}" == *":" || "${_l}" == *": #"* && "${_l}" != "-"*":"* ]]; then
 _p_y_k
 elif [[ "${_l}" == *": "* && ${_l} != "- "* ]]; then
 _p_y_k_v
@@ -887,6 +906,9 @@ elif [[ "${_l}" == "-"* ]]; then
 _p_y_lt_v
 else
 _p_y_other
+fi
+if [[ "${_l}" == *" #"* ]]; then
+_p_y_in_cmt
 fi
 _p_fr
 done <<< "${_Y}"
@@ -905,6 +927,10 @@ fi
 _p_y_cmt(){
 l_["ty"]="cmt"
 l_["v"]="${_l}"
+}
+_p_y_in_cmt(){
+l_["cmt"]=" #${_l#*#}"
+l_["v"]="${l_["v"]%% #*}"
 }
 _p_y_k(){
 l_["ty"]="k"
@@ -945,10 +971,12 @@ l_["v"]="${_tm}"
 l_["px"]="- "
 l_["su"]=": "
 l_["pa"]="${_pv_pa}"
-if [[ "${l_["v"]}" == "|" ]]; then
+if [[ "${l_["v"]}" == "|" || "${l_["v"]}" == "| #"* ]]; then
 l_["ty"]="lt-k:pi"
 _pa_ty="lt-k:pi"
 _pa_lv="${l_["lv"]}"
+l_["v"]="|"
+l_["cmt"]="hah"
 fi
 }
 _p_y_lt_k(){
@@ -1308,6 +1336,8 @@ _is_crd=true
 elif [[ "${_v_ty}" == "!! null " ]]; then
 _st_set_cr "${v}" "${_italic}"
 _v="${_cr_st}"
+_is_crd=true
+elif [[ "${_v_ty}" == "!! str " ]]; then
 _is_crd=true
 fi
 if [[ "${_ty}" == false ]]; then

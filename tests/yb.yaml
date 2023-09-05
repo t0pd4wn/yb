@@ -19,7 +19,7 @@ yaml:
   yb:
   yaml:
     bash:
-      - IFS: BASED PARSER
+      - IFS: BASED PARSER # inline comment
     yaml:
       bash:
         - IFS:
@@ -27,7 +27,7 @@ yaml:
             - PARSER
             - 1
             - 0
-            - 1
+            - 1 # an other inline comment # a third one
             number: 101
             float-number: 101.01
 inline-object: {one: 1, two: 2, three: 3}
@@ -59,12 +59,14 @@ complex:
   strings:
     - trick::
     - \033[0;30m
-    - I am: a complex string
-    - key: or string
+    - I am: a complex string #comment
+    - key: or string # comment
     - string: "this string: "
     - "String says: I am a string !"
     - 'this string: ' 
     - inline-string: "this string: "
+    - this string#
+    - 'this string \#'
     - \n
     - \"Complex string\" \t\t\t\t tabs, newlines\n\n, and \${special} \${very special} characters.
     - Complex-string- and::very special::characters.
@@ -72,18 +74,18 @@ keys:
   are:
   all:
   are:
-  all:
+  all: # comment
     all:
-    all:
+    all: #comment
     the:
     the:
       - same
 - root-key:
   - child-key: true
 - yb: yaml bash parser
-- ascii: |
+- ascii: | #comment
   ___  _ ____
   \  \///  __\
    \  / | | //
    / /  | |_\\
-  /_/   \____/
+  /_/   \____/ # for bash

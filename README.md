@@ -88,7 +88,7 @@ chmod +x yb
 You can use this command to dowload directly the `yb` script where needed:
 
 ```bash
-bash <(echo https://gitlab.com/t0pd4wn/yb/-/raw/main/yb|(read l; wget $l || curl $l >yb)) && chmod +x yb;
+bash <(echo "https://gitlab.com/t0pd4wn/yb/-/raw/main/yb"|(read l; wget $l || curl $l >yb)) && chmod +x yb;
 ```
 
 If you want `yb` to be available system wide, run this command from the repository folder:
@@ -99,7 +99,7 @@ sudo cp yb /usr/local/bin/
 
 ### One-liner
 
-You can use this command to download `yb` on your system in one line:
+You can use this command to download `yb` in the current folder in one line:
 
 ```bash
 bash <(echo "https://gitlab.com/t0pd4wn/yb/-/raw/main/yb"|(read l; wget $l || curl $l >yb)) && chmod +x yb;
@@ -133,7 +133,7 @@ bash <(echo "https://gitlab.com/t0pd4wn/yb/-/raw/main/yb"|(read l; wget $l || cu
 | `-F`   | format | format | Prints a formatted output to represent the arborescence inline. | `yb -f "file.yaml" -F -k "key"` | Will provide a different formatting if used with `-A` or `-d`. |
 | `-l`   | line   | format | Prints `{{line}}` on each lines. | `yb -f "file.yaml" -l -k "key"` | |
 | `-L`   | level  | format | Prints `{{<level number>}}` on each lines. | `yb -f "file.yaml" -L -k "key"` | |
-| `-R`   | raw    | format | Prints the ouptut without added colors. | `yb -f "file.yaml" -R -k "key"` | |
+| `-R`   | raw    | format | Prints the ouptut without added colors, comments and empty lines. | `yb -f "file.yaml" -R -k "key"` | |
 | `-n`   | number | format | Prints `{{<line number>}}` on each lines. | `yb -f "file.yaml" -n -k "key"` | |
 | `-T`   | type   | format | Prints a value type. | `yb -f "file.yaml" -T -k "key"` | Supports `null`, `boolean`, `integer`, `floating number`, `string`. |
 | `-s`   | spaces | Deprecated | Spaces number selection. | | |

@@ -62,7 +62,7 @@ yb::build(){
   rm "${copy_file}"
 
   # run tests
-  ./tests/yb_tests.sh "yb"
+  ./tests/tests.sh "yb"
 }
 
 yb::build "${@}"

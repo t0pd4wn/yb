@@ -145,7 +145,7 @@ minified version "${version_number}"}
   cached_file="${cached_file//::trim/::tr}"
   # last removal
   cached_file="${cached_file//ed/d}"
-  cached_file="${cached_file//::/_}"
+  # cached_file="${cached_file//::/_}"
   cached_file="${cached_file//__/_}"
 
   # correcting strings
@@ -186,7 +186,7 @@ minified version "${version_number}"}
   rm "${copy_file}"
   rm "${help_file}"
 
-  ./tests/yb_tests.sh "dist/yb.min"
+  ./tests/tests.sh "dist/yb.min"
 }
 
 yb::minify "${@}"

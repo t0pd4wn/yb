@@ -8,6 +8,7 @@ tests(){
   local yaml_file="tests/yb.yaml"
   local yaml_object
   yaml_object=$("./${program}" -Rf "${yaml_file}")
+  local value
 
 	echo -e "\U1F3B2 Welcome to YB tests: "
 
@@ -68,6 +69,50 @@ tests(){
   echo -e "\U1F4AC Test 1.${test_num}: parse object with key chain, targetting an inline-key containing a space"
   parse=$("./${program}" -o "${yaml_object}" -k "complex.strings.- I am")
   check_test "a complex string" "${parse}"
+
+  echo -e "\U1F4AC Test 1.${test_num}: parse file with key chain, targetting a string with inline comment"
+  parse=$("./${program}" -f "${yaml_file}" -k "yaml.yaml.bash.- IFS")
+  check_test $'BASED PARSER\E[30m # inline comment\E[0m' "${parse}"
+
+  echo -e "\U1F4AC Test 1.${test_num}: parse object with key chain, targetting a string with inline comment"
+  parse=$("./${program}" -o "${yaml_object}" -k "yaml.yaml.bash.- IFS")
+  check_test $'BASED PARSER' "${parse}"
+
+  echo -e "\U1F4AC Test 1.${test_num}: parse file with key chain, targetting a set of complex strings"
+  parse=$("./${program}" -Rf "${yaml_file}" -k "complex.strings")
+  value="- trick::
+- \\033[0;30m
+- I am: a complex string
+- key: or string
+- string: \"this string: \"
+- \"String says: I am a string !\"
+- 'this string: '
+- inline-string: \"this string: \"
+- this string#
+- 'this string #'
+- \"this string #\"
+- \n
+- \\\"Complex string\\\" \t\t\t\t tabs, newlines\n\n, and \\\${special} \\\${very special} characters.
+- Complex-string- and::very special::characters."
+  check_test "${value}" "${parse}"
+
+  echo -e "\U1F4AC Test 1.${test_num}: parse object with key chain, targetting a set of complex strings"
+  parse=$("./${program}" -Ro "${yaml_object}" -k "complex.strings")
+  value="- trick::
+- \\033[0;30m
+- I am: a complex string
+- key: or string
+- string: \"this string: \"
+- \"String says: I am a string !\"
+- 'this string: '
+- inline-string: \"this string: \"
+- this string#
+- 'this string #'
+- \"this string #\"
+- \n
+- \\\"Complex string\\\" \t\t\t\t tabs, newlines\n\n, and \\\${special} \\\${very special} characters.
+- Complex-string- and::very special::characters."
+  check_test "${value}" "${parse}"
 
 	echo -e "\U1F4AC Test 1.${test_num}: parse file with key chain and raw option"
 	parse=$("./${program}" -Rf "${yaml_file}" -k "yb.yaml.bash")
@@ -165,6 +210,8 @@ tests(){
 
   echo -e "\U1F4AC Test 1.${test_num}: parse object with all -lLn outer options"
   parse=$("./${program}" -RlLno "${yaml_object}" -k "yb.yaml.bash")
+  # note: line numbers are different in the object scenario 
+  # because the YAML was parsed using the -R option
   check_test "- IFS{{line}}{{3}}{{5}}
 - BASED{{line}}{{3}}{{6}}
 - PARSER{{line}}{{3}}{{7}}" "${parse}"
@@ -175,6 +222,8 @@ tests(){
        
   echo -e "\U1F4AC Test 1.${test_num}: parse object with all options but depth"
   parse=$("./${program}" -FARlLno "${yaml_object}" -k "yb.yaml.bash")
+  # note: line numbers are different in the object scenario 
+  # because the YAML was parsed using the -R option
   check_test ".bash_IFS{{line}}{{3}}{{5}} .bash_BASED{{line}}{{3}}{{6}} .bash_PARSER{{line}}{{3}}{{7}}" "${parse}"
 
   echo -e "\U1F4AC Test 1.${test_num}: parse file with type options"
@@ -201,6 +250,8 @@ float-number: !! float 101.01" "${parse}"
 
   echo -e "\U1F4AC Test 1.${test_num}: parse object with all compatible options"
   parse=$("./${program}" -FARTldLno "${yaml_object}" -k "yb.yaml.bash")
+  # note: line numbers are different in the object scenario 
+  # because the YAML was parsed using the -R option
   check_test "....bash_!! str IFS{{line}}{{3}}{{5}} ....bash_!! str BASED{{line}}{{3}}{{6}} ....bash_!! str PARSER{{line}}{{3}}{{7}}" "${parse}"
 
   # 

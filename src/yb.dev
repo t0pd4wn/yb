@@ -409,7 +409,6 @@ yb::add::object::to_YAML(){
     # loop through each line of the YAML object
     counter=0
 
-
   # set IFS on newline
   yb::core::set_IFS $'\n'
 
@@ -788,11 +787,11 @@ yb::main::globals::script_parameters(){
 ########################################
 yb::main::globals::colors(){
   # colors definition
-  declare -g yb_grey="\e[3;30m"
-  declare -g yb_blue="\e[1;36m"
-  declare -g yb_orange="\e[1;33m"
-  declare -g yb_red="\e[31m"
-  declare -g yb_italic="\e[3m"
+  declare -g yb_grey="\033[30m"
+  declare -g yb_blue="\033[36m"
+  declare -g yb_orange="\033[33m"
+  declare -g yb_red="\033[31m"
+  declare -g yb_italic="\033[3m"
 }
 
 ########################################
@@ -885,29 +884,6 @@ yb::main::globals::others(){
   declare -ga yb_array
   declare -gA yb_keys
 }
-
-# ########################################
-# # Print the help message
-# ########################################
-# yb::main::help(){
-#   echo '  -a  | Adds key(s), value(s) or both. | yb -f "file.yaml" -a -k "key" -v "value"'
-#   echo '  -c  | Changes value(s). | yb -f "file.yaml" -c -k "key" -v "new_value"'
-#   echo '  -q  | Prints "true" or "false" if key(s), value(s) or both are present or not. | yb -f "file.yaml" -q -k "key" | Using single quotes is advised to retrieve a pipe value "-v pipe value".'
-#   echo '  -r  | Removes key(s), value(s) or both. | yb -f "file.yaml" -r -k "key" -v "value" | Using single quotes is advised to remove a pipe value "-v pipe value".'
-#   echo '  -f  | YAML file path. | yb -f "file.yaml" | A file can be presented without the -f option, as the "$1" option. -f and -c are not compatible with each others.'
-#   echo '  -o  | YAML object. | yb -o "${YAML_object}" | YAML object can be used with all actions. -f and -o are compatible together, only when adding an object to a file.'
-#   echo '  -k  | Key(s) selection path. | yb -f "file.yaml" -k "key" | Support keys in this format :"key", "key.childkey", "- list-key", "pipe-key|". Multiple key(s) can be provided with a "."" as the separator.'
-#   echo '  -v  | Value(s) to be added, removed, queried or changed. | yb -f "file.yaml" -k "key" -v "value" | Support values in this format : "value", "- list-value", "|> pipe-value".'
-#   echo '  -A  | Prints the output as a bash array. | yb -f "file.yaml" -A -k "key" | Will provide a different formatting if used with -F or -d.'
-#   echo '  -d  | Provides the output with the original depth. | yb -f "file.yaml" -d -k "key.childkey" -v "new_value"'
-#   echo '  -F  || Prints a formatted output to represent the arborescence inline. | yb -f "file.yaml" -F -k "key" | Will provide a different formatting if used with -A or -d.'
-#   echo '  -l  | Prints {{line}} on each lines. | yb -f "file.yaml" -l -k "key"'
-#   echo '  -L  | Prints {{<level number>}} on each lines. | yb -f "file.yaml" -L -k "key"'
-#   echo '  -R  | Prints the ouptut without added colors. | yb -f "file.yaml" -R -k "key"'
-#   echo '  -n  | Prints {{<line number>}} on each lines. | yb -f "file.yaml" -n -k "key"'
-#   echo '  -T  | Prints a value type. | yb -f "file.yaml" -T -k "key" | Supports null, boolean, integer, floating number, string.'
-#   echo '  -s  | Spaces number selection. (deprecated)'
-# }
 
 ########################################
 # Parse script options
@@ -1186,7 +1162,13 @@ yb::parse::print::prepare_colors(){
 ########################################
 yb::parse::print::output(){
   local string=""
+  local type="${yb_value_type}"
   local comment=""
+
+  # empty the global variable if not expected
+  if [[ "${yb_type}" == false ]]; then
+    yb_value_type=""
+  fi
 
   if [[ "${yb_is_raw}" == true ]]; then
     line_["comment"]=""
@@ -1215,9 +1197,14 @@ yb::parse::print::output(){
     else
       if [[ ${yb_is_colored} == true ]]; then
         comment=$(echo -e ${line_["comment"]})
-        string="${line_["prefix"]}${line_["key"]}${line_["suffix"]}"
+        # string="${line_["prefix"]}${line_["key"]}${line_["suffix"]}"
+        string="$(echo -e "${line_["prefix"]}${line_["key"]}${line_["suffix"]}")"
         string+=" ${yb_value_type}${line_["value"]}${line_["outer"]}${comment}"
-        string=$(echo -e "${string}")
+        if [[ "${type}" == "!! str " ]]; then
+          string=$(echo "${string}")
+        else
+          string=$(echo -e "${string}")
+        fi
       else
         string="${line_["prefix"]}${line_["key"]}${line_["suffix"]}"
         string=$(echo -e "${string}" &&\
@@ -1482,15 +1469,14 @@ yb::parse::yaml() {
     yb::string::trim::space "${yb_line}"
     yb_line="${yb_trimmed}"
 
-
-local regex="\\*\\.!.*|\\*\\.|\\.!.*"
     # check the line type
     if [[ -z "${yb_line}" ]]; then 
       line_["type"]="empty"
     elif [[ "${yb_line}" == "#"* ]]; then
       yb::parse::yaml::comment
-
-    elif [[ "${yb_line}" == *":" || "${yb_line}" == *": #"* && "${yb_line}" != "-"*":"* ]]; then
+    elif [[ "${yb_line}" == *":" ||\
+    "${yb_line}" == *": #"* ]] &&\
+    [[ "${yb_line}" != "-"*":"* ]]; then
       yb::parse::yaml::key
     elif [[ "${yb_line}" == *": "* && ${yb_line} != "- "* ]]; then
       yb::parse::yaml::key_value
@@ -1507,7 +1493,7 @@ local regex="\\*\\.!.*|\\*\\.|\\.!.*"
     fi
 
     # check for inline comment
-    if [[ "${yb_line}" == *" #"* ]]; then 
+    if [[ "${yb_line}" == *" #"* ]]; then
       yb::parse::yaml::inline_comment
     fi 
 
@@ -1552,8 +1538,16 @@ yb::parse::yaml::comment(){
 #   ${line_[@]}
 ########################################
 yb::parse::yaml::inline_comment(){
-  line_["comment"]=" #${yb_line#*#}"
-  line_["value"]="${line_["value"]%% #*}"
+  # check for inline comment and assign it 
+  if [[ "${yb_line}" =~ "'"*"#"*"'" ]]; then
+    line_["comment"]=" #${yb_line#*"' #"}"
+  elif [[ "${yb_line}" =~ '"'*'#'*'"' ]]; then
+    line_["comment"]=" #${yb_line#*'" #'}"
+  else
+    line_["comment"]=" #${yb_line#* #}"
+  fi 
+  # remove comment value from line
+  line_["value"]="${line_["value"]//${line_["comment"]}/}"
 }
 
 ########################################
@@ -1628,7 +1622,6 @@ yb::parse::yaml::list_key_value(){
     yb_parent_type="list-key:pipe"
     yb_parent_level="${line_["level"]}"
     line_["value"]="|"
-    line_["comment"]="hah"
   fi
 }
 
@@ -2280,11 +2273,6 @@ yb::string::color_type(){
     yb_is_colored=true
   elif [[ "${yb_value_type}" == "!! str " ]]; then
     yb_is_colored=true
-  fi
-
-  # empty the global variable if not expected
-  if [[ "${yb_type}" == false ]]; then
-    yb_value_type=""
   fi
 }
 

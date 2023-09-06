@@ -59,14 +59,15 @@ complex:
   strings:
     - trick::
     - \033[0;30m
-    - I am: a complex string #comment
-    - key: or string # comment
+    - I am: a complex string
+    - key: or string
     - string: "this string: "
     - "String says: I am a string !"
     - 'this string: ' 
     - inline-string: "this string: "
     - this string#
-    - 'this string \#'
+    - 'this string #'
+    - "this string #"
     - \n
     - \"Complex string\" \t\t\t\t tabs, newlines\n\n, and \${special} \${very special} characters.
     - Complex-string- and::very special::characters.
@@ -74,16 +75,16 @@ keys:
   are:
   all:
   are:
-  all: # comment
+  all:
     all:
-    all: #comment
+    all:
     the:
     the:
       - same
 - root-key:
   - child-key: true
 - yb: yaml bash parser
-- ascii: | #comment
+- ascii: |
   ___  _ ____
   \  \///  __\
    \  / | | //

@@ -148,7 +148,7 @@ A simple test suite is made available in the `tests/` folder. It introduces the 
 
 To launch it, run the below command from the repository root level :
 ```bash
-./tests/yb_tests.sh
+./tests/tests.sh
 ```
 
 ## Thank you

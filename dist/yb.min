@@ -28,50 +28,50 @@ yb::main::help ()
   echo '  -T  | Prints a value type. | yb -f "file.yaml" -T -k "key" | Supports null, boolean, integer, floating number, string.';
   echo '  -s  | Spaces number selection. (deprecated)'
 }
-_a(){
-_q_se_ks "${_k_op}"
+_::a(){
+_::q::se::ks "${_k_op}"
 if [[ "${_q_rt}" == false ]]; then
-_a_m_ks "${_k_op}"
+_::a::m::ks "${_k_op}"
 fi
 if [[ -n "${_Y_o}" ]]; then
-_a_m_o "${_Y_o}"
+_::a::m::o "${_Y_o}"
 fi
 if [[ -n "${_v_op}" ]]; then
-_a_m_vs "${_v_op}"
+_::a::m::vs "${_v_op}"
 fi
 }
-_a_m_o(){
+_::a::m::o(){
 declare -a ks=("${_ks[@]}")
 local s_le="${_k_le}"
 local ctr=$s_le
 local h_k
-_q_se_ks_ls "${_k_op}"
+_::q::se::ks_ls "${_k_op}"
 h_k=("${_q_rt}")
-_a_o_to_Y "${h_k}"
+_::a::o::to_Y "${h_k}"
 }
-_a_m_vs(){
+_::a::m::vs(){
 declare -a ks=("${_ks[@]}")
 local s_le="${_k_le}"
 local ctr=$s_le
 local h_k
-_q_se_ks_ls "${_k_op}"
+_::q::se::ks_ls "${_k_op}"
 h_k=("${_q_rt}")
-_a_vs_to_f "${h_k}"
+_::a::vs::to_f "${h_k}"
 }
-_a_vs_to_f_in(){
+_::a::vs::to_f::in(){
 declare -a pas=("${@-}")
 local k_l
 local pa_k_v
 local in_v
 for k in "${pas[@]}"; do
 k_l="${k##*_N}"
-_y_co_l "${k_l}"
+_::y::co_l "${k_l}"
 pa_k_v="${_l_co}"
 in_v="${pa_k_v} ${_v_op}"
-_y_re_l "${k_l}" "${in_v}"
+_::y::re_l "${k_l}" "${in_v}"
 done
 }
-_a_vs_to_f_lt(){
+_::a::vs::to_f::lt(){
 declare -a pas=("${@}")
 local st
 local dm
@@ -105,12 +105,12 @@ ra_le=${#v_ra[@]}
 for (( cv = ra_le - 1; cv >= 1; cv-- )); do
 k_l=$(( $k_l + $ctr ))
 cl_v="${sr}- ${v_ra[$cv]}"
-_y_ap_l "${k_l}" "${cl_v}"
+_::y::ap_l "${k_l}" "${cl_v}"
 done
 ctr=$(( $ctr + 1 ))
 done
 }
-_a_vs_to_f_pi(){
+_::a::vs::to_f::pi(){
 declare -a pas=("${@}")
 local st
 local cn
@@ -139,11 +139,11 @@ done
 ra_le=${#v_ra[@]}
 for (( cv = ra_le - 1; cv >= 1; cv-- )); do
 cl_v="${sr}${v_ra[$cv]}"
-_y_ap_l "${k_l}" "${cl_v}"
+_::y::ap_l "${k_l}" "${cl_v}"
 done
 done
 }
-_a_ks_to_f(){
+_::a::ks::to_f(){
 local pa_l_n="${1-}"
 local pa_lv="${2-}"
 local sg="  "
@@ -151,7 +151,7 @@ local sr
 local tg_l_n
 local ctr=0
 tg_l_n=$(( $pa_l_n + $_ad_ls ))
-_s_k_to_ra "${_k_op}"
+_::s::k_to_ra "${_k_op}"
 for (( aif = $pa_lv + 1; aif < $_k_le; aif++ )); do
 sr=""
 for (( sp = 0; sp < $pa_lv + 1; sp++ )); do
@@ -163,14 +163,14 @@ if [[ "${aif}" -eq $(( $_k_le - 1 )) ]]; then
 cd_k="${sr}${_ks[${aif}]:0:-1}: |"
 fi
 fi
-_y_ap_l "${tg_l_n}" "${cd_k}"
+_::y::ap_l "${tg_l_n}" "${cd_k}"
 pa_lv=$(( $pa_lv + 1 ))
 tg_l_n=$(( $tg_l_n + 1 ))
 ctr=$(( $ctr + 1 ))
 done
 _ad_ls=$(( $_ad_ls + $ctr ))
 }
-_a_cd_ks_to_f(){
+_::a::cd_ks::to_f(){
 declare -a ks_ans=(${@})
 local pa_lv
 local pa_l
@@ -178,15 +178,15 @@ for an in "${ks_ans[@]}"; do
 pa_lv="${an%%_N*}"
 pa_lv="${pa_lv#*L}"
 pa_l="${an#*N}"
-_a_ks_to_f "${pa_l}" "${pa_lv}"
+_::a::ks::to_f "${pa_l}" "${pa_lv}"
 done
 }
-_a_new_ks_to_f(){
+_::a::new_ks::to_f(){
 local lv=0
 local sg="  "
 local sr
 local ctr=0
-_s_k_to_ra "${_k_op}"
+_::s::k_to_ra "${_k_op}"
 for (( aif = 0 ; aif < $_k_le; aif++ )); do
 sr=""
 for (( sp = 0; sp < lv; sp++ )); do
@@ -198,11 +198,11 @@ if [[ "${aif}" -eq $(( $_k_le - 1 )) ]]; then
 cd_k="${sr}${_ks[${aif}]:0:-1}: |"
 fi
 fi
-_y_ap_l "${_f_ls_n}" "${cd_k}"
+_::y::ap_l "${_f_ls_n}" "${cd_k}"
 lv=$(( $lv + 1 ))
 done
 }
-_a_m_ks(){
+_::a::m::ks(){
 local h_k
 local s_le="${_k_le}"
 local se_k=""
@@ -218,7 +218,7 @@ for (( rs = 0; rs < $ctr; rs++ )); do
 se_k+=".${reverse_ra[$rs]}"
 done
 se_k="${se_k:1}"
-_q_se_ks_ls "${se_k}"
+_::q::se::ks_ls "${se_k}"
 h_k=("${_q_rt}")
 if [[ -n "${h_k}" ]]; then
 break;
@@ -226,12 +226,12 @@ fi
 ctr=$(( $ctr - 1 ))
 done
 if [[ -z "${h_k}" ]]; then
-_a_new_ks_to_f
+_::a::new_ks::to_f
 else
-_a_cd_ks_to_f "${h_k}"
+_::a::cd_ks::to_f "${h_k}"
 fi
 }
-_a_o_to_Y(){
+_::a::o::to_Y(){
 declare -a pas=(${1})
 declare -a pas=("${@}")
 local st
@@ -254,17 +254,17 @@ for (( sp = 0; sp < $k_lv + 1; sp++ )); do
 sr+="${sg}"
 done
 ctr=0
-_cr_sI $'\n'
+_::cr::sI $'\n'
 while IFS= read -r line; do
 echo "${line}"
 l_n=$(( $k_l + $ctr ))
-_y_ap_l "${l_n}" "${sr}${line}"
+_::y::ap_l "${l_n}" "${sr}${line}"
 ctr=$(( $ctr + 1 ))
 done <<< "${_Y_o}"
-_cr_uI
+_::cr::uI
 done
 }
-_a_vs_to_f(){
+_::a::vs::to_f(){
 declare -a pas=(${1-})
 local v_ty
 if [[ "${_v_op}" == "- "* ]]; then
@@ -275,56 +275,56 @@ else
 v_ty="in"
 fi
 if [[ "${v_ty}" == "in" ]]; then
-_a_vs_to_f_in "${pas[@]}"
+_::a::vs::to_f::in "${pas[@]}"
 elif [[ "${v_ty}" == "lt" ]]; then
-_a_vs_to_f_lt "${pas[@]}"
+_::a::vs::to_f::lt "${pas[@]}"
 elif [[ "${v_ty}" == "pi" ]]; then
-_a_vs_to_f_pi "${pas[@]}"
+_::a::vs::to_f::pi "${pas[@]}"
 fi
 }
-_c(){
+_::c(){
 if [[ -z "${_v_op-}" ]]; then
 _is_ot=false
 echo "Values are needed when using the '-c' option."
 else
-_q_se_ks "${_k_op}"
+_::q::se::ks "${_k_op}"
 if [[ "${_q_rt}" == false ]]; then
-_a_m_ks "${_k_op}"
+_::a::m::ks "${_k_op}"
 else
-_r
-_a_m_ks "${_k_op}"
+_::r
+_::a::m::ks "${_k_op}"
 fi
-_a_m_vs "${_v_op}"
+_::a::m::vs "${_v_op}"
 fi
 }
-_cr_debug(){
+_::cr::debug(){
 local me="${@}"
 echo "${BASH_LINENO} : ${me}"
 }
-_cr_exit_dump() {
+_::cr::exit_dump() {
 echo "${_ra[@]-}"
-_cr_error "${@-}"
-_cr_exit
+_::cr::error "${@-}"
+_::cr::exit
 }
-_cr_exit() {
-_f_unlo "${_f}"
+_::cr::exit() {
+_::f::unlo "${_f}"
 }
-_cr_error() {
+_::cr::error() {
 echo "${FUNCNAME[1]} @ [$(date +'%Y-%m-%dT%H:%M:%S%z')]: ${@-}"
 }
-_cr_sI(){
+_::cr::sI(){
 local setting="${1-}"
 if [[ -z "${_IFS}" ]]; then
 _IFS=$IFS
 IFS="${setting}"
 fi
 }
-_cr_uI(){
+_::cr::uI(){
 if [[ -n "${_IFS}" ]]; then
 IFS=$"${_IFS}"
 fi
 }
-_f_lo(){
+_::f::lo(){
 local f="${1-}"
 local path="${f%/*}"
 local fname="${f##*/}"
@@ -339,7 +339,7 @@ else
 touch "${path}"
 fi
 }
-_f_unlo(){
+_::f::unlo(){
 local f="${1-}"
 local path="${f%/*}"
 local fname="${f##*/}"
@@ -350,21 +350,21 @@ path=".${f}._.lo"
 fi
 rm "${path}"
 }
-_f_u_f(){
+_::f::u_f(){
 local t_f="${_f}.t"
 declare -a t_ra
 local t_l
-_cr_sI $'\n'
+_::cr::sI $'\n'
 while IFS= read -r line; do
 echo "${line}" >> "${t_f}"
 done <<< "${_Y}"
-_cr_uI
+_::cr::uI
 cp "${t_f}" "${_f}"
 rm "${t_f}"
 }
-_m(){
-_m_g
-_m_cli "${@}"
+_::m(){
+_::m::g
+_::m::cli "${@}"
 if ! [[ -f "${_f}" ]]; then
 if [[ "${_f}" == *".y" ]]; then
 _is_f=true
@@ -387,16 +387,16 @@ through the '-a' op."
 return
 fi
 fi
-trap _cr_exit_dump SIGINT
-trap _cr_exit EXIT
-_f_lo "${_f}"
+trap _::cr::exit_dump SIGINT
+trap _::cr::exit EXIT
+_::f::lo "${_f}"
 if [[ "${_is_lod}" == false ]]; then
-_m_sa
+_::m::sa
 else
 echo "File is currently being processd with yb."
 fi
 }
-_m_cli(){
+_::m::cli(){
 while getopts "aAcdf:Fhk:lLno:qrRTv:V" arg; do
 case $arg in
 a)
@@ -419,7 +419,7 @@ _fo=true
 ;;
 h)
 _he=true
-yb::main::help
+_::m::he
 ;;
 k)
 _k_op="${OPTARG}"
@@ -469,25 +469,25 @@ exit 0
 fi
 fi
 }
-_m_g(){
-_m_g_script_parameters
-_m_g_crs
-_m_g_cli_ops
-_m_g_flags
-_m_g_others
+_::m::g(){
+_::m::g::script_parameters
+_::m::g::crs
+_::m::g::cli_ops
+_::m::g::flags
+_::m::g::others
 }
-_m_g_script_parameters(){
+_::m::g::script_parameters(){
 declare -g _sg=2
 declare -g _pi_dm="|>"
 }
-_m_g_crs(){
-declare -g _grey="\e[3;30m"
-declare -g _blue="\e[1;36m"
-declare -g _orange="\e[1;33m"
-declare -g _rd="\e[31m"
-declare -g _italic="\e[3m"
+_::m::g::crs(){
+declare -g _grey="\033[30m"
+declare -g _blue="\033[36m"
+declare -g _orange="\033[33m"
+declare -g _rd="\033[31m"
+declare -g _italic="\033[3m"
 }
-_m_g_cli_ops(){
+_::m::g::cli_ops(){
 declare -g _f=""
 declare -g _o=""
 declare -g _v_op=""
@@ -508,7 +508,7 @@ declare -g _sh_lv=false
 declare -g _sh_l=false
 declare -g _sh_l_n=false
 }
-_m_g_flags(){
+_::m::g::flags(){
 declare -g _is_f=false
 declare -g _ie_f=false
 declare -g _is_lod=false
@@ -525,7 +525,7 @@ declare -g _iv=false
 declare -g _Y_im=false
 declare -g _is_ot=true
 }
-_m_g_others(){
+_::m::g::others(){
 declare -g _s_rvd=0
 declare -g _ol_k_le=""
 declare -g _k_le=0
@@ -557,58 +557,58 @@ declare -ga _q_rt
 declare -ga _ra
 declare -gA _ks
 }
-_m_sa(){
-_y_ca
+_::m::sa(){
+_::y::ca
 if [[ "${_q}" == true ]]; then
 if [[ -n "${_v_op}" ]]; then
-_q_se_vs "${_k_op}"
+_::q::se::vs "${_k_op}"
 if [[ "${_q_rt}" == false ]]; then
 echo "${_q_rt}"
 fi
 else
-_q_se_ks "${_k_op}"
+_::q::se::ks "${_k_op}"
 echo "${_q_rt}"
 fi
 elif [[ "${_a}" == true ]]; then
-_a
-_y_ot
+_::a
+_::y::ot
 elif [[ "${_r}" == true ]]; then
 if [[ -n "${_v_op}" ]]; then
-_r_vs
+_::r::vs
 else
-_r
+_::r
 fi
-_y_ot
+_::y::ot
 elif [[ "${_c}" == true ]]; then
-_c
-_y_ot
+_::c
+_::y::ot
 elif [[ -n "${_k_op}" ]]; then
-_s
-_p_y "${_Y}"
+_::s
+_::p::y "${_Y}"
 elif [[ -z "${_k_op}" ]]; then
-_p_y "${_Y}"
+_::p::y "${_Y}"
 fi
 if [[ "${_is_ra}" == true ]]; then
 echo "${_ra[@]}"
 fi
 }
-_p_fr(){
-_st_b_sr
-_st_b_or
+_::p::fr(){
+_::st::b_sr
+_::st::b_or
 if [[ "${_is_s}" == true ]]; then
 if [[ "${_l_n_q}" == true ]]; then
-_p_se
+_::p::se
 else
-_p_se
+_::p::se
 fi
 if [[ "${_is_pt}" == true ]]; then
-_p_pt
+_::p::pt
 fi
 elif [[ "${_is_s}" == false ]]; then
-_p_pt
+_::p::pt
 fi
 }
-_p_pt(){
+_::p::pt(){
 _is_crd=false
 _v=""
 _v_ty=""
@@ -617,23 +617,23 @@ return 0
 fi
 if [[ "${_ty}" == true ]]; then
 if [[ "${l_["ty"]}" == *"v"* ]]; then
-_st_v_ty "${l_["v"]}" "${l_["ty"]}"
+_::st::v_ty "${l_["v"]}" "${l_["ty"]}"
 fi
 fi
 if [[ "${_v_q}" == true ]]; then
-_p_pt_is_v_q
+_::p::pt::is_v_q
 return 0
 fi
 if [[ "${_is_ra}" == true ]]; then
-_p_pt_is_ra
+_::p::pt::is_ra
 return 0
 fi
 if [[ "${_is_rw}" == false && "${_fo}" == false ]]; then
-_p_pt_pr_crs
+_::p::pt::pr_crs
 fi
-_p_pt_ot
+_::p::pt::ot
 }
-_p_pt_is_v_q(){
+_::p::pt::is_v_q(){
 local st=""
 if [[  "${_pa_ty}" == *"k:pi" ]]; then
 _q_pi_rt+="${l_["v"]}"
@@ -669,7 +669,7 @@ echo ${_q_rt}
 fi
 fi
 }
-_p_pt_is_ra(){
+_::p::pt::is_ra(){
 local st=""
 if [[ "${l_["ty"]}" != "cmt" && "${l_["ty"]}" != "empty" ]]; then
 if [[ "${l_["ty"]}" == *"k"* ]]; then
@@ -701,19 +701,19 @@ _ra+=("${st}")
 fi
 fi
 }
-_p_pt_pr_crs(){
+_::p::pt::pr_crs(){
 if [[ "${l_["ty"]}" == "cmt" ]]; then
-_st_set_cr "${l_["v"]}" "${_grey}"
+_::st::set_cr "${l_["v"]}" "${_grey}"
 l_["v"]="${_cr_st}"
 elif [[ "${l_["ty"]}" == *"k"* ]]; then
-_st_set_cr "${l_["k"]}" "${_blue}"
+_::st::set_cr "${l_["k"]}" "${_blue}"
 l_["k"]="${_cr_st}"
-_st_set_cr "${l_["px"]}" "${_blue}"
+_::st::set_cr "${l_["px"]}" "${_blue}"
 l_["px"]="${_cr_st}"
 fi
 if [[ "${l_["ty"]}" == *"v"* ]]; then
-_st_v_ty "${l_["v"]}" "${l_["ty"]}"
-_st_cr_ty "${l_["v"]}"
+_::st::v_ty "${l_["v"]}" "${l_["ty"]}"
+_::st::cr_ty "${l_["v"]}"
 if [[ -n "${_v}" ]]; then
 l_["v"]="${_v}"
 fi
@@ -722,14 +722,18 @@ if [[ -n "${l_["cmt"]}" ]]; then
 if [[ "${_pa_ty}" == *"k:pi" &&\
 "${l_["ty"]}" == *"k:pi" ]] ||\
 [[ ! "${_pa_ty}" == *"k:pi" ]] ; then
-_st_set_cr "${l_["cmt"]}" "${_grey}"
+_::st::set_cr "${l_["cmt"]}" "${_grey}"
 l_["cmt"]="${_cr_st}"
 fi
 fi
 }
-_p_pt_ot(){
+_::p::pt::ot(){
 local st=""
+local ty="${_v_ty}"
 local cmt=""
+if [[ "${_ty}" == false ]]; then
+_v_ty=""
+fi
 if [[ "${_is_rw}" == true ]]; then
 l_["cmt"]=""
 if [[ "${l_["ty"]}" == "cmt" || "${l_["ty"]}" == "empty" ]]; then
@@ -755,9 +759,13 @@ echo "${l_["sr"]}"${st}
 else
 if [[ ${_is_crd} == true ]]; then
 cmt=$(echo -e ${l_["cmt"]})
-st="${l_["px"]}${l_["k"]}${l_["su"]}"
+st="$(echo -e "${l_["px"]}${l_["k"]}${l_["su"]}")"
 st+=" ${_v_ty}${l_["v"]}${l_["or"]}${cmt}"
+if [[ "${ty}" == "!! str " ]]; then
+st=$(echo "${st}")
+else
 st=$(echo -e "${st}")
+fi
 else
 st="${l_["px"]}${l_["k"]}${l_["su"]}"
 st=$(echo -e "${st}" &&\
@@ -776,7 +784,7 @@ fi
 fi
 fi
 }
-_p_se(){
+_::p::se(){
 local q_px
 local k="${l_["k"]-}"
 local new_lv
@@ -797,30 +805,30 @@ if [[ "${_rve}" == false ]]; then
 if [[ "${l_["px"]}${k}" == "${_ks[${_k_se}]}" ]]; then
 if [[ "${l_["lv"]}" -eq "${_k_se}" ]]; then
 _k_se=$(( $_k_se + 1 ))
-_p_se_is_nestd_pi
+_::p::se::is_nestd_pi
 if [[ "${_k_se}" -eq "${_k_le}" ]]; then
-_p_se_rve_ops
+_::p::se::rve_ops
 fi
 fi
 fi
 elif [[ "${_rve}" == true  ]]; then
-_p_se_is_rvae
+_::p::se::is_rvae
 fi
 }
-_p_se_rve_ops(){
+_::p::se::rve_ops(){
 _rve=true
 _k_ba_lv="${l_["lv"]}"
 _h_k=true
 if [[ "${_l_n_q}" == true || "${_bo_q}" == true ]]; then
-_p_se_is_q
+_::p::se::is_q
 return 0
 fi
 if [[ "${l_["ty"]}" == *"k:v" ]]; then
-_p_se_is_k_v
+_::p::se::is_k_v
 return 0
 fi
 }
-_p_se_is_nestd_pi(){
+_::p::se::is_nestd_pi(){
 if [[ "${l_["ty"]}" == *"k:pi" ]]; then
 if [[ ${_k_se} -lt ${_ol_k_le} ]]; then
 echo "_: pi ty k can not be nestd in another pi ty k."
@@ -828,7 +836,7 @@ exit 0
 fi
 fi
 }
-_p_se_is_q(){
+_::p::se::is_q(){
 local q_px
 if [[ "${_l_n_q}" == true ]]; then
 q_px="L${l_["lv"]}_N${l_["l_n"]}"
@@ -842,7 +850,7 @@ fi
 _rve=false
 _k_se=0
 }
-_p_se_is_k_v(){
+_::p::se::is_k_v(){
 _one_l=true
 _k_se=0
 _rve=false
@@ -850,7 +858,7 @@ _is_pt=true
 _s_rvd=$(( _s_rvd + 1 ))
 _ie=false
 }
-_p_se_is_rvae(){
+_::p::se::is_rvae(){
 if  [[ "${l_["lv"]}" -gt "${_k_ba_lv}" ]]; then
 _one_l=false
 _is_pt=true
@@ -863,12 +871,12 @@ _rve=false
 _s_rvd=$(( _s_rvd + 1 ))
 fi
 }
-_p_y() {
+_::p::y() {
 local sp
 local lv
 local l_n=0
 declare -A l_
-_cr_sI $' \t\n'
+_::cr::sI $' \t\n'
 while IFS= read -r rw_l; do
 l_["lv"]=""
 l_["l_n"]=""
@@ -885,34 +893,35 @@ _l="${rw_l}"
 sp="${_l%%[^[:space:]]*}"
 lv="${#sp}"
 l_["lv"]="$(( $lv / $_sg ))"
-_st_tr_sp "${_l}"
+_::st::tr::sp "${_l}"
 _l="${_tm}"
-local rx="\\*\\.!.*|\\*\\.|\\.!.*"
 if [[ -z "${_l}" ]]; then
 l_["ty"]="empty"
 elif [[ "${_l}" == "#"* ]]; then
-_p_y_cmt
-elif [[ "${_l}" == *":" || "${_l}" == *": #"* && "${_l}" != "-"*":"* ]]; then
-_p_y_k
+_::p::y::cmt
+elif [[ "${_l}" == *":" ||\
+"${_l}" == *": #"* ]] &&\
+[[ "${_l}" != "-"*":"* ]]; then
+_::p::y::k
 elif [[ "${_l}" == *": "* && ${_l} != "- "* ]]; then
-_p_y_k_v
-elif [[ "${_l}" == "- "*": "* && "${_l}" != *"_"* ]] &&\
+_::p::y::k_v
+elif [[ "${_l}" == "- "*": "* && "${_l}" != *"::"* ]] &&\
 [[ "${_l}" != '- "'* && "${_l}" != "- '"* ]]; then
-_p_y_lt_k_v
-elif [[ "${_l}" == "-"*":"  && "${_l}" != *"_"* ]] &&\
+_::p::y::lt_k_v
+elif [[ "${_l}" == "-"*":"  && "${_l}" != *"::"* ]] &&\
 [[ "${_l}" != '- "'* && "${_l}" != "- '"* ]]; then
-_p_y_lt_k
+_::p::y::lt_k
 elif [[ "${_l}" == "-"* ]]; then
-_p_y_lt_v
+_::p::y::lt_v
 else
-_p_y_other
+_::p::y::other
 fi
 if [[ "${_l}" == *" #"* ]]; then
-_p_y_in_cmt
+_::p::y::in_cmt
 fi
-_p_fr
+_::p::fr
 done <<< "${_Y}"
-_cr_uI
+_::cr::uI
 if [[ "${_ie_f}" == true ]]; then
 if [[ "${_Y_im}" == false ]]; then
 _f_ls_n=0
@@ -924,15 +933,21 @@ else
 _f_ls_n="${l_n}"
 fi
 }
-_p_y_cmt(){
+_::p::y::cmt(){
 l_["ty"]="cmt"
 l_["v"]="${_l}"
 }
-_p_y_in_cmt(){
-l_["cmt"]=" #${_l#*#}"
-l_["v"]="${l_["v"]%% #*}"
+_::p::y::in_cmt(){
+if [[ "${_l}" =~ "'"*"#"*"'" ]]; then
+l_["cmt"]=" #${_l#*"' #"}"
+elif [[ "${_l}" =~ '"'*'#'*'"' ]]; then
+l_["cmt"]=" #${_l#*'" #'}"
+else
+l_["cmt"]=" #${_l#* #}"
+fi
+l_["v"]="${l_["v"]//${l_["cmt"]}/}"
 }
-_p_y_k(){
+_::p::y::k(){
 l_["ty"]="k"
 l_["k"]="${_l%%:*}"
 l_["pa"]="${l_["k"]}"
@@ -940,12 +955,12 @@ l_["su"]=": "
 _pv_pa="${l_["k"]}"
 _pa_ty="k"
 }
-_p_y_k_v(){
+_::p::y::k_v(){
 l_["k"]="${_l%%:*}"
 l_["v"]="${_l#*:}"
-_st_tr_sp "${l_["k"]}"
+_::st::tr::sp "${l_["k"]}"
 l_["k"]="${_tm}"
-_st_tr_sp "${l_["v"]}"
+_::st::tr::sp "${l_["v"]}"
 l_["v"]="${_tm}"
 l_["pa"]="${l_["k"]}"
 l_["su"]=": "
@@ -958,15 +973,15 @@ l_["ty"]="k:v"
 _pa_ty="k:v"
 fi
 }
-_p_y_lt_k_v(){
+_::p::y::lt_k_v(){
 l_["ty"]="lt-k:v"
 _pa_ty="lt-k:v"
-_st_tr_sp "${_l}"
-_st_tr_hy "${_tm}"
+_::st::tr::sp "${_l}"
+_::st::tr::hy "${_tm}"
 l_["k"]="${_tm}"
 l_["k"]="${l_["k"]%%:*}"
 l_["v"]="${_l#*:}"
-_st_tr_sp "${l_["v"]}"
+_::st::tr::sp "${l_["v"]}"
 l_["v"]="${_tm}"
 l_["px"]="- "
 l_["su"]=": "
@@ -976,14 +991,13 @@ l_["ty"]="lt-k:pi"
 _pa_ty="lt-k:pi"
 _pa_lv="${l_["lv"]}"
 l_["v"]="|"
-l_["cmt"]="hah"
 fi
 }
-_p_y_lt_k(){
+_::p::y::lt_k(){
 l_["ty"]="lt-k"
 _pa_ty="lt-k"
-_st_tr_sp "${_l}"
-_st_tr_hy "${_tm}"
+_::st::tr::sp "${_l}"
+_::st::tr::hy "${_tm}"
 l_["k"]="${_tm}"
 l_["k"]="${l_["k"]%%:*}"
 l_["px"]="- "
@@ -991,30 +1005,30 @@ l_["su"]=": "
 l_["pa"]="${l_["k"]}"
 _pv_pa="${l_["k"]}"
 }
-_p_y_lt_v(){
+_::p::y::lt_v(){
 l_["ty"]="lt-v"
-_st_tr_sp "${_l}"
-_st_tr_hy "${_tm}"
+_::st::tr::sp "${_l}"
+_::st::tr::hy "${_tm}"
 l_["v"]="${_tm}"
 l_["px"]="- "
 }
-_p_y_other(){
+_::p::y::other(){
 l_["ty"]="other"
 l_["v"]="${_l}"
 if [[ "${_pa_ty}" == *"k:pi" ]]; then
 l_["ty"]="pi-v"
 l_["lv"]=$(( $_pa_lv + 1 ))
-_st_tr_pi_v_sp
+_::st::tr::pi_v::sp
 l_["v"]="${_tm}"
 fi
 }
-_q_se_ks(){
+_::q::se::ks(){
 declare -a k=("${1-}")
 _k_se=0
 _q_rt=""
 _bo_q=true
-_s "${k[@]}"
-_p_y "${_f}"
+_::s "${k[@]}"
+_::p::y "${_f}"
 if [[  "${_q_rt}" == *"true"* ]] &&\
 [[ "${_a}" == false ]] &&\
 [[ "${_c}" == false ]]; then
@@ -1035,14 +1049,14 @@ _q_rt=false
 fi
 _bo_q=false
 }
-_q_se_vs(){
+_::q::se::vs(){
 declare -a k=(${@-})
 _k_se=0
 _q_rt=""
 _q_pi_rt=""
 _v_q=true
-_s "${k[@]}"
-_p_y "${_f}"
+_::s "${k[@]}"
+_::p::y "${_f}"
 if [[ -z "${_q_pi_rt}" ]]; then
 if [[ "${_q_pi_rt}" == "${_v_op}" ]]; then
 _q_rt=true
@@ -1053,18 +1067,18 @@ _q_rt=false
 fi
 _v_q=false
 }
-_q_se_ks_ls(){
+_::q::se::ks_ls(){
 declare -a k=("${1-}")
 _q_ls_rt=()
 _q_rt=()
 _k_se=0
 _l_n_q=true
-_s "${k[@]}"
-_p_y "${_f}"
+_::s "${k[@]}"
+_::p::y "${_f}"
 _q_rt="${_q_ls_rt[@]}"
 _l_n_q=false
 }
-_q_se_vs_ls(){
+_::q::se::vs_ls(){
 declare -a k=("${1-}")
 _q_se_vs_rt=()
 _q_rt=()
@@ -1072,12 +1086,12 @@ _k_se=0
 _is_ra=true
 _sh_l_n=true
 _se_vs_q=true
-_s "${k[@]}"
-_p_y "${_f}"
+_::s "${k[@]}"
+_::p::y "${_f}"
 _q_rt="${_ra[@]}"
 _is_ra=false
 }
-_r(){
+_::r(){
 declare -a pa_ls=()
 declare -a cd_ls=()
 _q_rt=()
@@ -1086,9 +1100,9 @@ declare -a r_ls
 local nx_l
 local r_l
 local l_ctr=0
-_q_se_ks_ls "${_k_op}"
+_::q::se::ks_ls "${_k_op}"
 pa_ls=(${_q_rt})
-_q_se_vs_ls "${_k_op}"
+_::q::se::vs_ls "${_k_op}"
 cd_ls=(${_q_rt})
 if [[ -z "${pa_ls[@]}" && -z "${cd_ls[@]}" ]]; then
 return 0
@@ -1118,11 +1132,11 @@ done
 for (( li = 0; li < "${#r_ls[@]}"; li++ )); do
 r_l="${r_ls[${li}]}"
 r_l=$(( $r_l - $l_ctr ))
-_y_d_l "${r_l}"
+_::y::d_l "${r_l}"
 l_ctr=$(( $l_ctr + 1 ))
 done
 }
-_r_vs(){
+_::r::vs(){
 declare -a pa_ls
 declare -a cd_ls
 declare -a cd_ra
@@ -1144,20 +1158,20 @@ local pi_q=""
 if [[ "${_k_op: -1}" == "|" ]]; then
 pi_q=true
 fi
-_q_se_vs "${_k_op}"
+_::q::se::vs "${_k_op}"
 rt=(${_q_rt})
 if [[ "${rt}" == false ]]; then
 return 0
 fi
 if [[ "${pi_q}" == true ]]; then
-_r_vs_pi "${rt[@]}"
+_::r::vs::pi "${rt[@]}"
 else
-_r_vs_in_ad_lt "${rt[@]}"
+_::r::vs::in_ad_lt "${rt[@]}"
 fi
 _sh_l=false
 _silent_q=false
 }
-_r_vs_pi(){
+_::r::vs::pi(){
 declare -a rt=(${@})
 local l_ty
 local l_n
@@ -1175,13 +1189,13 @@ ft_l_n=$(( $ft_l_n - $l_ctr ))
 l_n=$(( $l_n - $l_ctr ))
 ls_to_d="${l_n}"
 for (( ld = $ft_l_n; ld <= $ls_to_d; ld++ )); do
-_y_d_l "${l_n}"
+_::y::d_l "${l_n}"
 l_n=$(( $l_n - 1 ))
 l_ctr=$(( $l_ctr + 1 ))
 done
 done
 }
-_r_vs_in_ad_lt(){
+_::r::vs::in_ad_lt(){
 declare -a rt=(${@})
 local l_ty
 local l_n
@@ -1199,7 +1213,7 @@ l_n="${rt[$rs]##*'{{N_'}"
 l_n="${l_n%%'}}'}"
 l_n=$(( $l_n - $l_ctr ))
 if [[ "${l_ty}" == *"k:v" ]]; then
-_y_d_l "${l_n}"
+_::y::d_l "${l_n}"
 l_n=$(( $l_n - 1 ))
 for (( sp = 0; sp < $_k_le - 1; sp++ )); do
 sr+="${sg}"
@@ -1211,21 +1225,21 @@ lt_k="${sr}${lt_k}:"
 elif [[  "${l_ty}" == "lt-k:v" ]]; then
 lt_k="${sr}${lt_k}:"
 fi
-_y_ap_l "${l_n}" "${lt_k}"
+_::y::ap_l "${l_n}" "${lt_k}"
 sr=""
 else
-_y_d_l "${l_n}"
+_::y::d_l "${l_n}"
 l_ctr=$(( $l_ctr + 1 ))
 fi
 done
 }
-_s(){
+_::s(){
 local k=${@:-"${_k_op}"}
 _is_s=true
 _rve=false
-_s_k_to_ra "${k}"
+_::s::k_to_ra "${k}"
 }
-_s_k_to_ra(){
+_::s::k_to_ra(){
 local ks="${1:-"${_k_op}"}"
 _ks=()
 ks="${ks// /\\}"
@@ -1243,7 +1257,7 @@ if [[ -z "${_ol_k_le}" ]]; then
 _ol_k_le="${_k_le}"
 fi
 }
-_st_b_sr(){
+_::st::b_sr(){
 local lv="${l_["lv"]}"
 local sy=""
 local spa=""
@@ -1263,7 +1277,7 @@ for (( i = 0; i < $_sg; i++ )); do
 spa+="${sy}"
 done
 fi
-_st_set_lv "${lv}"
+_::st::set_lv "${lv}"
 lv="${_set_lv}"
 for (( i = 0; i < $lv; i++ )); do
 sr+="${spa}"
@@ -1273,7 +1287,7 @@ sr+="${_pv_pa}_"
 fi
 l_["sr"]="${sr}"
 }
-_st_set_lv(){
+_::st::set_lv(){
 local lv="${1-}"
 if [[ ${_is_s} == false ]]; then
 lv=$(( $lv - 1 ))
@@ -1287,7 +1301,7 @@ lv=$(( $lv - $ba_lv ))
 fi
 _set_lv="${lv}"
 }
-_st_b_or(){
+_::st::b_or(){
 local or=""
 local l_sr="{{line}}"
 local l_lv_sr="{{${l_["lv"]}}}"
@@ -1303,7 +1317,7 @@ or+="${l_n_sr}"
 fi
 l_["or"]="${or}"
 }
-_st_v_ty(){
+_::st::v_ty(){
 local v="${1-}"
 local ty="${1-}"
 local bo_rx='^(?i)true$'
@@ -1323,34 +1337,31 @@ elif [[ -n "${v}" ]]; then
 _v_ty="!! str "
 fi
 }
-_st_cr_ty(){
+_::st::cr_ty(){
 local v="${1-}"
 if [[ "${_v_ty}" == "!! bool " ]]; then
-_st_set_cr "${v}" "${_rd}"
+_::st::set_cr "${v}" "${_rd}"
 _v="${_cr_st}"
 _is_crd=true
 elif [[ "${_v_ty}" == "!! int " || "${_v_ty}" == "!! float " ]]; then
-_st_set_cr "${v}" "${_orange}"
+_::st::set_cr "${v}" "${_orange}"
 _v="${_cr_st}"
 _is_crd=true
 elif [[ "${_v_ty}" == "!! null " ]]; then
-_st_set_cr "${v}" "${_italic}"
+_::st::set_cr "${v}" "${_italic}"
 _v="${_cr_st}"
 _is_crd=true
 elif [[ "${_v_ty}" == "!! str " ]]; then
 _is_crd=true
 fi
-if [[ "${_ty}" == false ]]; then
-_v_ty=""
-fi
 }
-_st_tr_sp(){
+_::st::tr::sp(){
 local st="${@-}"
 st="${st#"${st%%[![:space:]]*}"}"
 st="${st%"${st##*[![:space:]]}"}"
 _tm="${st}"
 }
-_st_tr_pi_v_sp(){
+_::st::tr::pi_v::sp(){
 local sg="  "
 local sr=""
 for (( i = 0; i < ${l_["lv"]}; i++ )); do
@@ -1358,23 +1369,23 @@ sr+="${sg}"
 done
 _tm="${rw_l##"${sr}"}"
 }
-_st_tr_hy(){
+_::st::tr::hy(){
 local st="${@-}"
 st="${st#- }"
 _tm="${st}"
 }
-_st_set_cr(){
+_::st::set_cr(){
 local text="${1-}"
 local cr="${2-}"
 _cr_st="${cr}${text}\033[0m"
 }
-_y_ap_l(){
+_::y::ap_l(){
 local l_to_ap="${1-}"
 local cnt_to_co="${2-}"
 local l_ct=0
 local line=""
 local t_y=""
-_cr_sI $'\n'
+_::cr::sI $'\n'
 if [[ -n "${_Y}" ]]; then
 while IFS= read -r line; do
 l_ct=$(( $l_ct + 1 ))
@@ -1400,17 +1411,17 @@ else
 t_y="${cnt_to_co}"$'\n'
 _f_ls_n=$(( $_f_ls_n + 1 ))
 fi
-_cr_uI
+_::cr::uI
 _Y="${t_y}"
 _Y_im=true
 }
-_y_ap_o(){
+_::y::ap_o(){
 local l_to_ap="${1-}"
 local cnt_to_co="${2-}"
 local l_ct=0
 local line=""
 local t_y=""
-_cr_sI $'\n'
+_::cr::sI $'\n'
 while IFS= read -r line; do
 l_ct=$(( $l_ct + 1 ))
 if [[ "${l_ct}" -eq "${l_to_ap}" ]]; then
@@ -1420,11 +1431,11 @@ else
 t_y+="${line}"
 fi
 done <<< "${_Y}"
-_cr_uI
+_::cr::uI
 _Y="${t_y}"
 _Y_im=true
 }
-_y_ca(){
+_::y::ca(){
 if [[ -f "${_f}" && -n "${_o}" ]]; then
 _Y=$(<"${_f}")
 _Y_o="${_o}"
@@ -1436,11 +1447,11 @@ _Y="${_o}"
 fi
 fi
 }
-_y_co_l(){
+_::y::co_l(){
 local l_to_co="${1-}"
 local l_ct=0
 local line=""
-_cr_sI $'\n'
+_::cr::sI $'\n'
 while IFS= read -r line; do
 l_ct=$(( $l_ct + 1 ))
 if [[ $l_ct -eq $l_to_co ]]; then
@@ -1448,15 +1459,15 @@ _l_co="${line}"
 return 0
 fi
 done <<< "${_Y}"
-_cr_uI
+_::cr::uI
 }
-_y_d_l(){
+_::y::d_l(){
 local l_to_d="${1-}"
 local l_ct=0
 local lt_l=0
 local nx_l_ct=1
 local t_y=""
-_cr_sI $'\n'
+_::cr::sI $'\n'
 while IFS= read -r line; do
 l_ct=$(( $l_ct + 1 ))
 nx_l_ct=$(( $nx_l_ct + 1 ))
@@ -1488,17 +1499,17 @@ fi
 fi
 fi
 done <<< "${_Y}"
-_cr_uI
+_::cr::uI
 _Y="${t_y}"
 _Y_im=true
 }
-_y_re_l(){
+_::y::re_l(){
 local l_to_re="${1-}"
 local cnt_to_co="${2-}"
 local l_ct=0
 local line
 local t_y
-_cr_sI $'\n'
+_::cr::sI $'\n'
 while IFS= read -r line; do
 l_ct=$(( $l_ct + 1 ))
 if [[ "${l_ct}" -eq "${_f_ls_n}" ]]; then
@@ -1516,15 +1527,15 @@ t_y+="${line}"$'\n'
 fi
 fi
 done <<< "${_Y}"
-_cr_uI
+_::cr::uI
 _Y="${t_y}"
 }
-_y_ot(){
+_::y::ot(){
 if [[ "${_is_f}" == true ]]; then
-_f_u_f
+_::f::u_f
 elif [[ "${_is_ot}" == true ]]; then
 echo "${_Y}"
 fi
 }
-_m "${@}"
+_::m "${@}"
 set +eu

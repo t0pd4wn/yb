@@ -11,6 +11,7 @@ yb::main::help(){
   echo '  -r  | Removes key(s), value(s) or both. | yb -f "file.yaml" -r -k "key" -v "value" | Using single quotes is advised to remove a pipe value "-v pipe value".'
   echo '  -f  | YAML file path. | yb -f "file.yaml" | A file can be presented without the -f option, as the "$1" option. -f and -c are not compatible with each others.'
   echo '  -o  | YAML object. | yb -o "${YAML_object}" | YAML object can be used with all actions. -f and -o are compatible together, only when adding an object to a file.'
+  echo '  -O  | YAML object value(s) to be added. | yb -f "file.yaml" -k "key" -O "object value" | YAML object value support raw YAML formatting.'
   echo '  -k  | Key(s) selection path. | yb -f "file.yaml" -k "key" | Support keys in this format :"key", "key.childkey", "- list-key", "pipe-key|". Multiple key(s) can be provided with a "."" as the separator.'
   echo '  -v  | Value(s) to be added, removed, queried or changed. | yb -f "file.yaml" -k "key" -v "value" | Support values in this format : "value", "- list-value", "|> pipe-value".'
   echo '  -A  | Prints the output as a bash array. | yb -f "file.yaml" -A -k "key" | Will provide a different formatting if used with -F or -d.'

@@ -4,13 +4,13 @@
 
 - [Usage](#usage)
 - [Installation](#installation)
-- [API](#api)
+- [Options](#options)
 - [Development](#development)
 
 ## Usage
 
 ```bash
-yb [-v|-h|-a|-c|-q|-r|-A-d-F-l-L-R-n-T] [-f <file>|-o <object>] [-k <key>] [-v <value>]
+yb [-v|-h|-a|-c|-q|-r|-A-d-F-l-L-R-n-T] [-f <file>|-o <object>] [-k <key>] [-v <value>] [-O <object value>]
 ```
 
 ### Examples
@@ -111,9 +111,9 @@ You can use this command to install `yb` on your system in one line:
 bash <(echo "https://gitlab.com/t0pd4wn/yb/-/raw/main/yb"|(read l; wget $l || curl $l >yb)) && chmod +x yb && sudo cp yb /usr/local/bin && rm yb;
 ```
 
-## Options API
+## Options
 
-`yb` options API is divided under 3 types:
+`yb` options are divided under 3 types:
 - `action`: action options are ran against the file and are not compatible with each others. They are compatible with `input`, but not `format`.
 - `input`: input options are user settable options, and are compatible with each others. They are compatible with both `action` and `format`.  
 - `format`: format options are printing the output in various ways. They are compatible with each others, with `input` type , but not the `action` one.
@@ -126,6 +126,7 @@ bash <(echo "https://gitlab.com/t0pd4wn/yb/-/raw/main/yb"|(read l; wget $l || cu
 | `-r`   | remove | action | Removes key(s), value(s) or both. | `yb -f "file.yaml" -r -k "key" -v "value"` | Using single quotes is advised to remove a pipe value `-v 'pipe value'`. |
 | `-f`   | file   | input  | YAML file path. | `yb -f "file.yaml"`| A file can be presented without the `-f` option, as the `$1` option. `-f` and `-c` are not compatible with each others. |
 | `-o`   | object | input  | YAML object. | `yb -o "${YAML_object}"`| YAML object can be used with all actions. `-f` and `-o` are compatible together, only when adding an object to a file. |
+| `-O`   | object value | input  | YAML object value. | `yb -f "file.yaml" -O "${YAML_object}"` | YAML object can be used with the `-a` action. |
 | `-k`   | key    | input  | Key(s) selection path. | `yb -f "file.yaml" -k "key"` | Support keys in this format :`key`, `key.childkey`, `- list-key`, `pipe-key\|`. Multiple key(s) can be provided with a `.` as the separator.|
 | `-v`   | value  | input  | Value(s) to be added, removed, queried or changed. | `yb -f "file.yaml" -k "key" -v "value"` | Support values in this format : `value`,  `- list-value`, `\|> pipe-value`. |
 | `-A`   | array  | format | Prints the output as a bash array. | `yb -f "file.yaml" -A -k "key"` | Will provide a different formatting if used with `-F` or `-d`. |

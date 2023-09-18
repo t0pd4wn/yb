@@ -16,6 +16,7 @@ yb::main::help ()
   echo '  -r  | Removes key(s), value(s) or both. | yb -f "file.yaml" -r -k "key" -v "value" | Using single quotes is advised to remove a pipe value "-v pipe value".';
   echo '  -f  | YAML file path. | yb -f "file.yaml" | A file can be presented without the -f option, as the "$1" option. -f and -c are not compatible with each others.';
   echo '  -o  | YAML object. | yb -o "${YAML_object}" | YAML object can be used with all actions. -f and -o are compatible together, only when adding an object to a file.';
+  echo '  -O  | YAML object value(s) to be added. | yb -f "file.yaml" -k "key" -O "object value" | YAML object value support raw YAML formatting.';
   echo '  -k  | Key(s) selection path. | yb -f "file.yaml" -k "key" | Support keys in this format :"key", "key.childkey", "- list-key", "pipe-key|". Multiple key(s) can be provided with a "."" as the separator.';
   echo '  -v  | Value(s) to be added, removed, queried or changed. | yb -f "file.yaml" -k "key" -v "value" | Support values in this format : "value", "- list-value", "|> pipe-value".';
   echo '  -A  | Prints the output as a bash array. | yb -f "file.yaml" -A -k "key" | Will provide a different formatting if used with -F or -d.';
@@ -33,8 +34,8 @@ _::q::se::ks "${_k_op}"
 if [[ "${_q_rt}" == false ]]; then
 _::a::m::ks "${_k_op}"
 fi
-if [[ -n "${_Y_o}" ]]; then
-_::a::m::o "${_Y_o}"
+if [[ -n "${_o_v}" ]]; then
+_::a::m::o "${_o_v}"
 fi
 if [[ -n "${_v_op}" ]]; then
 _::a::m::vs "${_v_op}"
@@ -232,8 +233,7 @@ _::a::cd_ks::to_f "${h_k}"
 fi
 }
 _::a::o::to_Y(){
-declare -a pas=(${1})
-declare -a pas=("${@}")
+declare -a pas=(${@})
 local st
 local delimeter
 local cn
@@ -253,14 +253,12 @@ sr=""
 for (( sp = 0; sp < $k_lv + 1; sp++ )); do
 sr+="${sg}"
 done
-ctr=0
 _::cr::sI $'\n'
 while IFS= read -r line; do
-echo "${line}"
 l_n=$(( $k_l + $ctr ))
 _::y::ap_l "${l_n}" "${sr}${line}"
 ctr=$(( $ctr + 1 ))
-done <<< "${_Y_o}"
+done <<< "${_o_v}"
 _::cr::uI
 done
 }
@@ -381,11 +379,9 @@ return
 fi
 if [[ -f "${_f}" ]] &&\
 [[ -n "${_o}" ]]; then
-if [[ "${_a}" == false ]]; then
-echo "YAML file and object can only be used together \
-through the '-a' op."
+echo "-f file and -o object can not be used together. \
+Use -O to add object value type to YAML file or object."
 return
-fi
 fi
 trap _::cr::exit_dump SIGINT
 trap _::cr::exit EXIT
@@ -397,7 +393,7 @@ echo "File is currently being processd with yb."
 fi
 }
 _::m::cli(){
-while getopts "aAcdf:Fhk:lLno:qrRTv:V" arg; do
+while getopts "aAcdf:Fhk:lLno:O:qrRTv:V" arg; do
 case $arg in
 a)
 _a=true
@@ -438,6 +434,9 @@ _sh_l_n=true
 ;;
 o)
 _o="${OPTARG}"
+;;
+O)
+_o_v="${OPTARG}"
 ;;
 r)
 _r=true
@@ -490,6 +489,7 @@ declare -g _italic="\033[3m"
 _::m::g::cli_ops(){
 declare -g _f=""
 declare -g _o=""
+declare -g _o_v=""
 declare -g _v_op=""
 declare -g _a=false
 declare -g _c=false
@@ -1436,15 +1436,10 @@ _Y="${t_y}"
 _Y_im=true
 }
 _::y::ca(){
-if [[ -f "${_f}" && -n "${_o}" ]]; then
-_Y=$(<"${_f}")
-_Y_o="${_o}"
-else
 if [[ -f "${_f}" ]]; then
 _Y=$(<"${_f}")
 elif [[ -n "${_o}" ]]; then
 _Y="${_o}"
-fi
 fi
 }
 _::y::co_l(){

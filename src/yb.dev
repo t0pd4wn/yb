@@ -25,8 +25,8 @@ yb::add(){
     yb::add::manage::keys "${yb_key_option}"
   fi
 
-  if [[ -n "${yb_YAML_object}" ]]; then
-    yb::add::manage::object "${yb_YAML_object}"
+  if [[ -n "${yb_object_value}" ]]; then
+    yb::add::manage::object "${yb_object_value}"
   fi
 
   if [[ -n "${yb_value_option}" ]]; then
@@ -380,9 +380,7 @@ yb::add::manage::keys(){
 #   yb_value_option
 ########################################
 yb::add::object::to_YAML(){
-  declare -a parents=(${1})
-
-  declare -a parents=("${@}")
+  declare -a parents=(${@})
   local string
   local delimeter
   local condition
@@ -406,18 +404,14 @@ yb::add::object::to_YAML(){
       spacer+="${spacing}"
     done
 
-    # loop through each line of the YAML object
-    counter=0
-
-  # set IFS on newline
-  yb::core::set_IFS $'\n'
+    # set IFS on newline
+    yb::core::set_IFS $'\n'
 
     while IFS= read -r line; do
-      echo "${line}"
       line_number=$(( $key_line + $counter ))
       yb::yaml::append_line "${line_number}" "${spacer}${line}"
       counter=$(( $counter + 1 ))
-    done <<< "${yb_YAML_object}"
+    done <<< "${yb_object_value}"
 
     yb::core::unset_IFS
 
@@ -653,11 +647,9 @@ through the '-f' or '-o' options."
   # check if both file and object are set
   if [[ -f "${yb_file}" ]] &&\
     [[ -n "${yb_object}" ]]; then
-    if [[ "${yb_add}" == false ]]; then
-      echo "YAML file and object can only be used together \
-through the '-a' option."
+      echo "-f file and -o object can not be used together. \
+Use -O to add object value type to YAML file or object."
       return
-    fi
   fi
 
   # trap the exit function
@@ -681,7 +673,7 @@ through the '-a' option."
 #   $@ # script user options
 ########################################
 yb::main::cli(){
-  while getopts "aAcdf:Fhk:lLno:qrRTv:V" arg; do
+  while getopts "aAcdf:Fhk:lLno:O:qrRTv:V" arg; do
     case $arg in
       a)
         yb_add=true
@@ -722,6 +714,9 @@ yb::main::cli(){
         ;;
       o)
         yb_object="${OPTARG}"
+        ;;
+      O)
+        yb_object_value="${OPTARG}"
         ;;
       r)
         yb_remove=true
@@ -803,6 +798,7 @@ yb::main::globals::cli_options(){
   # cli user options
   declare -g yb_file=""
   declare -g yb_object=""
+  declare -g yb_object_value=""
   declare -g yb_value_option=""
   # cli options flags
   declare -g yb_add=false
@@ -2105,7 +2101,6 @@ yb::sequence::key_to_array(){
   fi
 }
 
-
 ########################################
 # Build the spacer that comes before a key or value
 # Globals:
@@ -2447,16 +2442,12 @@ yb::yaml::append_object(){
 #   $1 # a yaml file path
 ########################################
 yb::yaml::cache(){
-  if [[ -f "${yb_file}" && -n "${yb_object}" ]]; then 
-    yb_YAML=$(<"${yb_file}")
-    yb_YAML_object="${yb_object}"
-  else
     if [[ -f "${yb_file}" ]]; then
       yb_YAML=$(<"${yb_file}")
     elif [[ -n "${yb_object}" ]]; then 
       yb_YAML="${yb_object}"
     fi
-  fi
+  # fi
 }
 
 ########################################

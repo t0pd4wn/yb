@@ -154,8 +154,8 @@ minified version "${version_number}"}
   cached_file="${cached_file//Values are nedd when using the \'-c\' op./Values are needed when using the \'-c\' option.}"
   cached_file="${cached_file//A Y f or o neds to be providd/A YAML file or object needs to be provided}"
   cached_file="${cached_file//through the \'-f\' or \'-o\' ops./through the \'-f\' or \'-o\' options.}"
-  cached_file="${cached_file//Y f ad o can only be usd together/YAML file and object can only be used together}"
-  cached_file="${cached_file//through the '-a' op./through the \'-a\' option.}"
+  cached_file="${cached_file//-f f ad -o o can not be usd together./-f file and -o object can not be used together.}"
+  cached_file="${cached_file//Use -O to a o v ty to Y f or o./Use -O to add object value type to YAML file or object.}"
   cached_file="${cached_file//File is currently being processd with _./File is currently being processd with yb.}"
 
   # prepare destination file

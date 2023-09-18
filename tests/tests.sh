@@ -34,6 +34,10 @@ tests(){
 	parse=$("./${program}" "${yaml_file}" "y")
 	check_test "b" "${parse}"
 
+  parse=$("./${program}" -f "${yaml_file}" -o "y")
+  echo -e "\U1F4AC Test 1.${test_num}: parse file both -f and -o options."
+  check_test "-f file and -o object can not be used together. Use -O to add object value type to YAML file or object." "${parse}"
+
 	echo -e "\U1F4AC Test 1.${test_num}: parse file with key selection with options"
 	parse=$("./${program}" -f "${yaml_file}" -k "y")
 	check_test "b" "${parse}"
@@ -466,6 +470,18 @@ false true" "${parse}"
   parse=$("./${program}" -qo "${yaml_object}" -k "- ascii|" -v ' ___  _ \  \//  \  /  / / /_/')
   check_test "true" "${parse}"
 
+  echo -e "\U1F4AC Test 3.${test_num}: add object to file"
+  ./"${program}" -af "${yaml_file}" -k "do.exist" -O "- object: value"
+  parse=$("./${program}" -qf "${yaml_file}" -k "do.exist.- object")
+  check_test "true
+true" "${parse}"
+
+  echo -e "\U1F4AC Test 3.${test_num}: add object to object"
+  yaml_object=$("./${program}" -ao "${yaml_object}" -k "do.exist" -O "- object: value")
+  parse=$("./${program}" -qo "${yaml_object}" -k "do.exist.- object")
+  check_test "true
+true" "${parse}"
+
   # 
   # part 4
   # 
@@ -520,7 +536,6 @@ false true" "${parse}"
   parse=$("./${program}" -qo "${yaml_object}" -k "- ascii-test|" -v ' ____/  __\| | //| |_\\\____/')
   check_test "true" "${parse}"
 	
-
   # 
   # part 5
   # 
@@ -540,6 +555,7 @@ false true" "${parse}"
   echo -e "\U1F4AC Test 5.${test_num}: remove existing keys"
   "./${program}" -rf "${yaml_file}" -k "never"
   "./${program}" -rf "${yaml_file}" -k "do.exist.not"
+  "./${program}" -rf "${yaml_file}" -k "do.exist.- object"
   "./${program}" -rf "${yaml_file}" -k "did not"
   "./${program}" -rf "${yaml_file}" -k "list"
   "./${program}" -rf "${yaml_file}" -k "- new.- child"

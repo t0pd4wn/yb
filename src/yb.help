@@ -3,7 +3,7 @@
 ########################################
 yb::main::help(){
   echo 'yb dev version by t0pd4wn.'
-  echo 'yb [-v|-h|-a|-c|-q|-r|-A-d-F-l-L-R-n-T] [-f <file>|-o <object>] [-k <key>] [-v <value>]'
+  echo 'yb [-v|-h|-a|-c|-q|-r|-A-d-F-l-L-R-n-T] [-f <file>|-o <object>] [-k <key>] [-v <value>|-O <object value>]'
   echo ''
   echo '  -a  | Adds key(s), value(s) or both. | yb -f "file.yaml" -a -k "key" -v "value"'
   echo '  -c  | Changes value(s). | yb -f "file.yaml" -c -k "key" -v "new_value"'

@@ -10,7 +10,7 @@
 ## Usage
 
 ```bash
-yb [-v|-h|-a|-c|-q|-r|-A-d-F-l-L-R-n-T] [-f <file>|-o <object>] [-k <key>] [-v <value>] [-O <object value>]
+yb [-v|-h|-a|-c|-q|-r|-A-d-F-l-L-R-n-T] [-f <file>|-o <object>] [-k <key>] [-v <value>|-O <object value>]
 ```
 
 ### Examples
@@ -116,7 +116,7 @@ bash <(echo "https://gitlab.com/t0pd4wn/yb/-/raw/main/yb"|(read l; wget $l || cu
 `yb` options are divided under 3 types:
 - `action`: action options are ran against the file and are not compatible with each others. They are compatible with `input`, but not `format`.
 - `input`: input options are user settable options, and are compatible with each others. They are compatible with both `action` and `format`.  
-- `format`: format options are printing the output in various ways. They are compatible with each others, with `input` type , but not the `action` one.
+- `format`: format options print the output in various ways. They are compatible with each others, with the `input` type , but not the `action` one.
 
 | Option | Name | Type | Description | Example | Notes |
 | ------ | ------ | ------ | ------ | ------ | ------ |

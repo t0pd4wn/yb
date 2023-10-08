@@ -5,6 +5,7 @@
 - [Usage](#usage)
 - [Installation](#installation)
 - [Options](#options)
+- [YAML support](#yaml-support)
 - [Development](#development)
 
 ## Usage
@@ -138,6 +139,10 @@ bash <(echo "https://gitlab.com/t0pd4wn/yb/-/raw/main/yb"|(read l; wget $l || cu
 | `-n`   | number | format | Prints `{{<line number>}}` on each lines. | `yb -f "file.yaml" -n -k "key"` | |
 | `-T`   | type   | format | Prints a value type. | `yb -f "file.yaml" -T -k "key"` | Supports `null`, `boolean`, `integer`, `floating number`, `string`. |
 | `-s`   | spaces | Deprecated | Spaces number selection. | | |
+
+## YAML support
+
+`yb` provides the basic YAML support for editing and reading a YAML file. As by version 0.8, `yb` doesn't support advanced features such as group based search, anchors, aliases, and overrides.
 
 ## Development
 

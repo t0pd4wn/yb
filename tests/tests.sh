@@ -429,16 +429,16 @@ false true" "${parse}"
   echo -e "\U1F4AC Test 3.${test_num}: add multiple list values to an existing key to file"
   "./${program}" -af "${yaml_file}" -k "list.which.do.exist" -v "- yes - right"
   parse=$("./${program}" -Rf "${yaml_file}" -k "list.which.do.exist")
-  check_test "- yes
-- right
-- true" "${parse}"
+  check_test "- true
+- yes
+- right" "${parse}"
 
   echo -e "\U1F4AC Test 3.${test_num}: add multiple list values to an existing key to object"
   yaml_object=$("./${program}" -ao "${yaml_object}" -k "list.which.do.exist" -v "- yes - right")
   parse=$("./${program}" -Ro "${yaml_object}" -k "list.which.do.exist")
-  check_test "- yes
-- right
-- true" "${parse}"
+  check_test "- true
+- yes
+- right" "${parse}"
 
   echo -e "\U1F4AC Test 3.${test_num}: add complex inline value to a non existing key to file"
   "./${program}" -af "${yaml_file}" -k "list.which.do.exist.- key" -v '\"Complex string\" \\t\\t\\t\\t tabs, newlines\\n\\n, and \${special} \${very special} character.'

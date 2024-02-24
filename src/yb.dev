@@ -2,7 +2,7 @@
 #---------------------------------------
 # yb | yaml bash parser | Licensed under GNU GPL V3
 #---------------------------------------
-# Notee: This is the dev version, built versions can be found under '/yb' and '/dist/yb.min'.
+# Note: This is the dev version, built versions can be found under '/yb' and '/dist/yb.min'.
 #---------------------------------------
 
 # Set the eu flag
@@ -680,7 +680,7 @@ yb::main(){
 
   # check for the existence of the parameter file
   if ! [[ -f "${yb_file}" ]]; then
-    if [[ "${yb_file}" == *".yaml" ]]; then
+    if [[ "${yb_file}" == *".yaml" || "${yb_file}" == *".yml" ]]; then
       yb_is_file=true
       yb_is_empty_file=true
     fi

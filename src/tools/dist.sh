@@ -7,7 +7,7 @@
 set -eu
 
 yb::dist(){
-  local version_number="0.8"
+  local version_number="0.9"
   local timestamp=$(date +"%Y%m%d%H%M%S")
   ./src/tools/build.sh "${version_number}" "${timestamp}"
   ./src/tools/minify.sh "${version_number}" "${timestamp}"

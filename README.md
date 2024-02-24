@@ -142,7 +142,7 @@ bash <(echo "https://gitlab.com/t0pd4wn/yb/-/raw/main/yb"|(read l; wget $l || cu
 
 ## YAML support
 
-`yb` provides the basic YAML support for editing and reading a YAML file. As by version 0.8, `yb` doesn't support advanced features such as group based search, anchors, aliases, and overrides.
+`yb` provides the basic YAML support for editing and reading a YAML file. As by version 0.9, `yb` doesn't support advanced features such as group based search, anchors, aliases, and overrides.
 
 ## Development
 

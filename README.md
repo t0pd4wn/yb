@@ -157,6 +157,11 @@ To launch it, run the below command from the repository root level :
 ./tests/tests.sh
 ```
 
+You can provide an extra parameter to select the parser (e.g. while developing) :
+```bash
+./tests/tests.sh "./src/yb.dev"
+```
+
 ## Thank you
 
 ***All of you, YAML'ers !***

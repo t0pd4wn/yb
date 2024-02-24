@@ -680,7 +680,7 @@ yb::main(){
 
   # check for the existence of the parameter file
   if ! [[ -f "${yb_file}" ]]; then
-    if [[ "${yb_file}" == *".yaml" || "${yb_file}" == *".yml" ]]; then
+    if [[ "${yb_file}" == *".yaml" ]]; then
       yb_is_file=true
       yb_is_empty_file=true
     fi
@@ -1314,9 +1314,9 @@ yb::parse::search(){
   fi
 
   # if the current step (base 0) is equal to the total ones (base 1), reset
-  if [[ "${yb_key_step}" -eq "${yb_original_key_length}" ]]; then
-    yb_key_step=0
-  fi
+  # if [[ "${yb_key_step}" -eq "${yb_original_key_length}" ]]; then
+  #   yb_key_step=0
+  # fi
 
   # if the current key introduces a pipe value
   if [[ "${line_["type"]}" == *"key:pipe" ]]; then

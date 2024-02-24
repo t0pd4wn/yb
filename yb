@@ -1,6 +1,6 @@
 #!/bin/bash
 #---------------------------------------
-# yb | yaml bash parser | 0.8-20240224153710 | Licensed under GNU GPL V3
+# yb | yaml bash parser | 0.9-20240224155430 | Licensed under GNU GPL V3
 #---------------------------------------
 # Note: this is an automatically built version. The full code is available in the 'src/' folder.
 #---------------------------------------
@@ -10,7 +10,7 @@ set -eu
 ########################################
 yb::main::help () 
 { 
-  echo 'yb version 0.8-20240224153710 by t0pd4wn.';
+  echo 'yb version 0.9-20240224155430 by t0pd4wn.';
   echo 'yb [-v|-h|-a|-c|-q|-r|-A-d-F-l-L-R-n-T] [-f <file>|-o <object>] [-k <key>] [-v <value>|-O <object value>]';
   echo '';
   echo '  -a  | Adds key(s), value(s) or both. | yb -f "file.yaml" -a -k "key" -v "value"';

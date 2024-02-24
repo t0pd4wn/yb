@@ -1,6 +1,6 @@
 #!/bin/bash
 #---------------------------------------
-# yb | yaml bash parser | 0.8-20240224121229 | Licensed under GNU GPL V3
+# yb | yaml bash parser | 0.8-20240224153710 | Licensed under GNU GPL V3
 #---------------------------------------
 # Note: this is a minified version. The full code is available in the 'src/' folder.
 #---------------------------------------
@@ -830,9 +830,6 @@ fi
 if [[ "${l_["lv"]}" -lt "${_k_se}" ]]; then
 _k_se=0
 _rve=false
-fi
-if [[ "${_k_se}" -eq "${_ol_k_le}" ]]; then
-_k_se=0
 fi
 if [[ "${l_["ty"]}" == *"k:pi" ]]; then
 if [[ ${_ks[${_k_se}]} == *"|" ]]; then

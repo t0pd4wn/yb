@@ -658,7 +658,6 @@ check_test(){
 	if [[ "${result}" == "${assertion}" ]]; then
 		echo -e "\033[1;36mPassed\033[0m"
 		((passed_num++))
-		error_code=0
 	else
 		echo -e "\033[1;33mFailed\033[0m"
 		error_code=1
@@ -671,12 +670,13 @@ globals(){
 	declare -g test_num=0
   declare -g total_num=0
 	declare -g passed_num=0
-	declare -g error_code
+	declare -g error_code=0
 }
 
 main(){
 	globals
 	time tests "${@}"
+  exit "${error_code}"
 }
 
 main "${@}"

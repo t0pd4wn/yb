@@ -8,8 +8,12 @@ set -eu
 
 yb::dist(){
   local version_number="0.8"
-  ./src/tools/build.sh "${version_number}"
-  ./src/tools/minify.sh "${version_number}"
+  local timestamp=$(date +"%Y%m%d%H%M%S")
+  ./src/tools/build.sh "${version_number}" "${timestamp}"
+  ./src/tools/minify.sh "${version_number}" "${timestamp}"
+  git add dist/*
+  git add yb
+  git commit -m "dist: ${version_number} - ${timestamp}"
 }
 
 yb::dist

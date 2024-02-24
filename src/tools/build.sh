@@ -8,8 +8,10 @@ set -eu
 
 yb::build(){
   local version_number="${1-}"
+  local timestamp="${2-}"
   local copy_file=src/yb_dev_copy
   local help_file=src/yb_help_copy
+  local dest_file="dist/yb.${version_number}_${timestamp}"
   local cached_file
 
   cp src/yb.dev "${copy_file}"
@@ -20,7 +22,7 @@ yb::build(){
   rm "${help_file}"
   help_function=$(declare -f yb::main::help)
   help_function=${help_function//    /  }
-  help_function=${help_function//dev version/version "${version_number}"}
+  help_function=${help_function//dev version/version "${version_number}-${timestamp}"}
 
   # remove file header
   sed -i '1,12d;' "${copy_file}"
@@ -38,9 +40,9 @@ yb::build(){
   # prepare destination file
   echo "#!/bin/bash" >> "${copy_file}"
   echo "#---------------------------------------" >> "${copy_file}"
-  echo "# yb | yaml bash parser | ${version_number} | Licensed under GNU GPL V3" >> "${copy_file}"
+  echo "# yb | yaml bash parser | ${version_number}-${timestamp} | Licensed under GNU GPL V3" >> "${copy_file}"
   echo "#---------------------------------------" >> "${copy_file}"
-  echo "# Note: this is an automatically built version. The full code is available in 'src/yb_dev'." >> "${copy_file}"
+  echo "# Note: this is an automatically built version. The full code is available in the 'src/' folder." >> "${copy_file}"
   echo "#---------------------------------------" >> "${copy_file}"
   echo "set -eu" >> "${copy_file}"
   echo "########################################" >> "${copy_file}"
@@ -56,13 +58,20 @@ yb::build(){
   # chmod file
   chmod +x "${copy_file}"
 
-  # copy to destination
-  cp "${copy_file}" yb
-
-  rm "${copy_file}"
-
   # run tests
-  ./tests/tests.sh "yb"
+  if ! ./tests/tests.sh "${copy_file}"; then
+    echo "Tests failed"
+    exit 1
+  else
+    # remove previous builds
+    rm dist/*
+    # copy to root destination
+    cp "${copy_file}" yb
+    # copy to /dist/ destination
+    cp "${copy_file}" "${dest_file}"
+    # remove temp file
+    rm "${copy_file}"
+  fi
 }
 
 yb::build "${@}"

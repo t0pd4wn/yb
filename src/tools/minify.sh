@@ -8,9 +8,10 @@ set -eu
 
 yb::minify(){
   local version_number="${1-}"
+  local timestamp="${2-}"
   local copy_file=src/yb_dev_copy
   local help_file=src/yb_help_copy
-  local dest_file=dist/yb.min
+  local dest_file="dist/yb.min.${version_number}_${timestamp}"
   local cached_file
 
   cp src/yb.dev "${copy_file}"
@@ -161,9 +162,9 @@ minified version "${version_number}"}
   # prepare destination file
   echo "#!/bin/bash" >> "${copy_file}"
   echo "#---------------------------------------" >> "${copy_file}"
-  echo "# yb | yaml bash parser | ${version_number} | Licensed under GNU GPL V3" >> "${copy_file}"
+  echo "# yb | yaml bash parser | ${version_number}-${timestamp} | Licensed under GNU GPL V3" >> "${copy_file}"
   echo "#---------------------------------------" >> "${copy_file}"
-  echo "# Note: this is a minified version. The full code is available in 'src/yb_dev'." >> "${copy_file}"
+  echo "# Note: this is a minified version. The full code is available in the 'src/' folder." >> "${copy_file}"
   echo "#---------------------------------------" >> "${copy_file}"
   echo "set -eu" >> "${copy_file}"
 
@@ -178,15 +179,15 @@ minified version "${version_number}"}
 
   # remove empty lines
   sed -i '/^[[:blank:]]*$/ d' "${copy_file}"
-
   chmod +x "${copy_file}"
 
-  cp "${copy_file}" "${dest_file}"
-
-  rm "${copy_file}"
-  rm "${help_file}"
-
-  ./tests/tests.sh "dist/yb.min"
+  if ! tests/tests.sh "${copy_file}"; then
+    echo "Tests failed (minified version)."
+  else
+    cp "${copy_file}" "${dest_file}"
+    rm "${copy_file}"
+    rm "${help_file}"
+  fi
 }
 
 yb::minify "${@}"

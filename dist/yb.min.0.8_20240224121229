@@ -1,14 +1,14 @@
 #!/bin/bash
 #---------------------------------------
-# yb | yaml bash parser | 0.8 | Licensed under GNU GPL V3
+# yb | yaml bash parser | 0.8-20240224121229 | Licensed under GNU GPL V3
 #---------------------------------------
-# Note: this is a minified version. The full code is available in 'src/yb_dev'.
+# Note: this is a minified version. The full code is available in the 'src/' folder.
 #---------------------------------------
 set -eu
 yb::main::help () 
 { 
   echo 'yb minified version 0.8 by t0pd4wn.';
-  echo 'yb [-v|-h|-a|-c|-q|-r|-A-d-F-l-L-R-n-T] [-f <file>|-o <object>] [-k <key>] [-v <value>]';
+  echo 'yb [-v|-h|-a|-c|-q|-r|-A-d-F-l-L-R-n-T] [-f <file>|-o <object>] [-k <key>] [-v <value>|-O <object value>]';
   echo '';
   echo '  -a  | Adds key(s), value(s) or both. | yb -f "file.yaml" -a -k "key" -v "value"';
   echo '  -c  | Changes value(s). | yb -f "file.yaml" -c -k "key" -v "new_value"';
@@ -45,27 +45,81 @@ _::a::m::o(){
 declare -a ks=("${_ks[@]}")
 local s_le="${_k_le}"
 local ctr=$s_le
-local h_k
+declare -a h_k
+_a_v_ty="o"
+_a_q=true
 _::q::se::ks_ls "${_k_op}"
-h_k=("${_q_rt}")
-_::a::o::to_Y "${h_k}"
+h_k=(${_q_rt[@]})
+_a_q=false
+_::a::o::to_Y "${h_k[@]}"
+_a_v_ty=""
 }
 _::a::m::vs(){
 declare -a ks=("${_ks[@]}")
 local s_le="${_k_le}"
 local ctr=$s_le
-local h_k
+declare -a h_k
+if [[ "${_v_op}" == "- "* ]]; then
+_a_v_ty="lt"
+elif [[ "${_v_op}" == "|"* ]]; then
+_a_v_ty="pi"
+else
+_a_v_ty="in"
+fi
+_a_q=true
 _::q::se::ks_ls "${_k_op}"
-h_k=("${_q_rt}")
-_::a::vs::to_f "${h_k}"
+h_k=(${_q_rt[@]})
+_a_q=false
+if [[ "${_a_v_ty}" == "in" ]]; then
+_::a::vs::to_f::in "${h_k[@]}"
+elif [[ "${_a_v_ty}" == "lt" ]]; then
+_::a::vs::to_f::lt "${h_k[@]}"
+elif [[ "${_a_v_ty}" == "pi" ]]; then
+_::a::vs::to_f::pi "${h_k[@]}"
+fi
+_a_v_ty=""
+}
+_::a::m::ks(){
+local s_le="${_k_le}"
+local se_k=""
+local ctr=$s_le
+declare -a ks=("${_ks[@]}")
+declare -a reverse_ra
+declare -a h_k
+_a_q=true
+_a_v_ty="ks"
+for (( rk = ${#ks[@]} - 1; rk >= 0; rk-- )); do
+reverse_ra+=("${ks[rk]}")
+done
+for (( s = 0; s < $s_le; s++ )); do
+se_k=""
+for (( rs = 0; rs < $ctr; rs++ )); do
+se_k+=".${reverse_ra[$rs]}"
+done
+se_k="${se_k:1}"
+_::q::se::ks_ls "${se_k}"
+h_k=(${_q_rt[@]})
+if [[ -n "${h_k[@]}" ]]; then
+break;
+fi
+ctr=$(( $ctr - 1 ))
+done
+_a_q=false
+_a_v_ty=""
+if [[ -z "${h_k[@]}" ]]; then
+_::a::new_ks::to_f "${h_k[@]}"
+else
+_::a::cd_ks::to_f "${h_k[@]}"
+fi
 }
 _::a::vs::to_f::in(){
-declare -a pas=("${@-}")
+declare -a pas=(${@-})
 local k_l
 local pa_k_v
 local in_v
 for k in "${pas[@]}"; do
 k_l="${k##*_N}"
+k_l=$(( $k_l ))
 _::y::co_l "${k_l}"
 pa_k_v="${_l_co}"
 in_v="${pa_k_v} ${_v_op}"
@@ -202,35 +256,6 @@ fi
 _::y::ap_l "${_f_ls_n}" "${cd_k}"
 lv=$(( $lv + 1 ))
 done
-}
-_::a::m::ks(){
-local h_k
-local s_le="${_k_le}"
-local se_k=""
-local ctr=$s_le
-declare -a ks=("${_ks[@]}")
-declare -a reverse_ra
-for (( rk = ${#ks[@]} - 1; rk >= 0; rk-- )); do
-reverse_ra+=("${ks[rk]}")
-done
-for (( s = 0; s < $s_le; s++ )); do
-se_k=""
-for (( rs = 0; rs < $ctr; rs++ )); do
-se_k+=".${reverse_ra[$rs]}"
-done
-se_k="${se_k:1}"
-_::q::se::ks_ls "${se_k}"
-h_k=("${_q_rt}")
-if [[ -n "${h_k}" ]]; then
-break;
-fi
-ctr=$(( $ctr - 1 ))
-done
-if [[ -z "${h_k}" ]]; then
-_::a::new_ks::to_f
-else
-_::a::cd_ks::to_f "${h_k}"
-fi
 }
 _::a::o::to_Y(){
 declare -a pas=(${@})
@@ -524,6 +549,7 @@ declare -g _h_k=false
 declare -g _iv=false
 declare -g _Y_im=false
 declare -g _is_ot=true
+declare -g _a_q=false
 }
 _::m::g::others(){
 declare -g _s_rvd=0
@@ -538,8 +564,10 @@ declare -g _pa_ty=""
 declare -g _pa_lv=""
 declare -g _set_lv=""
 declare -g _l=""
+declare -g _l_co=""
 declare -g _v=""
 declare -g _v_ty=""
+declare -g _a_v_ty=""
 declare -g _k_op=""
 declare -g _Y=""
 declare -g _Y_o=""
@@ -548,8 +576,12 @@ declare -g _tm=""
 declare -g _sr=""
 declare -g _an=""
 declare -g _cr_st=""
+declare -g _l_lv_ca=""
+declare -g _l_n_ca=""
 declare -g _q_se_rt=""
 declare -g _q_ls_rt=""
+declare -g _q_endls_rt=""
+declare -g _q_ty=""
 declare -g _q_se_vs_rt=""
 declare -g _q_pi_rt=""
 declare -g _q_pi_ft_l=""
@@ -787,8 +819,14 @@ fi
 _::p::se(){
 local q_px
 local k="${l_["k"]-}"
-local new_lv
 _is_pt=false
+if [[ ( "${_a_q}" == true ) && ( -n "${_l_lv_ca}" ) ]]; then
+if [[ "${l_["lv"]}" -le "${_l_lv_ca:1}" ]]; then
+_::p::se::is_a_q
+_k_se=0
+_rve=false
+fi
+fi
 if [[ "${l_["lv"]}" -lt "${_k_se}" ]]; then
 _k_se=0
 _rve=false
@@ -821,11 +859,11 @@ _k_ba_lv="${l_["lv"]}"
 _h_k=true
 if [[ "${_l_n_q}" == true || "${_bo_q}" == true ]]; then
 _::p::se::is_q
-return 0
+return
 fi
 if [[ "${l_["ty"]}" == *"k:v" ]]; then
 _::p::se::is_k_v
-return 0
+return
 fi
 }
 _::p::se::is_nestd_pi(){
@@ -838,6 +876,16 @@ fi
 }
 _::p::se::is_q(){
 local q_px
+if [[ "${_a_q}" == true ]]; then
+if [[ "${_a_v_ty}" != "in" ]]; then
+_l_lv_ca="L${l_["lv"]}"
+_l_n_ca="L${l_["lv"]}_N${l_["l_n"]}"
+else
+_l_n_ca="L${l_["lv"]}_N${l_["l_n"]}"
+_::p::se::is_a_q
+fi
+return
+fi
 if [[ "${_l_n_q}" == true ]]; then
 q_px="L${l_["lv"]}_N${l_["l_n"]}"
 _q_ls_rt+=("${q_px}")
@@ -850,6 +898,11 @@ fi
 _rve=false
 _k_se=0
 }
+_::p::se::is_a_q(){
+_q_ls_rt+=("${_l_n_ca}")
+_l_n_ca=""
+_l_lv_ca=""
+}
 _::p::se::is_k_v(){
 _one_l=true
 _k_se=0
@@ -859,11 +912,23 @@ _s_rvd=$(( _s_rvd + 1 ))
 _ie=false
 }
 _::p::se::is_rvae(){
+local q_px
+local l_n
 if  [[ "${l_["lv"]}" -gt "${_k_ba_lv}" ]]; then
+if [[ "${_a_q}" == true ]]; then
+q_px="${_l_lv_ca}_N${l_["l_n"]}"
+_l_n_ca=("${q_px}")
+fi
 _one_l=false
 _is_pt=true
 _ie=false
 else
+if [[ "${_a_q}" == true ]]; then
+l_n="${l_["l_n"]}"
+l_n=$(( $l_n - 1 ))
+_l_n_ca="${_l_lv_ca}_N${l_n}"
+_::p::se::is_a_q
+fi
 _one_l=false
 _is_pt=false
 _k_se=0
@@ -931,6 +996,12 @@ _ie_f=false
 fi
 else
 _f_ls_n="${l_n}"
+if [[ "${_a_q}" == true ]]; then
+if [[ -n "${_l_n_ca}" ]]; then
+_::p::se::is_a_q
+_k_se=0
+fi
+fi
 fi
 }
 _::p::y::cmt(){
@@ -1070,12 +1141,13 @@ _v_q=false
 _::q::se::ks_ls(){
 declare -a k=("${1-}")
 _q_ls_rt=()
+_q_endls_rt=()
 _q_rt=()
 _k_se=0
 _l_n_q=true
 _::s "${k[@]}"
 _::p::y "${_f}"
-_q_rt="${_q_ls_rt[@]}"
+_q_rt=("${_q_ls_rt[@]}")
 _l_n_q=false
 }
 _::q::se::vs_ls(){
@@ -1101,9 +1173,9 @@ local nx_l
 local r_l
 local l_ctr=0
 _::q::se::ks_ls "${_k_op}"
-pa_ls=(${_q_rt})
+pa_ls=(${_q_rt[@]})
 _::q::se::vs_ls "${_k_op}"
-cd_ls=(${_q_rt})
+cd_ls=(${_q_rt[@]})
 if [[ -z "${pa_ls[@]}" && -z "${cd_ls[@]}" ]]; then
 return 0
 fi

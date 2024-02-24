@@ -58,6 +58,30 @@ tests(){
 - BASED
 - PARSER" "${parse}"
 
+  echo -e "\U1F4AC Test 1.${test_num}: parse file with consecutive key chains"
+  parse=$("./${program}" -Rf "${yaml_file}" -k "consecutive.list")
+  check_test "- yes
+- no
+- neither
+- TRUE" "${parse}"
+
+  echo -e "\U1F4AC Test 1.${test_num}: parse object with consecutive key chains"
+  parse=$("./${program}" -Ro "${yaml_object}" -k "consecutive.list")
+  check_test "- yes
+- no
+- neither
+- TRUE" "${parse}"
+
+  echo -e "\U1F4AC Test 1.${test_num}: parse file with non-consecutive key chains"
+  parse=$("./${program}" -Rf "${yaml_file}" -k "non-consecutive.list")
+  check_test "- TRUE
+- FALSE" "${parse}"
+
+  echo -e "\U1F4AC Test 1.${test_num}: parse object with non-consecutive key chains"
+  parse=$("./${program}" -Ro "${yaml_object}" -k "non-consecutive.list")
+  check_test "- TRUE
+- FALSE" "${parse}"
+
 	echo -e "\U1F4AC Test 1.${test_num}: parse file with key chain, targetting an inline key"
 	parse=$("./${program}" -Rf "${yaml_file}" -k "yaml.yaml.bash.- IFS")
 	check_test "BASED PARSER" "${parse}"

@@ -43,6 +43,21 @@ do:
   exist: FALSE
 do:
   - true
+consecutive:
+  list:
+    - yes
+    - no
+    - neither
+consecutive:
+  list:
+    - TRUE
+non-consecutive:
+  list:
+    - TRUE
+separator : yes
+non-consecutive:
+  list:
+    - FALSE
 is:
   a:
     boolean:

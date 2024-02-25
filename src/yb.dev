@@ -726,7 +726,7 @@ Use -O to add object value type to YAML file or object."
 #   $@ # script user options
 ########################################
 yb::main::cli(){
-  while getopts "aAcdf:Fhk:lLno:O:qrRTv:V" arg; do
+  while getopts "aAcdf:Fhk:KlLno:O:qrRTv:V" arg; do
     case $arg in
       a)
         yb_add=true
@@ -752,6 +752,9 @@ yb::main::cli(){
         ;;
       k)
         yb_key_option="${OPTARG}"
+        ;;
+      K)
+        yb_key_only=true
         ;;
       l)
         yb_show_line=true
@@ -890,6 +893,7 @@ yb::main::globals::flags(){
   declare -g yb_is_colored=false
   declare -g yb_silent_query=false
   declare -g yb_has_key=false
+  declare -g yb_key_only=false
   declare -g yb_inclusive=false
   declare -g yb_YAML_is_modified=false
   declare -g yb_is_output=true
@@ -1230,6 +1234,16 @@ yb::parse::print::output(){
     line_["comment"]=""
     if [[ "${line_["type"]}" == "comment" || "${line_["type"]}" == "empty" ]]; then
       return
+    fi
+  fi
+
+  # if -K option
+  if [[ "${yb_key_only}" == true ]]; then
+    if [[ "${line_["type"]}" != *"key"* ]]; then
+      return
+    else
+      line_["value"]=""
+      line_["suffix"]=""
     fi
   fi
 

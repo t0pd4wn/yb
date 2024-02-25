@@ -162,6 +162,22 @@ tests(){
   parse=$("./${program}" -Ro "${yaml_object}" -k "yaml.yaml.yaml.bash.- IFS.- BASED.number")
   check_test "101" "${parse}"
 
+  echo -e "\U1F4AC Test 1.${test_num}: parse file to retrieve only keys"
+	parse=$("./${program}" -RKf "${yaml_file}" -k "yaml.yaml.yaml")
+	check_test "bash
+  - IFS
+    - BASED
+      number
+      float-number" "${parse}"
+
+  echo -e "\U1F4AC Test 1.${test_num}: parse object to retrieve only keys"
+	parse=$("./${program}" -RKo "${yaml_object}" -k "yaml.yaml.yaml")
+	check_test "bash
+  - IFS
+    - BASED
+      number
+      float-number" "${parse}"
+
 	echo -e "\U1F4AC Test 1.${test_num}: parse file with a boolean output as an array"
 	parse=$("./${program}" -Af "${yaml_file}" -k "is.a.boolean")
 	check_test "true" "${parse}"

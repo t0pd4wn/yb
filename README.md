@@ -11,7 +11,7 @@
 ## Usage
 
 ```bash
-yb [-v|-h|-a|-c|-q|-r|-A-d-F-l-L-R-n-T] [-f <file>|-o <object>] [-k <key>] [-v <value>|-O <object value>]
+yb [-h|-a|-c|-q|-r|-A-d-F-K-l-L-R-n-T] [-f <file>|-o <object>] [-k <key>] [-v <value>|-O <object value>]
 ```
 
 ### Examples
@@ -133,6 +133,7 @@ bash <(echo "https://gitlab.com/t0pd4wn/yb/-/raw/main/yb"|(read l; wget $l || cu
 | `-A`   | array  | format | Prints the output as a bash array. | `yb -f "file.yaml" -A -k "key"` | Will provide a different formatting if used with `-F` or `-d`. |
 | `-d`   | depth  | format | Provides the output with the original depth. | `yb -f "file.yaml" -d -k "key.childkey" -v "new_value"`  |        |
 | `-F`   | format | format | Prints a formatted output to represent the arborescence inline. | `yb -f "file.yaml" -F -k "key"` | Will provide a different formatting if used with `-A` or `-d`. |
+| `-K`   | keys-only | format | Prints only keys. | `yb -Kf "file.yaml" -k "key"` | |
 | `-l`   | line   | format | Prints `{{line}}` on each lines. | `yb -f "file.yaml" -l -k "key"` | |
 | `-L`   | level  | format | Prints `{{<level number>}}` on each lines. | `yb -f "file.yaml" -L -k "key"` | |
 | `-R`   | raw    | format | Prints the ouptut without added colors, comments and empty lines. | `yb -f "file.yaml" -R -k "key"` | |

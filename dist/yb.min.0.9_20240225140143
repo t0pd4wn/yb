@@ -1,6 +1,6 @@
 #!/bin/bash
 #---------------------------------------
-# yb | yaml bash parser | 0.9-20240224155430 | Licensed under GNU GPL V3
+# yb | yaml bash parser | 0.9-20240225140143 | Licensed under GNU GPL V3
 #---------------------------------------
 # Note: this is a minified version. The full code is available in the 'src/' folder.
 #---------------------------------------
@@ -18,6 +18,7 @@ yb::main::help ()
   echo '  -o  | YAML object. | yb -o "${YAML_object}" | YAML object can be used with all actions. -f and -o are compatible together, only when adding an object to a file.';
   echo '  -O  | YAML object value(s) to be added. | yb -f "file.yaml" -k "key" -O "object value" | YAML object value support raw YAML formatting.';
   echo '  -k  | Key(s) selection path. | yb -f "file.yaml" -k "key" | Support keys in this format :"key", "key.childkey", "- list-key", "pipe-key|". Multiple key(s) can be provided with a "."" as the separator.';
+  echo '  -K  | Prints only child keys. | yb -Kf "file.yaml" -k "key"';
   echo '  -v  | Value(s) to be added, removed, queried or changed. | yb -f "file.yaml" -k "key" -v "value" | Support values in this format : "value", "- list-value", "|> pipe-value".';
   echo '  -A  | Prints the output as a bash array. | yb -f "file.yaml" -A -k "key" | Will provide a different formatting if used with -F or -d.';
   echo '  -d  | Provides the output with the original depth. | yb -f "file.yaml" -d -k "key.childkey" -v "new_value"';
@@ -418,7 +419,7 @@ echo "File is currently being processd with yb."
 fi
 }
 _::m::cli(){
-while getopts "aAcdf:Fhk:lLno:O:qrRTv:V" arg; do
+while getopts "aAcdf:Fhk:KlLno:O:qrRTv:V" arg; do
 case $arg in
 a)
 _a=true
@@ -444,6 +445,9 @@ _::m::he
 ;;
 k)
 _k_op="${OPTARG}"
+;;
+K)
+_k_only=true
 ;;
 l)
 _sh_l=true
@@ -546,6 +550,7 @@ declare -g _one_l=false
 declare -g _is_crd=false
 declare -g _silent_q=false
 declare -g _h_k=false
+declare -g _k_only=false
 declare -g _iv=false
 declare -g _Y_im=false
 declare -g _is_ot=true
@@ -770,6 +775,14 @@ if [[ "${_is_rw}" == true ]]; then
 l_["cmt"]=""
 if [[ "${l_["ty"]}" == "cmt" || "${l_["ty"]}" == "empty" ]]; then
 return
+fi
+fi
+if [[ "${_k_only}" == true ]]; then
+if [[ "${l_["ty"]}" != *"k"* ]]; then
+return
+else
+l_["v"]=""
+l_["su"]=""
 fi
 fi
 if [[ "${_is_s}" == true && "${_one_l}" == true ]]; then

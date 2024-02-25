@@ -1,6 +1,6 @@
 #!/bin/bash
 #---------------------------------------
-# yb | yaml bash parser | 0.9-20240224155430 | Licensed under GNU GPL V3
+# yb | yaml bash parser | 0.9-20240225140143 | Licensed under GNU GPL V3
 #---------------------------------------
 # Note: this is an automatically built version. The full code is available in the 'src/' folder.
 #---------------------------------------
@@ -10,7 +10,7 @@ set -eu
 ########################################
 yb::main::help () 
 { 
-  echo 'yb version 0.9-20240224155430 by t0pd4wn.';
+  echo 'yb version 0.9-20240225140143 by t0pd4wn.';
   echo 'yb [-v|-h|-a|-c|-q|-r|-A-d-F-l-L-R-n-T] [-f <file>|-o <object>] [-k <key>] [-v <value>|-O <object value>]';
   echo '';
   echo '  -a  | Adds key(s), value(s) or both. | yb -f "file.yaml" -a -k "key" -v "value"';
@@ -21,6 +21,7 @@ yb::main::help ()
   echo '  -o  | YAML object. | yb -o "${YAML_object}" | YAML object can be used with all actions. -f and -o are compatible together, only when adding an object to a file.';
   echo '  -O  | YAML object value(s) to be added. | yb -f "file.yaml" -k "key" -O "object value" | YAML object value support raw YAML formatting.';
   echo '  -k  | Key(s) selection path. | yb -f "file.yaml" -k "key" | Support keys in this format :"key", "key.childkey", "- list-key", "pipe-key|". Multiple key(s) can be provided with a "."" as the separator.';
+  echo '  -K  | Prints only child keys. | yb -Kf "file.yaml" -k "key"';
   echo '  -v  | Value(s) to be added, removed, queried or changed. | yb -f "file.yaml" -k "key" -v "value" | Support values in this format : "value", "- list-value", "|> pipe-value".';
   echo '  -A  | Prints the output as a bash array. | yb -f "file.yaml" -A -k "key" | Will provide a different formatting if used with -F or -d.';
   echo '  -d  | Provides the output with the original depth. | yb -f "file.yaml" -d -k "key.childkey" -v "new_value"';
@@ -655,7 +656,7 @@ Use -O to add object value type to YAML file or object."
 #   $@ # script user options
 ########################################
 yb::main::cli(){
-  while getopts "aAcdf:Fhk:lLno:O:qrRTv:V" arg; do
+  while getopts "aAcdf:Fhk:KlLno:O:qrRTv:V" arg; do
     case $arg in
       a)
         yb_add=true
@@ -681,6 +682,9 @@ yb::main::cli(){
         ;;
       k)
         yb_key_option="${OPTARG}"
+        ;;
+      K)
+        yb_key_only=true
         ;;
       l)
         yb_show_line=true
@@ -814,6 +818,7 @@ yb::main::globals::flags(){
   declare -g yb_is_colored=false
   declare -g yb_silent_query=false
   declare -g yb_has_key=false
+  declare -g yb_key_only=false
   declare -g yb_inclusive=false
   declare -g yb_YAML_is_modified=false
   declare -g yb_is_output=true
@@ -1135,6 +1140,15 @@ yb::parse::print::output(){
     line_["comment"]=""
     if [[ "${line_["type"]}" == "comment" || "${line_["type"]}" == "empty" ]]; then
       return
+    fi
+  fi
+  # if -K option
+  if [[ "${yb_key_only}" == true ]]; then
+    if [[ "${line_["type"]}" != *"key"* ]]; then
+      return
+    else
+      line_["value"]=""
+      line_["suffix"]=""
     fi
   fi
   # if a *key:value sequence

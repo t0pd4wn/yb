@@ -1,6 +1,6 @@
 #!/bin/bash
 #---------------------------------------
-# yb | yaml bash parser | 0.9-20240225140143 | Licensed under GNU GPL V3
+# yb | yaml bash parser | 0.9-20240303191126 | Licensed under GNU GPL V3
 #---------------------------------------
 # Note: this is a minified version. The full code is available in the 'src/' folder.
 #---------------------------------------
@@ -389,6 +389,7 @@ rm "${t_f}"
 _::m(){
 _::m::g
 _::m::cli "${@}"
+_::m::is_terminal
 if ! [[ -f "${_f}" ]]; then
 if [[ "${_f}" == *".y" ]]; then
 _is_f=true
@@ -418,8 +419,15 @@ else
 echo "File is currently being processd with yb."
 fi
 }
+_::m::is_terminal(){
+if [[ ! -t 1 ]]; then
+if [[ "${_crs}" == false ]]; then
+_is_rw=true
+fi
+fi
+}
 _::m::cli(){
-while getopts "aAcdf:Fhk:KlLno:O:qrRTv:V" arg; do
+while getopts "aAcCdf:Fhk:KlLno:O:qrRTv:V" arg; do
 case $arg in
 a)
 _a=true
@@ -429,6 +437,9 @@ _is_ra=true
 ;;
 c)
 _c=true
+;;
+C)
+_crs=true
 ;;
 d)
 _de=true
@@ -532,6 +543,7 @@ declare -g _de=false
 declare -g _fo=false
 declare -g _is_ra=false
 declare -g _is_rw=false
+declare -g _crs=false
 declare -g _he=false
 declare -g _sh_lv=false
 declare -g _sh_l=false
@@ -772,7 +784,6 @@ if [[ "${_ty}" == false ]]; then
 _v_ty=""
 fi
 if [[ "${_is_rw}" == true ]]; then
-l_["cmt"]=""
 if [[ "${l_["ty"]}" == "cmt" || "${l_["ty"]}" == "empty" ]]; then
 return
 fi
@@ -1019,12 +1030,14 @@ l_["ty"]="cmt"
 l_["v"]="${_l}"
 }
 _::p::y::in_cmt(){
+if [[ "${_l}" == *"# "* ]]; then
 if [[ "${_l}" =~ "'"*"#"*"'" ]]; then
 l_["cmt"]=" #${_l#*"' #"}"
 elif [[ "${_l}" =~ '"'*'#'*'"' ]]; then
 l_["cmt"]=" #${_l#*'" #'}"
 else
 l_["cmt"]=" #${_l#* #}"
+fi
 fi
 l_["v"]="${l_["v"]//${l_["cmt"]}/}"
 }

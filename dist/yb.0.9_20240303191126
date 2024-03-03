@@ -1,6 +1,6 @@
 #!/bin/bash
 #---------------------------------------
-# yb | yaml bash parser | 0.9-20240225140143 | Licensed under GNU GPL V3
+# yb | yaml bash parser | 0.9-20240303191126 | Licensed under GNU GPL V3
 #---------------------------------------
 # Note: this is an automatically built version. The full code is available in the 'src/' folder.
 #---------------------------------------
@@ -10,7 +10,7 @@ set -eu
 ########################################
 yb::main::help () 
 { 
-  echo 'yb version 0.9-20240225140143 by t0pd4wn.';
+  echo 'yb version 0.9-20240303191126 by t0pd4wn.';
   echo 'yb [-v|-h|-a|-c|-q|-r|-A-d-F-l-L-R-n-T] [-f <file>|-o <object>] [-k <key>] [-v <value>|-O <object value>]';
   echo '';
   echo '  -a  | Adds key(s), value(s) or both. | yb -f "file.yaml" -a -k "key" -v "value"';
@@ -615,6 +615,7 @@ yb::file::update_file(){
 yb::main(){
   yb::main::globals
   yb::main::cli "${@}"
+  yb::main::is_terminal
   # check for the existence of the parameter file
   if ! [[ -f "${yb_file}" ]]; then
     if [[ "${yb_file}" == *".yaml" ]]; then
@@ -651,12 +652,26 @@ Use -O to add object value type to YAML file or object."
   fi
 }
 ########################################
+# Check the output type
+# Globals:
+#   $yb_colors
+#   $yb_is_raw
+########################################
+yb::main::is_terminal(){
+  # if not in the terminal print without colors
+  if [[ ! -t 1 ]]; then
+    if [[ "${yb_colors}" == false ]]; then
+      yb_is_raw=true
+    fi
+  fi
+}
+########################################
 # Initialize the cli
 # Attributes:
 #   $@ # script user options
 ########################################
 yb::main::cli(){
-  while getopts "aAcdf:Fhk:KlLno:O:qrRTv:V" arg; do
+  while getopts "aAcCdf:Fhk:KlLno:O:qrRTv:V" arg; do
     case $arg in
       a)
         yb_add=true
@@ -666,6 +681,9 @@ yb::main::cli(){
         ;;
       c)
         yb_change=true
+        ;;
+      C)
+        yb_colors=true
         ;;
       d)
         yb_depth=true
@@ -795,6 +813,7 @@ yb::main::globals::cli_options(){
   declare -g yb_format=false
   declare -g yb_is_array=false
   declare -g yb_is_raw=false
+  declare -g yb_colors=false
   declare -g yb_help=false
   declare -g yb_show_level=false
   declare -g yb_show_line=false
@@ -1137,7 +1156,7 @@ yb::parse::print::output(){
     yb_value_type=""
   fi
   if [[ "${yb_is_raw}" == true ]]; then
-    line_["comment"]=""
+    # line_["comment"]=""
     if [[ "${line_["type"]}" == "comment" || "${line_["type"]}" == "empty" ]]; then
       return
     fi
@@ -1549,12 +1568,14 @@ yb::parse::yaml::comment(){
 ########################################
 yb::parse::yaml::inline_comment(){
   # check for inline comment and assign it
-  if [[ "${yb_line}" =~ "'"*"#"*"'" ]]; then
-    line_["comment"]=" #${yb_line#*"' #"}"
-  elif [[ "${yb_line}" =~ '"'*'#'*'"' ]]; then
-    line_["comment"]=" #${yb_line#*'" #'}"
-  else
-    line_["comment"]=" #${yb_line#* #}"
+  if [[ "${yb_line}" == *"# "* ]]; then
+    if [[ "${yb_line}" =~ "'"*"#"*"'" ]]; then
+      line_["comment"]=" #${yb_line#*"' #"}"
+    elif [[ "${yb_line}" =~ '"'*'#'*'"' ]]; then
+      line_["comment"]=" #${yb_line#*'" #'}"
+    else
+      line_["comment"]=" #${yb_line#* #}"
+    fi
   fi
   # remove comment value from line
   line_["value"]="${line_["value"]//${line_["comment"]}/}"

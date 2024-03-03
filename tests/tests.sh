@@ -7,7 +7,7 @@ tests(){
   local program="${1:-yb}"
   local yaml_file="tests/yb.yaml"
   local yaml_object
-  yaml_object=$("./${program}" -Rf "${yaml_file}")
+  yaml_object=$("./${program}" -f "${yaml_file}")
   local value
 
 	echo -e "\U1F3B2 Welcome to YB tests: "
@@ -59,39 +59,39 @@ tests(){
 - PARSER" "${parse}"
 
   echo -e "\U1F4AC Test 1.${test_num}: parse file with consecutive key chains"
-  parse=$("./${program}" -Rf "${yaml_file}" -k "consecutive.list")
+  parse=$("./${program}" -f "${yaml_file}" -k "consecutive.list")
   check_test "- yes
 - no
 - neither
 - TRUE" "${parse}"
 
   echo -e "\U1F4AC Test 1.${test_num}: parse object with consecutive key chains"
-  parse=$("./${program}" -Ro "${yaml_object}" -k "consecutive.list")
+  parse=$("./${program}" -o "${yaml_object}" -k "consecutive.list")
   check_test "- yes
 - no
 - neither
 - TRUE" "${parse}"
 
   echo -e "\U1F4AC Test 1.${test_num}: parse file with non-consecutive key chains"
-  parse=$("./${program}" -Rf "${yaml_file}" -k "non-consecutive.list")
+  parse=$("./${program}" -f "${yaml_file}" -k "non-consecutive.list")
   check_test "- TRUE
 - FALSE" "${parse}"
 
   echo -e "\U1F4AC Test 1.${test_num}: parse object with non-consecutive key chains"
-  parse=$("./${program}" -Ro "${yaml_object}" -k "non-consecutive.list")
+  parse=$("./${program}" -o "${yaml_object}" -k "non-consecutive.list")
   check_test "- TRUE
 - FALSE" "${parse}"
 
 	echo -e "\U1F4AC Test 1.${test_num}: parse file with key chain, targetting an inline key"
-	parse=$("./${program}" -Rf "${yaml_file}" -k "yaml.yaml.bash.- IFS")
+	parse=$("./${program}" -f "${yaml_file}" -k "yaml.yaml.bash.- IFS")
 	check_test "BASED PARSER # inline comment" "${parse}"
 
   echo -e "\U1F4AC Test 1.${test_num}: parse object with key chain, targetting an inline key"
-  parse=$("./${program}" -Ro "${yaml_object}" -k "yaml.yaml.bash.- IFS")
+  parse=$("./${program}" -o "${yaml_object}" -k "yaml.yaml.bash.- IFS")
   check_test "BASED PARSER # inline comment" "${parse}"
 
 	echo -e "\U1F4AC Test 1.${test_num}: parse file with key chain, targetting an inline-key containing a space"
-	parse=$("./${program}" -Rf "${yaml_file}" -k "complex.strings.- I am")
+	parse=$("./${program}" -f "${yaml_file}" -k "complex.strings.- I am")
   check_test "a complex string" "${parse}"
 
   echo -e "\U1F4AC Test 1.${test_num}: parse object with key chain, targetting an inline-key containing a space"
@@ -107,7 +107,7 @@ tests(){
   check_test $'BASED PARSER\E[30m # inline comment\E[0m' "${parse}"
 
   echo -e "\U1F4AC Test 1.${test_num}: parse file with key chain, targetting a set of complex strings"
-  parse=$("./${program}" -Rf "${yaml_file}" -k "complex.strings")
+  parse=$("./${program}" -f "${yaml_file}" -k "complex.strings")
   value="- trick::
 - \\033[0;30m
 - I am: a complex string
@@ -125,7 +125,7 @@ tests(){
   check_test "${value}" "${parse}"
 
   echo -e "\U1F4AC Test 1.${test_num}: parse object with key chain, targetting a set of complex strings"
-  parse=$("./${program}" -Ro "${yaml_object}" -k "complex.strings")
+  parse=$("./${program}" -o "${yaml_object}" -k "complex.strings")
   value="- trick::
 - \\033[0;30m
 - I am: a complex string
@@ -143,27 +143,27 @@ tests(){
   check_test "${value}" "${parse}"
 
 	echo -e "\U1F4AC Test 1.${test_num}: parse file with key chain and raw option"
-	parse=$("./${program}" -Rf "${yaml_file}" -k "yb.yaml.bash")
+	parse=$("./${program}" -f "${yaml_file}" -k "yb.yaml.bash")
 	check_test "- IFS
 - BASED
 - PARSER" "${parse}"
 
   echo -e "\U1F4AC Test 1.${test_num}: parse object with key chain and raw option"
-  parse=$("./${program}" -Ro "${yaml_object}" -k "yb.yaml.bash")
+  parse=$("./${program}" -o "${yaml_object}" -k "yb.yaml.bash")
   check_test "- IFS
 - BASED
 - PARSER" "${parse}"
 
 	echo -e "\U1F4AC Test 1.${test_num}: parse file with a number output"
-	parse=$("./${program}" -Rf "${yaml_file}" -k "yaml.yaml.yaml.bash.- IFS.- BASED.number")
+	parse=$("./${program}" -f "${yaml_file}" -k "yaml.yaml.yaml.bash.- IFS.- BASED.number")
 	check_test "101" "${parse}"
 
   echo -e "\U1F4AC Test 1.${test_num}: parse object with a number output"
-  parse=$("./${program}" -Ro "${yaml_object}" -k "yaml.yaml.yaml.bash.- IFS.- BASED.number")
+  parse=$("./${program}" -o "${yaml_object}" -k "yaml.yaml.yaml.bash.- IFS.- BASED.number")
   check_test "101" "${parse}"
 
   echo -e "\U1F4AC Test 1.${test_num}: parse file to retrieve only keys"
-	parse=$("./${program}" -RKf "${yaml_file}" -k "yaml.yaml.yaml")
+	parse=$("./${program}" -Kf "${yaml_file}" -k "yaml.yaml.yaml")
 	check_test "bash
   - IFS
     - BASED
@@ -171,7 +171,7 @@ tests(){
       float-number" "${parse}"
 
   echo -e "\U1F4AC Test 1.${test_num}: parse object to retrieve only keys"
-	parse=$("./${program}" -RKo "${yaml_object}" -k "yaml.yaml.yaml")
+	parse=$("./${program}" -Ko "${yaml_object}" -k "yaml.yaml.yaml")
 	check_test "bash
   - IFS
     - BASED
@@ -187,13 +187,13 @@ tests(){
   check_test "true" "${parse}"
 
   echo -e "\U1F4AC Test 1.${test_num}: parse file with raw option and depth option"
-	parse=$("./${program}" -Rdf "${yaml_file}" -k "yb.yaml.bash")
+	parse=$("./${program}" -df "${yaml_file}" -k "yb.yaml.bash")
 	check_test "      - IFS
       - BASED
       - PARSER" "${parse}"
 
   echo -e "\U1F4AC Test 1.${test_num}: parse object with raw option and depth option"
-  parse=$("./${program}" -Rdo "${yaml_object}"  -k "yb.yaml.bash")
+  parse=$("./${program}" -do "${yaml_object}"  -k "yb.yaml.bash")
   check_test "      - IFS
       - BASED
       - PARSER" "${parse}"
@@ -247,15 +247,15 @@ tests(){
   check_test "....bash_IFS ....bash_BASED ....bash_PARSER" "${parse}"
 
 	echo -e "\U1F4AC Test 1.${test_num}: parse file with all -lLn outer options"
-	parse=$("./${program}" -RlLnf "${yaml_file}" -k "yb.yaml.bash")
+	parse=$("./${program}" -lLnf "${yaml_file}" -k "yb.yaml.bash")
 	check_test "- IFS{{line}}{{3}}{{7}}
 - BASED{{line}}{{3}}{{8}}
 - PARSER{{line}}{{3}}{{9}}" "${parse}"
 
   echo -e "\U1F4AC Test 1.${test_num}: parse object with all -lLn outer options"
-  parse=$("./${program}" -RlLno "${yaml_object}" -k "yb.yaml.bash")
+  parse=$("./${program}" -lLno "${yaml_object}" -k "yb.yaml.bash")
   # note: line numbers are different in the object scenario 
-  # because the YAML was parsed using the -R option
+  # because the YAML was parsed using the - option
   check_test "- IFS{{line}}{{3}}{{5}}
 - BASED{{line}}{{3}}{{6}}
 - PARSER{{line}}{{3}}{{7}}" "${parse}"
@@ -267,11 +267,11 @@ tests(){
   echo -e "\U1F4AC Test 1.${test_num}: parse object with all options but depth"
   parse=$("./${program}" -FARlLno "${yaml_object}" -k "yb.yaml.bash")
   # note: line numbers are different in the object scenario 
-  # because the YAML was parsed using the -R option
+  # because the YAML was parsed using the - option
   check_test ".bash_IFS{{line}}{{3}}{{5}} .bash_BASED{{line}}{{3}}{{6}} .bash_PARSER{{line}}{{3}}{{7}}" "${parse}"
 
   echo -e "\U1F4AC Test 1.${test_num}: parse file with type options"
-  parse=$("./${program}" -RTf "${yaml_file}" -k "yaml.yaml.yaml.bash.- IFS.- BASED")
+  parse=$("./${program}" -Tf "${yaml_file}" -k "yaml.yaml.yaml.bash.- IFS.- BASED")
   check_test "- !! str PARSER
 - !! int 1
 - !! int 0
@@ -280,7 +280,7 @@ number: !! int 101
 float-number: !! float 101.01" "${parse}"
 
   echo -e "\U1F4AC Test 1.${test_num}: parse object with type options"
-  parse=$("./${program}" -RTo "${yaml_object}" -k "yaml.yaml.yaml.bash.- IFS.- BASED")
+  parse=$("./${program}" -To "${yaml_object}" -k "yaml.yaml.yaml.bash.- IFS.- BASED")
   check_test "- !! str PARSER
 - !! int 1
 - !! int 0
@@ -295,7 +295,7 @@ float-number: !! float 101.01" "${parse}"
   echo -e "\U1F4AC Test 1.${test_num}: parse object with all compatible options"
   parse=$("./${program}" -FARTldLno "${yaml_object}" -k "yb.yaml.bash")
   # note: line numbers are different in the object scenario 
-  # because the YAML was parsed using the -R option
+  # because the YAML was parsed using the - option
   check_test "....bash_!! str IFS{{line}}{{3}}{{5}} ....bash_!! str BASED{{line}}{{3}}{{6}} ....bash_!! str PARSER{{line}}{{3}}{{7}}" "${parse}"
 
   # 
@@ -424,58 +424,58 @@ true" "${parse}"
 
   echo -e "\U1F4AC Test 3.${test_num}: add inline value to an empty existing key to file"
   "./${program}" -af "${yaml_file}" -k "do.exist.not" -v "false"
-  parse=$("./${program}" -Rf "${yaml_file}" -k "do.exist.not")
+  parse=$("./${program}" -f "${yaml_file}" -k "do.exist.not")
   check_test "false
 false" "${parse}"
 
   echo -e "\U1F4AC Test 3.${test_num}: add inline value to an empty existing key to object"
   yaml_object=$("./${program}" -ao "${yaml_object}" -k "do.exist.not" -v "false")
-  parse=$("./${program}" -Ro "${yaml_object}" -k "do.exist.not")
+  parse=$("./${program}" -o "${yaml_object}" -k "do.exist.not")
   check_test "false
 false" "${parse}"
 
   echo -e "\U1F4AC Test 3.${test_num}: add inline value to a non-empty existing key to file"
   "./${program}" -af "${yaml_file}" -k "do.exist.not" -v "true"
-  parse=$("./${program}" -Rf "${yaml_file}" -k "do.exist.not")
+  parse=$("./${program}" -f "${yaml_file}" -k "do.exist.not")
   check_test "false true
 false true" "${parse}"
 
   echo -e "\U1F4AC Test 3.${test_num}: add inline value to a non-empty existing key to object"
   yaml_object=$("./${program}" -ao "${yaml_object}" -k "do.exist.not" -v "true")
-  parse=$("./${program}" -Ro "${yaml_object}" -k "do.exist.not")
+  parse=$("./${program}" -o "${yaml_object}" -k "do.exist.not")
   check_test "false true
 false true" "${parse}"
 
   echo -e "\U1F4AC Test 3.${test_num}: add inline value to a non-existing key with a space to file"
   "./${program}" -af "${yaml_file}" -k "did not.exist.before" -v "true"
-  parse=$("./${program}" -Rf "${yaml_file}" -k "did not.exist.before")
+  parse=$("./${program}" -f "${yaml_file}" -k "did not.exist.before")
   check_test "true" "${parse}"
 
   echo -e "\U1F4AC Test 3.${test_num}: add inline value to a non-existing key with a space to object"
   yaml_object=$("./${program}" -ao "${yaml_object}" -k "did not.exist.before" -v "true")
-  parse=$("./${program}" -Ro "${yaml_object}" -k "did not.exist.before")
+  parse=$("./${program}" -o "${yaml_object}" -k "did not.exist.before")
   check_test "true" "${parse}"
   
   echo -e "\U1F4AC Test 3.${test_num}: add list value to a non-existing key to file"
   "./${program}" -af "${yaml_file}" -k "list.which.do.exist" -v "- true"
-  parse=$("./${program}" -Rf "${yaml_file}" -k "list.which.do.exist")
+  parse=$("./${program}" -f "${yaml_file}" -k "list.which.do.exist")
   check_test "- true" "${parse}"
 
   echo -e "\U1F4AC Test 3.${test_num}: add list value to a non-existing key to object"
   yaml_object=$("./${program}" -ao "${yaml_object}" -k "list.which.do.exist" -v "- true")
-  parse=$("./${program}" -Ro "${yaml_object}" -k "list.which.do.exist")
+  parse=$("./${program}" -o "${yaml_object}" -k "list.which.do.exist")
   check_test "- true" "${parse}"
 
   echo -e "\U1F4AC Test 3.${test_num}: add multiple list values to an existing key to file"
   "./${program}" -af "${yaml_file}" -k "list.which.do.exist" -v "- yes - right"
-  parse=$("./${program}" -Rf "${yaml_file}" -k "list.which.do.exist")
+  parse=$("./${program}" -f "${yaml_file}" -k "list.which.do.exist")
   check_test "- true
 - yes
 - right" "${parse}"
 
   echo -e "\U1F4AC Test 3.${test_num}: add multiple list values to an existing key to object"
   yaml_object=$("./${program}" -ao "${yaml_object}" -k "list.which.do.exist" -v "- yes - right")
-  parse=$("./${program}" -Ro "${yaml_object}" -k "list.which.do.exist")
+  parse=$("./${program}" -o "${yaml_object}" -k "list.which.do.exist")
   check_test "- true
 - yes
 - right" "${parse}"
@@ -558,12 +558,12 @@ true" "${parse}"
 
   echo -e "\U1F4AC Test 4.${test_num}: change existing key, with value in file"
   "./${program}" -cf "${yaml_file}" -k "was.not.- previously" -v "false"
-  parse=$("./${program}" -Rf "${yaml_file}" -k "was.not.- previously")
+  parse=$("./${program}" -f "${yaml_file}" -k "was.not.- previously")
   check_test "false" "${parse}"
 
   echo -e "\U1F4AC Test 4.${test_num}: change existing key, with value in object"
   yaml_object=$("./${program}" -co "${yaml_object}" -k "was.not.- previously" -v "false")
-  parse=$("./${program}" -Ro "${yaml_object}" -k "was.not.- previously")
+  parse=$("./${program}" -o "${yaml_object}" -k "was.not.- previously")
   check_test "false" "${parse}"
 
   echo -e "\U1F4AC Test 4.${test_num}: change existing pipe-value in file"
@@ -617,39 +617,39 @@ true" "${parse}"
 
   echo -e "\U1F4AC Test 5.${test_num}: remove non-existing value"
   "./${program}" -rf "${yaml_file}" -k "do.exist" -v "false"
-  parse=$("./${program}" -Rf "${yaml_file}" -k "do.exist")
+  parse=$("./${program}" -f "${yaml_file}" -k "do.exist")
   check_test "true
 FALSE" "${parse}"
 
   echo -e "\U1F4AC Test 5.${test_num}: remove non-existing value"
   yaml_object=$("./${program}" -ro "${yaml_object}" -k "do.exist" -v "false")
-  parse=$("./${program}" -Ro "${yaml_object}" -k "do.exist")
+  parse=$("./${program}" -o "${yaml_object}" -k "do.exist")
   check_test "true
 FALSE" "${parse}"
 
   echo -e "\U1F4AC Test 5.${test_num}: remove existing inline value"
   "./${program}" -af "${yaml_file}" -k "is.- empty" -v "false"
   "./${program}" -rf "${yaml_file}" -k "is.- empty" -v "false"
-  parse=$("./${program}" -Rf "${yaml_file}" -k "is.- empty")
+  parse=$("./${program}" -f "${yaml_file}" -k "is.- empty")
   check_test "" "${parse}"
 
   echo -e "\U1F4AC Test 5.${test_num}: remove existing inline value"
   yaml_object=$("./${program}" -ao "${yaml_object}" -k "is.- empty" -v "false")
   yaml_object=$("./${program}" -ro "${yaml_object}" -k "is.- empty" -v "false")
-  parse=$("./${program}" -Ro "${yaml_object}" -k "is.- empty")
+  parse=$("./${program}" -o "${yaml_object}" -k "is.- empty")
   check_test "" "${parse}"
 
 
   echo -e "\U1F4AC Test 5.${test_num}: remove existing list-value"
   "./${program}" -af "${yaml_file}" -k "is.- empty" -v "- false"
   "./${program}" -rf "${yaml_file}" -k "is.- empty" -v "- false"
-  parse=$("./${program}" -Rf "${yaml_file}" -k "is.- empty")
+  parse=$("./${program}" -f "${yaml_file}" -k "is.- empty")
   check_test "" "${parse}"
   
   echo -e "\U1F4AC Test 5.${test_num}: remove existing list-value"
   yaml_object=$("./${program}" -ao "${yaml_object}" -k "is.- empty" -v "- false")
   yaml_object=$("./${program}" -ro "${yaml_object}" -k "is.- empty" -v "- false")
-  parse=$("./${program}" -Ro "${yaml_object}" -k "is.- empty")
+  parse=$("./${program}" -o "${yaml_object}" -k "is.- empty")
   check_test "" "${parse}"
 
   # clean key

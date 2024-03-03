@@ -84,11 +84,11 @@ tests(){
 
 	echo -e "\U1F4AC Test 1.${test_num}: parse file with key chain, targetting an inline key"
 	parse=$("./${program}" -Rf "${yaml_file}" -k "yaml.yaml.bash.- IFS")
-	check_test "BASED PARSER" "${parse}"
+	check_test "BASED PARSER # inline comment" "${parse}"
 
   echo -e "\U1F4AC Test 1.${test_num}: parse object with key chain, targetting an inline key"
   parse=$("./${program}" -Ro "${yaml_object}" -k "yaml.yaml.bash.- IFS")
-  check_test "BASED PARSER" "${parse}"
+  check_test "BASED PARSER # inline comment" "${parse}"
 
 	echo -e "\U1F4AC Test 1.${test_num}: parse file with key chain, targetting an inline-key containing a space"
 	parse=$("./${program}" -Rf "${yaml_file}" -k "complex.strings.- I am")
@@ -98,13 +98,13 @@ tests(){
   parse=$("./${program}" -o "${yaml_object}" -k "complex.strings.- I am")
   check_test "a complex string" "${parse}"
 
-  echo -e "\U1F4AC Test 1.${test_num}: parse file with key chain, targetting a string with inline comment"
-  parse=$("./${program}" -f "${yaml_file}" -k "yaml.yaml.bash.- IFS")
+  echo -e "\U1F4AC Test 1.${test_num}: parse file with key chain and colors option, targetting a string with inline comment"
+  parse=$("./${program}" -Cf "${yaml_file}" -k "yaml.yaml.bash.- IFS")
   check_test $'BASED PARSER\E[30m # inline comment\E[0m' "${parse}"
 
-  echo -e "\U1F4AC Test 1.${test_num}: parse object with key chain, targetting a string with inline comment"
-  parse=$("./${program}" -o "${yaml_object}" -k "yaml.yaml.bash.- IFS")
-  check_test $'BASED PARSER' "${parse}"
+  echo -e "\U1F4AC Test 1.${test_num}: parse object with key chain and colors option, targetting a string with inline comment"
+  parse=$("./${program}" -Co "${yaml_object}" -k "yaml.yaml.bash.- IFS")
+  check_test $'BASED PARSER\E[30m # inline comment\E[0m' "${parse}"
 
   echo -e "\U1F4AC Test 1.${test_num}: parse file with key chain, targetting a set of complex strings"
   parse=$("./${program}" -Rf "${yaml_file}" -k "complex.strings")
@@ -275,7 +275,7 @@ tests(){
   check_test "- !! str PARSER
 - !! int 1
 - !! int 0
-- !! int 1
+- !! int 1 # an other inline comment # a third one
 number: !! int 101
 float-number: !! float 101.01" "${parse}"
 
@@ -284,7 +284,7 @@ float-number: !! float 101.01" "${parse}"
   check_test "- !! str PARSER
 - !! int 1
 - !! int 0
-- !! int 1
+- !! int 1 # an other inline comment # a third one
 number: !! int 101
 float-number: !! float 101.01" "${parse}"
   

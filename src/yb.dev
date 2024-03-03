@@ -677,6 +677,7 @@ yb::file::update_file(){
 yb::main(){
   yb::main::globals
   yb::main::cli "${@}"
+  yb::main::is_terminal
 
   # check for the existence of the parameter file
   if ! [[ -f "${yb_file}" ]]; then
@@ -721,12 +722,27 @@ Use -O to add object value type to YAML file or object."
 }
 
 ########################################
+# Check the output type
+# Globals:
+#   $yb_colors
+#   $yb_is_raw
+########################################
+yb::main::is_terminal(){
+  # if not in the terminal print without colors
+  if [[ ! -t 1 ]]; then
+    if [[ "${yb_colors}" == false ]]; then
+      yb_is_raw=true
+    fi
+  fi
+}
+
+########################################
 # Initialize the cli
 # Attributes:
 #   $@ # script user options
 ########################################
 yb::main::cli(){
-  while getopts "aAcdf:Fhk:KlLno:O:qrRTv:V" arg; do
+  while getopts "aAcCdf:Fhk:KlLno:O:qrRTv:V" arg; do
     case $arg in
       a)
         yb_add=true
@@ -736,6 +752,9 @@ yb::main::cli(){
         ;;
       c)
         yb_change=true
+        ;;
+      C)
+        yb_colors=true
         ;;
       d)
         yb_depth=true
@@ -869,6 +888,7 @@ yb::main::globals::cli_options(){
   declare -g yb_format=false
   declare -g yb_is_array=false
   declare -g yb_is_raw=false
+  declare -g yb_colors=false
   declare -g yb_help=false
   declare -g yb_show_level=false
   declare -g yb_show_line=false
@@ -1231,7 +1251,7 @@ yb::parse::print::output(){
   fi
 
   if [[ "${yb_is_raw}" == true ]]; then
-    line_["comment"]=""
+    # line_["comment"]=""
     if [[ "${line_["type"]}" == "comment" || "${line_["type"]}" == "empty" ]]; then
       return
     fi
@@ -1680,13 +1700,17 @@ yb::parse::yaml::comment(){
 ########################################
 yb::parse::yaml::inline_comment(){
   # check for inline comment and assign it 
-  if [[ "${yb_line}" =~ "'"*"#"*"'" ]]; then
-    line_["comment"]=" #${yb_line#*"' #"}"
-  elif [[ "${yb_line}" =~ '"'*'#'*'"' ]]; then
-    line_["comment"]=" #${yb_line#*'" #'}"
-  else
-    line_["comment"]=" #${yb_line#* #}"
-  fi 
+
+  if [[ "${yb_line}" == *"# "* ]]; then
+    if [[ "${yb_line}" =~ "'"*"#"*"'" ]]; then
+      line_["comment"]=" #${yb_line#*"' #"}"
+    elif [[ "${yb_line}" =~ '"'*'#'*'"' ]]; then
+      line_["comment"]=" #${yb_line#*'" #'}"
+    else
+      line_["comment"]=" #${yb_line#* #}"
+    fi 
+  fi
+
   # remove comment value from line
   line_["value"]="${line_["value"]//${line_["comment"]}/}"
 }

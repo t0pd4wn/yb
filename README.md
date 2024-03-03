@@ -11,7 +11,7 @@
 ## Usage
 
 ```bash
-yb [-h|-a|-c|-q|-r|-A-d-F-K-l-L-R-n-T] [-f <file>|-o <object>] [-k <key>] [-v <value>|-O <object value>]
+yb [-h|-a|-c|-q|-r|-A-C-d-F-K-l-L-R-n-T] [-f <file>|-o <object>] [-k <key>] [-v <value>|-O <object value>]
 ```
 
 ### Examples
@@ -53,7 +53,7 @@ add an ASCII within a pipe-key:
 manipulate the YAML as a bash variable:
 ```bash
 # using the '-R' raw option is advised to retrieve the content without color codes
-my_YAML=$(./yb -Rf tests/user.yaml -k "new")
+my_YAML=$(./yb -f tests/user.yaml -k "new")
 my_YAML=$(./yb -ao "${my_YAML}" -k "in_memory" -v "true")
 ```
 
@@ -131,6 +131,7 @@ bash <(echo "https://gitlab.com/t0pd4wn/yb/-/raw/main/yb"|(read l; wget $l || cu
 | `-k`   | key    | input  | Key(s) selection path. | `yb -f "file.yaml" -k "key"` | Support keys in this format :`key`, `key.childkey`, `- list-key`, `pipe-key\|`. Multiple key(s) can be provided with a `.` as the separator.|
 | `-v`   | value  | input  | Value(s) to be added, removed, queried or changed. | `yb -f "file.yaml" -k "key" -v "value"` | Support values in this format : `value`,  `- list-value`, `\|> pipe-value`. |
 | `-A`   | array  | format | Prints the output as a bash array. | `yb -f "file.yaml" -A -k "key"` | Will provide a different formatting if used with `-F` or `-d`. |
+| `-C`   | colors  | format | Force colors in a non-terminal output. | `yb -Cf "file.yaml" -A -k "key"` | |
 | `-d`   | depth  | format | Provides the output with the original depth. | `yb -f "file.yaml" -d -k "key.childkey" -v "new_value"`  |        |
 | `-F`   | format | format | Prints a formatted output to represent the arborescence inline. | `yb -f "file.yaml" -F -k "key"` | Will provide a different formatting if used with `-A` or `-d`. |
 | `-K`   | keys-only | format | Prints only keys. | `yb -Kf "file.yaml" -k "key"` | |

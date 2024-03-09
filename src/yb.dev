@@ -681,14 +681,13 @@ yb::main(){
 
   # check for the existence of the parameter file
   if ! [[ -f "${yb_file}" ]]; then
-    if [[ "${yb_file}" == *".yaml" ]]; then
+    if [[ "${yb_file}" == *".yaml" || "${yb_file}" == *".yml" ]]; then
       yb_is_file=true
       yb_is_empty_file=true
     fi
   else
     yb_is_file=true
   fi
-
 
   # check for the existence of the parameter file
   if [[ "${yb_is_file}" == false ]] &&\

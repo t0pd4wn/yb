@@ -652,7 +652,7 @@ yb::core::unset_IFS(){
 ########################################
 yb::file::lock(){
   local file="${1-}"
-  local path="${file%/*}"
+  local path="/tmp"
   local filename="${file##*/}"
 
   if [[ "${file}" == */* ]]; then
@@ -675,7 +675,7 @@ yb::file::lock(){
 ########################################
 yb::file::unlock(){
   local file="${1-}"
-  local path="${file%/*}"
+  local path="/tmp"
   local filename="${file##*/}"
 
   if [[ "${file}" == */* ]]; then

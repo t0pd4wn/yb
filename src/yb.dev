@@ -530,6 +530,52 @@ yb::change(){
 }
 
 ########################################
+# Check bash version
+# Attributes:
+#   $@ # some message
+########################################
+yb::core::check_bash_version(){
+  local parameters="${@-}"
+  local yb_path=$(realpath "$0")
+  local bash_version="${BASH_VERSION}"
+  bash_version="${bash_version%%.*}"
+  bash_version="${bash_version##*version}"
+
+  if [[ -f .yb_bash_lock ]]; then
+    return 0
+  fi
+
+  if [[ "${bash_version}" -ge 5 ]]; then
+    return 0
+  elif [[ -f /usr/local/bin/bash ]]; then
+    bash_version=$(/usr/local/bin/bash --version)
+    bash_version="${bash_version%%.*}"
+    bash_version="${bash_version##*version}"
+    if [[ "${bash_version}" -ge 5 ]]; then
+      if [[ -n $(command -v yb) ]]
+      then
+        touch .yb_bash_lock
+        /usr/local/bin/bash yb "${parameters}"
+        rm .yb_bash_lock
+        exit 0
+      else
+        touch .yb_bash_lock
+        /usr/local/bin/bash "${yb_path}" "${parameters}"
+        rm .yb_bash_lock
+        exit 0
+      fi
+    else
+      echo "Error: yb needs bash 5.x to execute correctly."
+      exit 1
+    fi
+  else
+    echo "Error: yb needs bash 5.x to execute correctly."
+    exit 1
+  fi
+}
+
+
+########################################
 # Print a debug message
 # Attributes:
 #   $@ # some message
@@ -675,8 +721,9 @@ yb::file::update_file(){
 #   $@ # script user options
 ########################################
 yb::main(){
+  yb::core::check_bash_version "${@-}"
   yb::main::globals
-  yb::main::cli "${@}"
+  yb::main::cli "${@-}"
   yb::main::is_terminal
 
   # check for the existence of the parameter file

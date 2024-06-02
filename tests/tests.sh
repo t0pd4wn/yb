@@ -7,7 +7,7 @@ tests(){
   local program="${1:-yb}"
   local yaml_file="tests/yb.yaml"
   local yaml_object
-  yaml_object=$("./${program}" -f "${yaml_file}")
+  yaml_object=$("${program}" -f "${yaml_file}")
   local value
 
 	echo -e "\U1F3B2 Welcome to YB tests: "
@@ -18,11 +18,11 @@ tests(){
 
 	echo -e "\U1F4AC Test 1.${test_num}: parse without options"
   echo "${program}"
-	parse=$("./${program}")
+	parse=$("${program}")
 	check_test "No parameters provided. See the '-h' help option for usage details." "${parse}"
 
 	echo -e "\U1F4AC Test 1.${test_num}: parse without an existing file, file is not a *.yaml or *.yml file"
-	parse=$("./${program}" "not_a_file")
+	parse=$("${program}" "not_a_file")
 	check_test "A YAML file or object needs to be provided through the '-f' or '-o' options." "${parse}"
 
   echo -e "\U1F4AC Test 1.${test_num}: parse without an existing file, file is a *.yaml file"
@@ -34,8 +34,8 @@ tests(){
 	parse=$("./${program}" "${yaml_file}" "y")
 	check_test "b" "${parse}"
 
+  echo -e "\U1F4AC Test 1.${test_num}: parse file with both -f and -o options."
   parse=$("./${program}" -f "${yaml_file}" -o "y")
-  echo -e "\U1F4AC Test 1.${test_num}: parse file both -f and -o options."
   check_test "-f file and -o object can not be used together. Use -O to add object value type to YAML file or object." "${parse}"
 
 	echo -e "\U1F4AC Test 1.${test_num}: parse file with key selection with options"
@@ -691,6 +691,44 @@ FALSE" "${parse}"
   "./${program}" -f "${yaml_file}" -k "- ascii|"
 }
 
+check_bash_version(){
+  local parameters="${@-}"
+  local yb_test_path=$(realpath "$0")
+  local bash_version="${BASH_VERSION}"
+  bash_version="${bash_version%%.*}"
+  bash_version="${bash_version##*version}"
+
+  if [[ -f /tmp/.yb_test_bash_lock ]]; then
+    return 0
+  fi
+
+  if [[ "${bash_version}" -ge 5 ]]; then
+    return 0
+  elif [[ -f /usr/local/bin/bash ]]; then
+    bash_version=$(/usr/local/bin/bash --version)
+    bash_version="${bash_version%%.*}"
+    bash_version="${bash_version##*version}"
+    if [[ "${bash_version}" -ge 5 ]]; then
+        touch /tmp/.yb_test_bash_lock
+        /usr/local/bin/bash "${yb_test_path}" "${parameters}"
+        rm /tmp/.yb_test_bash_lock
+        exit 0
+    else
+      echo "Error: yb tests need bash 5.x to execute correctly."
+      exit 1
+    fi
+  else
+    echo "Error: yb tests need bash 5.x to execute correctly."
+    exit 1
+  fi
+}
+
+remove_lock(){
+  if [[ -f /tmp/.yb_test_bash_lock ]]; then
+    rm /tmp/.yb_test_bash_lock
+  fi
+}
+
 check_test(){
 	local assertion="${1-}"
 	local result="${2-}"
@@ -714,9 +752,11 @@ globals(){
 }
 
 main(){
+  check_bash_version "${@-}"
+  trap remove_lock EXIT
 	globals
-	time tests "${@}"
+	time tests "${@-}"
   exit "${error_code}"
 }
 
-main "${@}"
+main "${@-}"

@@ -1,6 +1,6 @@
 #!/bin/bash
 #---------------------------------------
-# yb | yaml bash parser | 0.9-20240303191126 | Licensed under GNU GPL V3
+# yb | yaml bash parser | 0.9-20240602152733 | Licensed under GNU GPL V3
 #---------------------------------------
 # Note: this is an automatically built version. The full code is available in the 'src/' folder.
 #---------------------------------------
@@ -10,7 +10,7 @@ set -eu
 ########################################
 yb::main::help () 
 { 
-  echo 'yb version 0.9-20240303191126 by t0pd4wn.';
+  echo 'yb version 0.9-20240602152733 by t0pd4wn.';
   echo 'yb [-v|-h|-a|-c|-q|-r|-A-d-F-l-L-R-n-T] [-f <file>|-o <object>] [-k <key>] [-v <value>|-O <object value>]';
   echo '';
   echo '  -a  | Adds key(s), value(s) or both. | yb -f "file.yaml" -a -k "key" -v "value"';
@@ -486,6 +486,48 @@ yb::change(){
   fi
 }
 ########################################
+# Check bash version
+# Attributes:
+#   $@ # some message
+########################################
+yb::core::check_bash_version(){
+  local parameters="${@-}"
+  local yb_path=$(realpath "$0")
+  local bash_version="${BASH_VERSION}"
+  bash_version="${bash_version%%.*}"
+  bash_version="${bash_version##*version}"
+  if [[ -f /tmp/.yb_bash_lock ]]; then
+    return 0
+  fi
+  if [[ "${bash_version}" -ge 5 ]]; then
+    return 0
+  elif [[ -f /usr/local/bin/bash ]]; then
+    bash_version=$(/usr/local/bin/bash --version)
+    bash_version="${bash_version%%.*}"
+    bash_version="${bash_version##*version}"
+    if [[ "${bash_version}" -ge 5 ]]; then
+      if [[ -n $(command -v yb) ]]
+      then
+        touch /tmp/.yb_bash_lock
+        /usr/local/bin/bash yb "${parameters}"
+        rm /tmp/.yb_bash_lock
+        exit 0
+      else
+        touch /tmp/.yb_bash_lock
+        /usr/local/bin/bash "${yb_path}" "${parameters}"
+        rm /tmp/.yb_bash_lock
+        exit 0
+      fi
+    else
+      echo "Error: yb needs bash 5.x to execute correctly."
+      exit 1
+    fi
+  else
+    echo "Error: yb needs bash 5.x to execute correctly."
+    exit 1
+  fi
+}
+########################################
 # Print a debug message
 # Attributes:
 #   $@ # some message
@@ -555,7 +597,7 @@ yb::core::unset_IFS(){
 ########################################
 yb::file::lock(){
   local file="${1-}"
-  local path="${file%/*}"
+  local path="/tmp"
   local filename="${file##*/}"
   if [[ "${file}" == */* ]]; then
     path="${path}/.${filename}.yb.lock"
@@ -575,7 +617,7 @@ yb::file::lock(){
 ########################################
 yb::file::unlock(){
   local file="${1-}"
-  local path="${file%/*}"
+  local path="/tmp"
   local filename="${file##*/}"
   if [[ "${file}" == */* ]]; then
     path="${path}/.${filename}.yb.lock"
@@ -613,12 +655,13 @@ yb::file::update_file(){
 #   $@ # script user options
 ########################################
 yb::main(){
+  yb::core::check_bash_version "${@-}"
   yb::main::globals
-  yb::main::cli "${@}"
+  yb::main::cli "${@-}"
   yb::main::is_terminal
   # check for the existence of the parameter file
   if ! [[ -f "${yb_file}" ]]; then
-    if [[ "${yb_file}" == *".yaml" ]]; then
+    if [[ "${yb_file}" == *".yaml" || "${yb_file}" == *".yml" ]]; then
       yb_is_file=true
       yb_is_empty_file=true
     fi
@@ -743,8 +786,8 @@ yb::main::cli(){
   done
   # if no options were provided
   if [[ "${OPTIND}" -eq 1 ]]; then
-    # if arguments were provided
-    if [[ "${#}" -gt 0 ]]; then
+    # if some arguments were provided
+    if [[ -n "${@-}" ]]; then
       yb_file="${1-}"
       yb_key_option="${2-}"
     else
@@ -2523,6 +2566,6 @@ yb::yaml::output(){
   fi
 }
 # Launch main function
-yb::main "${@}"
+yb::main "${@-}"
 # Unset the eu flag
 set +eu

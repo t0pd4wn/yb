@@ -1,6 +1,6 @@
 #!/bin/bash
 #---------------------------------------
-# yb | yaml bash parser | 0.9-20240303191126 | Licensed under GNU GPL V3
+# yb | yaml bash parser | 0.9-20240602152733 | Licensed under GNU GPL V3
 #---------------------------------------
 # Note: this is a minified version. The full code is available in the 'src/' folder.
 #---------------------------------------
@@ -321,6 +321,43 @@ fi
 _::a::m::vs "${_v_op}"
 fi
 }
+_::cr::check_bash_version(){
+local parameters="${@-}"
+local _path=$(realpath "$0")
+local bash_version="${BASH_VERSION}"
+bash_version="${bash_version%%.*}"
+bash_version="${bash_version##*version}"
+if [[ -f /tmp/._bash_lo ]]; then
+return 0
+fi
+if [[ "${bash_version}" -ge 5 ]]; then
+return 0
+elif [[ -f /usr/local/bin/bash ]]; then
+bash_version=$(/usr/local/bin/bash --version)
+bash_version="${bash_version%%.*}"
+bash_version="${bash_version##*version}"
+if [[ "${bash_version}" -ge 5 ]]; then
+if [[ -n $(commad -v _) ]]
+then
+touch /tmp/._bash_lo
+/usr/local/bin/bash _ "${parameters}"
+rm /tmp/._bash_lo
+exit 0
+else
+touch /tmp/._bash_lo
+/usr/local/bin/bash "${_path}" "${parameters}"
+rm /tmp/._bash_lo
+exit 0
+fi
+else
+echo "Error: _ neds bash 5.x to execute correctly."
+exit 1
+fi
+else
+echo "Error: _ neds bash 5.x to execute correctly."
+exit 1
+fi
+}
 _::cr::debug(){
 local me="${@}"
 echo "${BASH_LINENO} : ${me}"
@@ -350,7 +387,7 @@ fi
 }
 _::f::lo(){
 local f="${1-}"
-local path="${f%/*}"
+local path="/tmp"
 local fname="${f##*/}"
 if [[ "${f}" == */* ]]; then
 path="${path}/.${fname}._.lo"
@@ -365,7 +402,7 @@ fi
 }
 _::f::unlo(){
 local f="${1-}"
-local path="${f%/*}"
+local path="/tmp"
 local fname="${f##*/}"
 if [[ "${f}" == */* ]]; then
 path="${path}/.${fname}._.lo"
@@ -387,11 +424,12 @@ cp "${t_f}" "${_f}"
 rm "${t_f}"
 }
 _::m(){
+_::cr::check_bash_version "${@-}"
 _::m::g
-_::m::cli "${@}"
+_::m::cli "${@-}"
 _::m::is_terminal
 if ! [[ -f "${_f}" ]]; then
-if [[ "${_f}" == *".y" ]]; then
+if [[ "${_f}" == *".y" || "${_f}" == *".yml" ]]; then
 _is_f=true
 _ie_f=true
 fi
@@ -498,7 +536,7 @@ exit 0
 esac
 done
 if [[ "${OPTIND}" -eq 1 ]]; then
-if [[ "${#}" -gt 0 ]]; then
+if [[ -n "${@-}" ]]; then
 _f="${1-}"
 _k_op="${2-}"
 else
@@ -1627,5 +1665,5 @@ elif [[ "${_is_ot}" == true ]]; then
 echo "${_Y}"
 fi
 }
-_::m "${@}"
+_::m "${@-}"
 set +eu
